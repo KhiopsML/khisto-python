@@ -1,0 +1,64 @@
+[project]
+name = "khisto"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["narwhals", "pyarrow"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-xdist>=3.6",
+    "pytest-cov>=6",
+    "pytest-sugar>=1.0",
+    "pytest-codspeed>=3.2",
+    "bandit>=1.8",
+    "pre-commit>=4.1",
+    "pre-commit-hooks>=5.0",
+    "ruff>=0.9",
+    "pyrefly>=0.9",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+addopts = "-n 4 --cov --cov-report term-missing --durations=10"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.bandit]
+skips = ['B403', 'B301']
+
+[tool.codespell]
+skip = '*.ipynb,./src/verbascope/assets,./sandbox,./scripts,./build/doc,./CHANGELOG.md,./doc,./poetry.lock'
+ignore-words-list = "blocs, coo, hist, nd, sav, ser, recuse, nin, verbascope"
+ignore-regex = 'https://([\w/\.])+'
+quiet-level = 3
+
+[tool.ruff]
+
+# Group violations by containing file.
+output-format = "grouped"
+line-length = 88
+indent-width = 4
+
+# Enable fix by default
+fix = true
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+[tool.ruff.lint]
+
+# Allow fix for all enabled rules
+fixable = ["ALL"]
+unfixable = []
+ignore = [
+    "E402", # module level import not at top of file
+]
