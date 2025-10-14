@@ -1,0 +1,3 @@
+[submodule "src/khiops"]
+	path = src/khiops
+	url = https://github.com/KhiopsML/khiops.git

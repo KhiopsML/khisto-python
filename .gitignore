@@ -173,6 +173,7 @@ data/
 secret.json
 .vscode
 .fastest.coverage
+uv.lock
 
 # Excel
 **/*.xlsx
