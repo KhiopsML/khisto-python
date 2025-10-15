@@ -3,8 +3,14 @@ name = "khisto"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["narwhals", "pyarrow", "array-api-compat"]
+
+[project.optional-dependencies]
+matplotlib = ["matplotlib"]
+plotly = ["plotly"]
+all = ["matplotlib", "plotly"]
+
 
 [dependency-groups]
 dev = [
@@ -24,6 +30,7 @@ dev = [
     "jax>=0.7",
     "pandas>=2",
     "polars>=1.0",
+    "nbformat>=5.10.4",
 ]
 
 [build-system]
