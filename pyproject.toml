@@ -4,10 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["narwhals", "pyarrow"]
+dependencies = ["narwhals", "pyarrow", "array-api-compat"]
 
 [dependency-groups]
 dev = [
+    "pyarrow-stubs>=11.0",
     "pytest>=8.3",
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
@@ -18,6 +19,11 @@ dev = [
     "pre-commit-hooks>=5.0",
     "ruff>=0.9",
     "pyrefly>=0.9",
+    "ipykernel>=7",
+    "numpy>=2",
+    "jax>=0.7",
+    "pandas>=2",
+    "polars>=1.0",
 ]
 
 [build-system]
