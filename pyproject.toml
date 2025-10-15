@@ -32,7 +32,7 @@ build-backend = "hatchling.build"
 
 [tool.pytest.ini_options]
 addopts = "-n 4 --cov --cov-report term-missing --durations=10"
-asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
 
 [tool.bandit]
 skips = ['B403', 'B301']

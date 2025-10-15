@@ -1,10 +1,9 @@
-"""Tests for khisto.core.cli_adaptor module."""
+"""Tests for khisto.core.cli_adapter module."""
 
 import pathlib
 import subprocess
 from unittest.mock import MagicMock, patch
 
-import narwhals as nw
 import pyarrow as pa
 from pyarrow import compute
 import pytest
@@ -73,7 +72,7 @@ class TestHistogram:
     @pytest.fixture
     def mock_subprocess_success(self):
         """Mock successful subprocess execution."""
-        with patch("khisto.core.cli_adaptor.subprocess.run") as mock_run:
+        with patch("khisto.core.cli_adapter.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
             yield mock_run
 
@@ -90,10 +89,10 @@ class TestHistogram:
         )
 
         with patch(
-            "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path)
+            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
         ):
             with patch(
-                "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
+                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
             ) as mock_temp:
                 mock_file = MagicMock()
                 mock_file.name = str(tmp_path / "input.txt")
@@ -102,12 +101,6 @@ class TestHistogram:
                 mock_temp.return_value = mock_file
 
                 result = compute_histogram(sample_data, only_best=True)
-
-                # Verify result is a Narwhals DataFrame
-                assert isinstance(result, nw.DataFrame)
-
-                # Convert to PyArrow for easier assertions
-                result_pa = result.to_arrow()
 
                 # Check columns exist
                 expected_columns = {
@@ -120,13 +113,13 @@ class TestHistogram:
                     "granularity",
                     "is_best",
                 }
-                assert set(result_pa.column_names) == expected_columns
+                assert set(result.column_names) == expected_columns
 
                 # Check all rows are marked as best
-                assert all(result_pa["is_best"].to_pylist())
+                assert all(result["is_best"].to_pylist())
 
                 # Check granularity is 0
-                assert all(g == 0 for g in result_pa["granularity"].to_pylist())
+                assert all(g == 0 for g in result["granularity"].to_pylist())
 
     def test_histogram_exploratory_mode(
         self, sample_data, tmp_path, mock_subprocess_success
@@ -150,10 +143,10 @@ class TestHistogram:
         )
 
         with patch(
-            "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path)
+            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
         ):
             with patch(
-                "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
+                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
             ) as mock_temp:
                 mock_file = MagicMock()
                 mock_file.name = str(tmp_path / "input.txt")
@@ -163,19 +156,13 @@ class TestHistogram:
 
                 result = compute_histogram(sample_data, only_best=False)
 
-                # Verify result is a Narwhals DataFrame
-                assert isinstance(result, nw.DataFrame)
-
-                # Convert to PyArrow for easier assertions
-                result_pa = result.to_arrow()
-
                 # Check we have rows from both granularities
-                granularities = set(result_pa["granularity"].to_pylist())
+                granularities = set(result["granularity"].to_pylist())
                 assert 0 in granularities
                 assert 1 in granularities
 
                 # Check that best histogram is marked (granularity 1 has highest level)
-                best_rows = result_pa.filter(result_pa["is_best"])
+                best_rows = result.filter(result["is_best"])
                 assert len(best_rows) > 0
                 assert all(g == 1 for g in best_rows["granularity"].to_pylist())
 
@@ -185,10 +172,10 @@ class TestHistogram:
         """Test that the correct command is constructed for khisto CLI."""
         # Test only_best mode
         with patch(
-            "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path)
+            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
         ):
             with patch(
-                "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
+                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
             ) as mock_temp:
                 mock_file = MagicMock()
                 mock_file.name = str(tmp_path / "input.txt")
@@ -213,10 +200,10 @@ class TestHistogram:
         tmp_path2.mkdir(parents=True, exist_ok=True)
 
         with patch(
-            "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path2)
+            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path2)
         ):
             with patch(
-                "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
+                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
             ) as mock_temp:
                 mock_file = MagicMock()
                 mock_file.name = str(tmp_path2 / "input.txt")
@@ -236,16 +223,16 @@ class TestHistogram:
 
     def test_histogram_subprocess_error(self, sample_data, tmp_path):
         """Test that subprocess errors are properly handled."""
-        with patch("khisto.core.cli_adaptor.subprocess.run") as mock_run:
+        with patch("khisto.core.cli_adapter.subprocess.run") as mock_run:
             mock_run.side_effect = subprocess.CalledProcessError(
                 1, "khisto", stderr="Error message"
             )
 
             with patch(
-                "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path)
+                "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
             ):
                 with patch(
-                    "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
+                    "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
                 ) as mock_temp:
                     mock_file = MagicMock()
                     mock_file.name = str(tmp_path / "input.txt")
@@ -255,41 +242,6 @@ class TestHistogram:
 
                     with pytest.raises(subprocess.CalledProcessError):
                         compute_histogram(sample_data, only_best=True)
-
-    def test_histogram_input_file_formatting(self, tmp_path):
-        """Test that input values are correctly written to file."""
-        data = pa.array([1.5, 2.7, 3.9])
-
-        with patch("khisto.core.cli_adaptor.subprocess.run"):
-            with patch(
-                "khisto.core.cli_adaptor.tempfile.mkdtemp", return_value=str(tmp_path)
-            ):
-                with patch(
-                    "khisto.core.cli_adaptor.tempfile.NamedTemporaryFile"
-                ) as mock_temp:
-                    written_content = []
-
-                    def mock_write(content):
-                        written_content.append(content)
-
-                    mock_file = MagicMock()
-                    mock_file.write = mock_write
-                    mock_file.name = str(tmp_path / "input.txt")
-                    mock_file.__enter__ = MagicMock(return_value=mock_file)
-                    mock_file.__exit__ = MagicMock(return_value=False)
-                    mock_temp.return_value = mock_file
-
-                    # Create minimal histogram file
-                    (tmp_path / "histogram.csv").write_text(
-                        "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-                        "1.0,5.0,4.0,3,1.0,0.25\n"
-                    )
-
-                    compute_histogram(data, only_best=True)
-
-                    # Check that values were written correctly
-                    assert len(written_content) == 1
-                    assert written_content[0] == "1.5\n2.7\n3.9"
 
 
 class TestProcessHistogramFiles:

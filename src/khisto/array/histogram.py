@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
+
 from khisto.core import compute_histogram
 import pyarrow as pa
 import narwhals as nw
@@ -37,13 +38,12 @@ def histogram(x: Union[ArrayT, IntoSeries]) -> tuple[ArrayT, ArrayT]:
     df = compute_histogram(x, only_best=True)
 
     lower_bounds = df["lower_bound"]
-    upper_bounds = df["upper_bound"]
+    last_upper_bound = df["upper_bound"][-1]
     densities = df["density"]
 
     bin_edges = pa.concat_arrays(
-        (lower_bounds.combine_chunks(), upper_bounds.combine_chunks())
-    )
-    bin_edges = bin_edges.sort()
+        [lower_bounds.combine_chunks(), pa.array([last_upper_bound])]
+    ).sort()
 
     bin_edges = backend.asarray(bin_edges)
     densities = backend.asarray(densities.combine_chunks())
@@ -72,12 +72,11 @@ def histogram_bin_edges(x: Union[ArrayT, IntoSeries]) -> ArrayT:
     df = compute_histogram(x, only_best=True)
 
     lower_bounds = df["lower_bound"]
-    upper_bounds = df["upper_bound"]
+    last_upper_bound = df["upper_bound"][-1]
 
     bin_edges = pa.concat_arrays(
-        (lower_bounds.combine_chunks(), upper_bounds.combine_chunks())
-    )
-    bin_edges = bin_edges.sort()
+        [lower_bounds.combine_chunks(), pa.array([last_upper_bound])]
+    ).sort()
 
     bin_edges = backend.asarray(bin_edges)
     return bin_edges
