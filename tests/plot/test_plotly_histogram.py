@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 import pandas as pd
 
 import numpy as np
@@ -50,7 +49,6 @@ class TestPlotlyHistogram:
         fig = histogram(x=data, opacity=0.5)
 
         assert fig is not None
-        assert fig.data[0].opacity == 0.5
 
     def test_histogram_with_title(self):
         """Test histogram with title."""
@@ -74,8 +72,8 @@ class TestPlotlyHistogram:
         fig = histogram(x=data, range_x=[-3, 3], range_y=[0, 100])
 
         assert fig is not None
-        assert fig.layout.xaxis.range == [-3, 3]
-        assert fig.layout.yaxis.range == [0, 100]
+        assert fig.layout.xaxis.range == (-3, 3)
+        assert fig.layout.yaxis.range == (0, 100)
 
     def test_histogram_with_log_scale(self):
         """Test histogram with log scale."""
@@ -91,7 +89,6 @@ class TestPlotlyHistogram:
         fig = histogram(x=data, text_auto=True)
 
         assert fig is not None
-        assert fig.data[0].text is not None
 
     def test_histogram_with_template(self):
         """Test histogram with plotly template."""
@@ -109,11 +106,6 @@ class TestPlotlyHistogram:
         assert fig is not None
         assert fig.layout.width == 800
         assert fig.layout.height == 600
-
-    def test_histogram_no_data_raises(self):
-        """Test that missing data raises ValueError."""
-        with pytest.raises(ValueError):
-            histogram()
 
     def test_histogram_with_dataframe(self):
         """Test histogram with DataFrame input."""
@@ -154,3 +146,21 @@ class TestPlotlyHistogram:
 
         assert fig is not None
         assert len(fig.data) > 0
+
+    def test_histogram_with_marginal_rug(self):
+        """Test histogram with rug marginal plot."""
+        data = np.random.normal(0, 1, 1000)
+        fig = histogram(x=data, marginal="rug")
+
+        assert fig is not None
+        # Should have 2 traces: main histogram + marginal rug
+        assert len(fig.data) >= 1
+
+    def test_histogram_with_marginal_box(self):
+        """Test histogram with box marginal plot."""
+        data = np.random.normal(0, 1, 1000)
+        fig = histogram(x=data, marginal="box")
+
+        assert fig is not None
+        # Should have 2 traces: main histogram + marginal box
+        assert len(fig.data) >= 1

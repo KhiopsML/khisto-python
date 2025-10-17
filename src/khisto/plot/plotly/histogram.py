@@ -2,10 +2,19 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
-import narwhals as nw
 
 from khisto.array import histogram_series
-from khisto.utils import parse_narwhals_series
+import narwhals as nw
+
+from plotly.express._core import (
+    make_figure,
+    build_dataframe,
+    infer_config,
+    get_groups_and_orders,
+    one_group,
+    apply_default_cascade,
+)
+import plotly.graph_objects as go
 
 if TYPE_CHECKING:
     from khisto.typing import ArrayT
@@ -33,9 +42,9 @@ def histogram(
     color_discrete_map: Optional[dict] = None,
     pattern_shape_sequence: Optional[list[str]] = None,
     pattern_shape_map: Optional[dict] = None,
-    marginal: Optional[Literal["rug", "box", "violin", "histogram"]] = None,
+    marginal: Optional[Literal["rug", "box"]] = None,
     opacity: Optional[float] = None,
-    orientation: Optional[Literal["v", "h"]] = None,
+    orientation: Optional[Literal["v", "h"]] = "v",
     barmode: Literal["relative", "overlay", "group"] = "relative",
     log_x: bool = False,
     log_y: bool = False,
@@ -44,6 +53,7 @@ def histogram(
     cumulative: bool = False,
     text_auto: Union[bool, str] = False,
     title: Optional[str] = None,
+    subtitle: Optional[str] = None,
     template: Optional[str] = None,
     width: Optional[int] = None,
     height: Optional[int] = None,
@@ -166,802 +176,79 @@ def histogram(
     binning strategy that maximizes information while minimizing complexity.
     The histogram uses Khisto's density values by default.
     """
-    try:
-        import plotly.graph_objects as go
-        from plotly.subplots import make_subplots
-    except ImportError as e:
-        raise ImportError(
-            "plotly is required for this function. Install it with: pip install plotly"
-        ) from e
+    args = locals().copy()
 
-    # Default to vertical orientation
-    if orientation is None:
-        orientation = "v"
-
-    # Handle input data
-    if data_frame is not None:
-        # Convert to Narwhals for consistency
-        df_nw = nw.from_native(data_frame)
-
-        if x is None:
-            raise ValueError("Column name 'x' must be provided when using data_frame")
-
-        if not isinstance(x, str):
-            raise ValueError(
-                "When using data_frame, 'x' must be a column name (string)"
-            )
-
-        return _create_histogram_from_dataframe(
-            df_nw=df_nw,
-            x=x,
-            color=color,
-            pattern_shape=pattern_shape,
-            facet_row=facet_row,
-            facet_col=facet_col,
-            facet_col_wrap=facet_col_wrap,
-            facet_row_spacing=facet_row_spacing,
-            facet_col_spacing=facet_col_spacing,
-            hover_name=hover_name,
-            hover_data=hover_data,
-            animation_frame=animation_frame,
-            animation_group=animation_group,
-            category_orders=category_orders,
-            labels=labels,
-            color_discrete_sequence=color_discrete_sequence,
-            color_discrete_map=color_discrete_map,
-            pattern_shape_sequence=pattern_shape_sequence,
-            pattern_shape_map=pattern_shape_map,
-            marginal=marginal,
-            opacity=opacity,
-            orientation=orientation,
-            barmode=barmode,
-            log_x=log_x,
-            log_y=log_y,
-            range_x=range_x,
-            range_y=range_y,
-            cumulative=cumulative,
-            text_auto=text_auto,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            go=go,
-            make_subplots=make_subplots,
-        )
-
-    else:
-        # Direct array input - use Khisto for optimal binning
-        if x is None:
-            raise ValueError("Either data_frame or x must be provided")
-
-        # Parse narwhals series if applicable
-        series = parse_narwhals_series(x)
-        if series is not None:
-            data = series
-        else:
-            data = x
-
-        return _create_histogram_from_array(
-            data=data,
-            labels=labels,
-            opacity=opacity,
-            orientation=orientation,
-            log_x=log_x,
-            log_y=log_y,
-            range_x=range_x,
-            range_y=range_y,
-            cumulative=cumulative,
-            text_auto=text_auto,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            go=go,
-        )
-
-
-def _create_histogram_from_array(
-    data,
-    labels,
-    opacity,
-    orientation,
-    log_x,
-    log_y,
-    range_x,
-    range_y,
-    cumulative,
-    text_auto,
-    title,
-    template,
-    width,
-    height,
-    go,
-):
-    """Create histogram from array data using Khisto bins."""
-    # Use Khisto to compute histogram
-    hist_df = histogram_series(data, only_best=True)
-
-    # Extract histogram data using Khisto's computed values
-    lower_bounds = hist_df["lower_bound"].to_list()
-    upper_bounds = hist_df["upper_bound"].to_list()
-    densities = hist_df["density"].to_list()
-    bin_widths = hist_df["length"].to_list()
-
-    # Compute bin centers from lower and upper bounds
-    bin_centers = [
-        (lower_bounds[i] + upper_bounds[i]) / 2 for i in range(len(lower_bounds))
-    ]
-
-    # Use density values from Khisto
-    values = densities
-    value_label = "Density"
-
-    # Create cumulative if requested
-    if cumulative:
-        cumsum = 0
-        cumulative_values = []
-        for val in values:
-            cumsum += val
-            cumulative_values.append(cumsum)
-        values = cumulative_values
-
-    # Create the figure
-    fig = go.Figure()
-
-    if orientation == "v":
-        # Vertical bars
-        fig.add_trace(
-            go.Bar(
-                x=bin_centers,
-                y=values,
-                width=bin_widths,
-                opacity=opacity,
-                text=[round(v, 3) for v in values] if text_auto else None,
-                texttemplate=text_auto if isinstance(text_auto, str) else None,
-                textposition="auto" if text_auto else None,
-                hovertemplate=(
-                    "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                    + f"{value_label}: %{{y}}<br>"
-                    + "<extra></extra>"
-                ),
-                customdata=[
-                    [lower_bounds[i], upper_bounds[i]] for i in range(len(lower_bounds))
-                ],
-            )
-        )
-
-        # Update layout
-        fig.update_layout(
-            xaxis_title=labels.get("x") if labels else None,
-            yaxis_title=value_label if not labels else labels.get("y", value_label),
-            xaxis_type="log" if log_x else None,
-            yaxis_type="log" if log_y else None,
-            xaxis_range=range_x,
-            yaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            bargap=0,
-            bargroupgap=0,
-        )
-    else:
-        # Horizontal bars
-        fig.add_trace(
-            go.Bar(
-                y=bin_centers,
-                x=values,
-                width=bin_widths,
-                orientation="h",
-                opacity=opacity,
-                text=[round(v, 3) for v in values] if text_auto else None,
-                texttemplate=text_auto if isinstance(text_auto, str) else None,
-                textposition="auto" if text_auto else None,
-                hovertemplate=(
-                    "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                    + f"{value_label}: %{{x}}<br>"
-                    + "<extra></extra>"
-                ),
-                customdata=[
-                    [lower_bounds[i], upper_bounds[i]] for i in range(len(lower_bounds))
-                ],
-            )
-        )
-
-        # Update layout
-        fig.update_layout(
-            yaxis_title=labels.get("x") if labels else None,
-            xaxis_title=value_label if not labels else labels.get("y", value_label),
-            yaxis_type="log" if log_y else None,
-            xaxis_type="log" if log_x else None,
-            yaxis_range=range_x,
-            xaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            bargap=0,
-            bargroupgap=0,
-        )
-
-    return fig
-
-
-def _create_histogram_from_dataframe(
-    df_nw,
-    x,
-    color,
-    pattern_shape,
-    facet_row,
-    facet_col,
-    facet_col_wrap,
-    facet_row_spacing,
-    facet_col_spacing,
-    hover_name,
-    hover_data,
-    animation_frame,
-    animation_group,
-    category_orders,
-    labels,
-    color_discrete_sequence,
-    color_discrete_map,
-    pattern_shape_sequence,
-    pattern_shape_map,
-    marginal,
-    opacity,
-    orientation,
-    barmode,
-    log_x,
-    log_y,
-    range_x,
-    range_y,
-    cumulative,
-    text_auto,
-    title,
-    template,
-    width,
-    height,
-    go,
-    make_subplots,
-):
-    """Create histogram from DataFrame using Khisto bins with support for grouping and faceting."""
-    # Get the column data
-    col_data = df_nw[x]
-
-    # Handle color grouping
-    if color is not None:
-        return _create_grouped_histogram(
-            df_nw=df_nw,
-            x=x,
-            color=color,
-            hover_name=hover_name,
-            hover_data=hover_data,
-            category_orders=category_orders,
-            labels=labels,
-            color_discrete_sequence=color_discrete_sequence,
-            color_discrete_map=color_discrete_map,
-            opacity=opacity,
-            orientation=orientation,
-            barmode=barmode,
-            log_x=log_x,
-            log_y=log_y,
-            range_x=range_x,
-            range_y=range_y,
-            cumulative=cumulative,
-            text_auto=text_auto,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            go=go,
-        )
-
-    # Handle faceting
-    if facet_row is not None or facet_col is not None:
-        return _create_faceted_histogram(
-            df_nw=df_nw,
-            x=x,
-            facet_row=facet_row,
-            facet_col=facet_col,
-            facet_col_wrap=facet_col_wrap,
-            facet_row_spacing=facet_row_spacing,
-            facet_col_spacing=facet_col_spacing,
-            hover_name=hover_name,
-            hover_data=hover_data,
-            category_orders=category_orders,
-            labels=labels,
-            opacity=opacity,
-            orientation=orientation,
-            log_x=log_x,
-            log_y=log_y,
-            range_x=range_x,
-            range_y=range_y,
-            cumulative=cumulative,
-            text_auto=text_auto,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            go=go,
-            make_subplots=make_subplots,
-        )
-
-    # Simple histogram without grouping or faceting
-    hist_df = histogram_series(col_data, only_best=True)
-
-    # Extract histogram data
-    lower_bounds = hist_df["lower_bound"].to_list()
-    upper_bounds = hist_df["upper_bound"].to_list()
-    densities = hist_df["density"].to_list()
-    bin_widths = hist_df["length"].to_list()
-
-    # Compute bin centers
-    bin_centers = [
-        (lower_bounds[i] + upper_bounds[i]) / 2 for i in range(len(lower_bounds))
-    ]
-
-    values = densities
-    value_label = "Density"
-
-    # Create cumulative if requested
-    if cumulative:
-        cumsum = 0
-        cumulative_values = []
-        for val in values:
-            cumsum += val
-            cumulative_values.append(cumsum)
-        values = cumulative_values
-
-    # Build hover template
-    hover_template_parts = []
-    if hover_name and hover_name in df_nw.columns:
-        hover_template_parts.append(f"<b>{hover_name}: %{{customdata[2]}}</b><br>")
-
-    hover_template_parts.append("Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>")
-
-    if orientation == "v":
-        hover_template_parts.append(f"{value_label}: %{{y}}<br>")
-    else:
-        hover_template_parts.append(f"{value_label}: %{{x}}<br>")
-
-    if hover_data:
-        hover_cols = (
-            hover_data if isinstance(hover_data, list) else list(hover_data.keys())
-        )
-        for idx, col in enumerate(hover_cols):
-            if col in df_nw.columns:
-                hover_template_parts.append(f"{col}: %{{customdata[{idx + 3}]}}<br>")
-
-    hover_template_parts.append("<extra></extra>")
-
-    # Prepare custom data
-    customdata = [[lower_bounds[i], upper_bounds[i]] for i in range(len(lower_bounds))]
-
-    # Create the figure
-    fig = go.Figure()
-
-    if orientation == "v":
-        fig.add_trace(
-            go.Bar(
-                x=bin_centers,
-                y=values,
-                width=bin_widths,
-                opacity=opacity,
-                text=[round(v, 3) for v in values] if text_auto else None,
-                texttemplate=text_auto if isinstance(text_auto, str) else None,
-                textposition="auto" if text_auto else None,
-                hovertemplate="".join(hover_template_parts),
-                customdata=customdata,
-            )
-        )
-
-        fig.update_layout(
-            xaxis_title=labels.get("x", x) if labels else x,
-            yaxis_title=value_label if not labels else labels.get("y", value_label),
-            xaxis_type="log" if log_x else None,
-            yaxis_type="log" if log_y else None,
-            xaxis_range=range_x,
-            yaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            bargap=0,
-            bargroupgap=0,
-        )
-    else:
-        fig.add_trace(
-            go.Bar(
-                y=bin_centers,
-                x=values,
-                width=bin_widths,
-                orientation="h",
-                opacity=opacity,
-                text=[round(v, 3) for v in values] if text_auto else None,
-                texttemplate=text_auto if isinstance(text_auto, str) else None,
-                textposition="auto" if text_auto else None,
-                hovertemplate="".join(hover_template_parts),
-                customdata=customdata,
-            )
-        )
-
-        fig.update_layout(
-            yaxis_title=labels.get("x", x) if labels else x,
-            xaxis_title=value_label if not labels else labels.get("y", value_label),
-            yaxis_type="log" if log_y else None,
-            xaxis_type="log" if log_x else None,
-            yaxis_range=range_x,
-            xaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            bargap=0,
-            bargroupgap=0,
-        )
-
-    return fig
-
-
-def _create_grouped_histogram(
-    df_nw,
-    x,
-    color,
-    hover_name,
-    hover_data,
-    category_orders,
-    labels,
-    color_discrete_sequence,
-    color_discrete_map,
-    opacity,
-    orientation,
-    barmode,
-    log_x,
-    log_y,
-    range_x,
-    range_y,
-    cumulative,
-    text_auto,
-    title,
-    template,
-    width,
-    height,
-    go,
-):
-    """Create histogram with color grouping using Khisto bins."""
-    # Get unique groups
-    groups = df_nw[color].unique().to_list()
-
-    # Apply category orders if specified
-    if category_orders and color in category_orders:
-        groups = [g for g in category_orders[color] if g in groups]
-
-    # Setup colors
-    if color_discrete_map:
-        colors = [color_discrete_map.get(g) for g in groups]
-    elif color_discrete_sequence:
-        colors = [
-            color_discrete_sequence[i % len(color_discrete_sequence)]
-            for i in range(len(groups))
-        ]
-    else:
-        # Default plotly colors
-        default_colors = [
-            "#636EFA",
-            "#EF553B",
-            "#00CC96",
-            "#AB63FA",
-            "#FFA15A",
-            "#19D3F3",
-            "#FF6692",
-            "#B6E880",
-            "#FF97FF",
-            "#FECB52",
-        ]
-        colors = [default_colors[i % len(default_colors)] for i in range(len(groups))]
-
-    fig = go.Figure()
-    value_label = "Density"
-
-    for idx, group in enumerate(groups):
-        # Filter data for this group
-        group_data = df_nw.filter(nw.col(color) == group)[x]
-
-        # Compute histogram for this group
-        hist_df = histogram_series(group_data, only_best=True)
-
-        lower_bounds = hist_df["lower_bound"].to_list()
-        upper_bounds = hist_df["upper_bound"].to_list()
-        densities = hist_df["density"].to_list()
-        bin_widths = hist_df["length"].to_list()
-
-        bin_centers = [
-            (lower_bounds[i] + upper_bounds[i]) / 2 for i in range(len(lower_bounds))
-        ]
-
-        values = densities
-
-        if cumulative:
-            cumsum = 0
-            cumulative_values = []
-            for val in values:
-                cumsum += val
-                cumulative_values.append(cumsum)
-            values = cumulative_values
-
-        # Create trace
-        if orientation == "v":
-            fig.add_trace(
-                go.Bar(
-                    x=bin_centers,
-                    y=values,
-                    width=bin_widths,
-                    name=str(group),
-                    marker_color=colors[idx] if colors[idx] else None,
-                    opacity=opacity,
-                    text=[round(v, 3) for v in values] if text_auto else None,
-                    texttemplate=text_auto if isinstance(text_auto, str) else None,
-                    textposition="auto" if text_auto else None,
-                    hovertemplate=(
-                        f"<b>{color}: {group}</b><br>"
-                        + "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                        + f"{value_label}: %{{y}}<br>"
-                        + "<extra></extra>"
-                    ),
-                    customdata=[
-                        [lower_bounds[i], upper_bounds[i]]
-                        for i in range(len(lower_bounds))
-                    ],
-                )
-            )
-        else:
-            fig.add_trace(
-                go.Bar(
-                    y=bin_centers,
-                    x=values,
-                    width=bin_widths,
-                    orientation="h",
-                    name=str(group),
-                    marker_color=colors[idx] if colors[idx] else None,
-                    opacity=opacity,
-                    text=[round(v, 3) for v in values] if text_auto else None,
-                    texttemplate=text_auto if isinstance(text_auto, str) else None,
-                    textposition="auto" if text_auto else None,
-                    hovertemplate=(
-                        f"<b>{color}: {group}</b><br>"
-                        + "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                        + f"{value_label}: %{{x}}<br>"
-                        + "<extra></extra>"
-                    ),
-                    customdata=[
-                        [lower_bounds[i], upper_bounds[i]]
-                        for i in range(len(lower_bounds))
-                    ],
-                )
-            )
-
-    # Update layout
-    if orientation == "v":
-        fig.update_layout(
-            xaxis_title=labels.get("x", x) if labels else x,
-            yaxis_title=value_label if not labels else labels.get("y", value_label),
-            xaxis_type="log" if log_x else None,
-            yaxis_type="log" if log_y else None,
-            xaxis_range=range_x,
-            yaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            barmode=barmode,
-            bargap=0,
-            bargroupgap=0,
-        )
-    else:
-        fig.update_layout(
-            yaxis_title=labels.get("x", x) if labels else x,
-            xaxis_title=value_label if not labels else labels.get("y", value_label),
-            yaxis_type="log" if log_y else None,
-            xaxis_type="log" if log_x else None,
-            yaxis_range=range_x,
-            xaxis_range=range_y,
-            title=title,
-            template=template,
-            width=width,
-            height=height,
-            barmode=barmode,
-            bargap=0,
-            bargroupgap=0,
-        )
-
-    return fig
-
-
-def _create_faceted_histogram(
-    df_nw,
-    x,
-    facet_row,
-    facet_col,
-    facet_col_wrap,
-    facet_row_spacing,
-    facet_col_spacing,
-    hover_name,
-    hover_data,
-    category_orders,
-    labels,
-    opacity,
-    orientation,
-    log_x,
-    log_y,
-    range_x,
-    range_y,
-    cumulative,
-    text_auto,
-    title,
-    template,
-    width,
-    height,
-    go,
-    make_subplots,
-):
-    """Create faceted histogram using Khisto bins."""
-    # Get unique facet values
-    row_facets = [None]
-    col_facets = [None]
-
-    if facet_row:
-        row_facets = df_nw[facet_row].unique().to_list()
-        if category_orders and facet_row in category_orders:
-            row_facets = [f for f in category_orders[facet_row] if f in row_facets]
-
-    if facet_col:
-        col_facets = df_nw[facet_col].unique().to_list()
-        if category_orders and facet_col in category_orders:
-            col_facets = [f for f in category_orders[facet_col] if f in col_facets]
-
-    # Handle col_wrap
-    n_rows = len(row_facets)
-    n_cols = len(col_facets)
-
-    if facet_col_wrap and facet_col and not facet_row:
-        n_cols = min(facet_col_wrap, len(col_facets))
-        n_rows = (len(col_facets) + n_cols - 1) // n_cols
-
-    # Create subplots
-    subplot_titles = []
-    for row_val in row_facets:
-        for col_val in col_facets:
-            parts = []
-            if facet_row and row_val is not None:
-                parts.append(f"{facet_row}={row_val}")
-            if facet_col and col_val is not None:
-                parts.append(f"{facet_col}={col_val}")
-            subplot_titles.append(", ".join(parts) if parts else "")
-
-    fig = make_subplots(
-        rows=n_rows,
-        cols=n_cols,
-        subplot_titles=subplot_titles if subplot_titles[0] else None,
-        vertical_spacing=facet_row_spacing if facet_row_spacing else 0.03,
-        horizontal_spacing=facet_col_spacing if facet_col_spacing else 0.03,
+    apply_default_cascade(args)
+    args = build_dataframe(args, go.Bar)
+    trace_specs, grouped_mappings, sizeref, show_colorbar = infer_config(
+        args.copy(), go.Bar, {}, {}
     )
+    grouper = [x.grouper or one_group for x in grouped_mappings] or [one_group]
+    groups, orders = get_groups_and_orders(args.copy(), grouper)
 
-    value_label = "Density"
-
-    for row_idx, row_val in enumerate(row_facets, 1):
-        for col_idx, col_val in enumerate(col_facets, 1):
-            # Filter data
-            mask = nw.lit(True)
-            if facet_row and row_val is not None:
-                mask = mask & (nw.col(facet_row) == row_val)
-            if facet_col and col_val is not None:
-                mask = mask & (nw.col(facet_col) == col_val)
-
-            facet_data = df_nw.filter(mask)[x]
-
-            if len(facet_data) == 0:
-                continue
-
-            # Compute histogram
-            hist_df = histogram_series(facet_data, only_best=True)
-
-            lower_bounds = hist_df["lower_bound"].to_list()
-            upper_bounds = hist_df["upper_bound"].to_list()
-            densities = hist_df["density"].to_list()
-            bin_widths = hist_df["length"].to_list()
-
-            bin_centers = [
-                (lower_bounds[i] + upper_bounds[i]) / 2
-                for i in range(len(lower_bounds))
-            ]
-
-            values = densities
-
-            if cumulative:
-                cumsum = 0
-                cumulative_values = []
-                for val in values:
-                    cumsum += val
-                    cumulative_values.append(cumsum)
-                values = cumulative_values
-
-            # Add trace
-            if orientation == "v":
-                fig.add_trace(
-                    go.Bar(
-                        x=bin_centers,
-                        y=values,
-                        width=bin_widths,
-                        opacity=opacity,
-                        showlegend=False,
-                        hovertemplate=(
-                            "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                            + f"{value_label}: %{{y}}<br>"
-                            + "<extra></extra>"
-                        ),
-                        customdata=[
-                            [lower_bounds[i], upper_bounds[i]]
-                            for i in range(len(lower_bounds))
-                        ],
-                    ),
-                    row=row_idx,
-                    col=col_idx,
-                )
-            else:
-                fig.add_trace(
-                    go.Bar(
-                        y=bin_centers,
-                        x=values,
-                        width=bin_widths,
-                        orientation="h",
-                        opacity=opacity,
-                        showlegend=False,
-                        hovertemplate=(
-                            "Bin: [%{customdata[0]:.4g}, %{customdata[1]:.4g})<br>"
-                            + f"{value_label}: %{{x}}<br>"
-                            + "<extra></extra>"
-                        ),
-                        customdata=[
-                            [lower_bounds[i], upper_bounds[i]]
-                            for i in range(len(lower_bounds))
-                        ],
-                    ),
-                    row=row_idx,
-                    col=col_idx,
-                )
-
-    # Update layout
-    fig.update_layout(
-        title=title,
-        template=template,
-        width=width,
-        height=height,
-        bargap=0,
-        bargroupgap=0,
-    )
-
-    # Update axes
-    if orientation == "v":
-        fig.update_xaxes(
-            title_text=labels.get("x", x) if labels else x,
-            type="log" if log_x else None,
-            range=range_x,
+    histo_df_list = []
+    x_column_name = "_value" if not isinstance(x, str) else args["x"]
+    for g, g_df in groups.items():
+        value_column_name = x_column_name
+        if value_column_name not in g_df.columns:
+            value_column_name = "x"
+        histo_df = histogram_series(g_df[value_column_name], only_best=True)
+        histo_df = (
+            histo_df.with_columns(
+                center=((histo_df["lower_bound"] + histo_df["upper_bound"]) / 2),
+                offsetgroup=nw.lit(", ".join(str(v) for v in g if v)),
+            )
+            .rename(
+                {
+                    "center": "x",
+                    "density": "y",
+                    "length": "width",
+                }
+            )
+            .select(["x", "y", "width", "offsetgroup"])
+            .with_columns(
+                **{
+                    k.grouper: nw.lit(v)
+                    for k, v in zip(grouped_mappings, g)
+                    if k is not None and k.grouper is not None
+                }
+            )
         )
-        fig.update_yaxes(
-            title_text=value_label if not labels else labels.get("y", value_label),
-            type="log" if log_y else None,
-            range=range_y,
+
+        histo_df_list.append(histo_df)
+
+    if not histo_df_list:
+        combined_histo_df: nw.DataFrame = nw.from_dict(
+            {"x": [], "y": [], "width": [], "offsetgroup": []}, backend="pyarrow"
         )
     else:
-        fig.update_yaxes(
-            title_text=labels.get("x", x) if labels else x,
-            type="log" if log_y else None,
-            range=range_x,
-        )
-        fig.update_xaxes(
-            title_text=value_label if not labels else labels.get("y", value_label),
-            type="log" if log_x else None,
-            range=range_y,
-        )
+        combined_histo_df: nw.DataFrame = nw.concat(histo_df_list)
+
+    args["data_frame"] = nw.to_native(combined_histo_df)
+    args["x"] = "x" if orientation == "v" else "y"
+    args["y"] = "y" if orientation == "v" else "x"
+
+    offsetgroups = combined_histo_df["offsetgroup"].unique().to_list()
+
+    # Use make_figure with our Histogram constructor
+    fig = make_figure(args, go.Bar)
+
+    bar_traces = [trace for trace in fig.data if trace.type == "bar"]
+    other_traces = [trace for trace in fig.data if trace.type != "bar"]
+
+    # Update bar widths for histogram bars
+    for trace, offsetgroup in zip(bar_traces, offsetgroups):
+        mask = combined_histo_df["offsetgroup"] == offsetgroup
+        widths = combined_histo_df.filter(mask)["width"].to_list()
+        trace.update(width=widths)
+
+    # Update marginal traces with original data
+    for trace, offsetgroup in zip(other_traces, groups.keys()):
+        value_column_name = x_column_name
+        if value_column_name not in groups[offsetgroup].columns:
+            value_column_name = "x"
+        original_x = groups[offsetgroup][value_column_name]
+        trace.update(x=original_x if orientation == "v" else None)
+        trace.update(y=original_x if orientation == "h" else None)
 
     return fig
