@@ -412,3 +412,245 @@ class TestReturnTypeConsistency:
         df = histogram_series(series, only_best=True)
         native = nw.to_native(df)
         assert isinstance(native, pl.DataFrame)
+
+
+class TestCumulativeParameter:
+    """Test cases for cumulative parameter in histogram and histogram_series functions."""
+
+    def test_histogram_cumulative_false(self, uniform_data):
+        """Test histogram with cumulative=False (default) returns densities."""
+        densities, bin_edges = histogram(uniform_data, cumulative=False)
+
+        # Convert to numpy for easier calculation
+        densities_np = np.asarray(densities)
+        bin_edges_np = np.asarray(bin_edges)
+
+        # Calculate bin widths
+        bin_widths = bin_edges_np[1:] - bin_edges_np[:-1]
+
+        # Sum of (density * width) should be approximately 1
+        total_probability = np.sum(densities_np * bin_widths)
+        assert np.isclose(total_probability, 1.0, rtol=1e-5)
+
+    def test_histogram_cumulative_true(self, uniform_data):
+        """Test histogram with cumulative=True returns cumulative probabilities."""
+        cumulative_probs, bin_edges = histogram(uniform_data, cumulative=True)
+
+        # Convert to numpy
+        cumulative_probs_np = np.asarray(cumulative_probs)
+
+        # Check that cumulative probabilities are monotonically increasing
+        assert np.all(np.diff(cumulative_probs_np) >= 0)
+
+        # Last cumulative probability should be approximately 1
+        assert np.isclose(cumulative_probs_np[-1], 1.0, rtol=1e-5)
+
+        # First cumulative probability should be positive
+        assert cumulative_probs_np[0] > 0
+
+    def test_histogram_cumulative_monotonic(self, normal_data):
+        """Test that cumulative histogram is strictly monotonic."""
+        cumulative_probs, _ = histogram(normal_data, cumulative=True)
+
+        cumulative_probs_np = np.asarray(cumulative_probs)
+
+        # All differences should be non-negative (monotonically increasing)
+        diffs = np.diff(cumulative_probs_np)
+        assert np.all(diffs >= 0)
+
+    def test_histogram_cumulative_starts_positive(self, simple_data):
+        """Test that cumulative histogram starts with a positive value."""
+        cumulative_probs, _ = histogram(simple_data, cumulative=True)
+
+        first_value = np.asarray(cumulative_probs)[0]
+        assert first_value > 0
+
+    def test_histogram_cumulative_with_different_backends(self, simple_data):
+        """Test cumulative histogram with different array backends."""
+        # Test with list
+        cum_list, _ = histogram(simple_data, cumulative=True)
+        assert isinstance(cum_list, list)
+
+        # Test with numpy
+        np_array = np.array(simple_data)
+        cum_np, _ = histogram(np_array, cumulative=True)
+        assert hasattr(cum_np, "__array_namespace__")
+
+        # Test with pyarrow
+        pa_array = pa.array(simple_data)
+        cum_pa, _ = histogram(pa_array, cumulative=True)
+        assert isinstance(cum_pa, pa.Array)
+
+        # All should end at approximately 1.0
+        assert np.isclose(np.asarray(cum_list)[-1], 1.0, rtol=1e-5)
+        assert np.isclose(np.asarray(cum_np)[-1], 1.0, rtol=1e-5)
+        assert np.isclose(np.asarray(cum_pa)[-1], 1.0, rtol=1e-5)
+
+    def test_histogram_series_cumulative_column(self, normal_data):
+        """Test histogram_series adds cumulative_probability column when cumulative=True."""
+        df = histogram_series(normal_data, only_best=True, cumulative=True)
+
+        # Check that cumulative_probability column exists
+        assert "cumulative_probability" in df.columns
+
+        # Check monotonicity
+        cum_probs = df["cumulative_probability"].to_numpy()
+        assert np.all(np.diff(cum_probs) >= 0)
+
+        # Last value should be approximately 1
+        assert np.isclose(cum_probs[-1], 1.0, rtol=1e-5)
+
+    def test_histogram_series_cumulative_false(self, uniform_data):
+        """Test histogram_series without cumulative column when cumulative=False."""
+        df = histogram_series(uniform_data, only_best=True, cumulative=False)
+
+        # Check that cumulative_probability column does not exist
+        assert "cumulative_probability" not in df.columns
+
+    def test_histogram_series_cumulative_with_multiple_granularities(self, normal_data):
+        """Test histogram_series cumulative with only_best=False."""
+        df = histogram_series(normal_data, only_best=False, cumulative=True)
+
+        # Check that cumulative_probability column exists
+        assert "cumulative_probability" in df.columns
+
+        # For each granularity, check that cumulative probabilities are valid
+        for granularity in df["granularity"].unique():
+            df_gran = df.filter(nw.col("granularity") == granularity)
+            cum_probs = df_gran["cumulative_probability"].to_numpy()
+
+            # Check monotonicity
+            assert np.all(np.diff(cum_probs) >= 0)
+
+            # Last value should be approximately 1
+            assert np.isclose(cum_probs[-1], 1.0, rtol=1e-5)
+
+
+class TestGranularityParameter:
+    """Test cases for granularity parameter in histogram and histogram_bin_edges functions."""
+
+    def test_histogram_granularity_best_default(self, normal_data):
+        """Test histogram with default granularity='best'."""
+        densities, bin_edges = histogram(normal_data, granularity="best")
+
+        assert len(densities) > 0
+        assert len(bin_edges) == len(densities) + 1
+
+    def test_histogram_granularity_zero(self, normal_data):
+        """Test histogram with granularity=0."""
+        densities_0, bin_edges_0 = histogram(normal_data, granularity=0)
+        densities_best, bin_edges_best = histogram(normal_data, granularity="best")
+
+        # Granularity 0 might be the same as best, but should at least be valid
+        assert len(densities_0) > 0
+        assert len(bin_edges_0) == len(densities_0) + 1
+
+    def test_histogram_granularity_increases_bins(self, normal_data):
+        """Test that higher granularity generally means more bins."""
+        _, bin_edges_0 = histogram(normal_data, granularity=0)
+        _, bin_edges_1 = histogram(normal_data, granularity=1)
+
+        # Higher granularity should have at least as many bins
+        # (though not guaranteed in all cases, generally true)
+        assert len(bin_edges_1) >= len(bin_edges_0)
+
+    def test_histogram_granularity_consistency(self, uniform_data):
+        """Test that same granularity gives consistent results."""
+        densities_1, bin_edges_1 = histogram(uniform_data, granularity=1)
+        densities_2, bin_edges_2 = histogram(uniform_data, granularity=1)
+
+        # Should be identical
+        assert np.allclose(np.asarray(densities_1), np.asarray(densities_2))
+        assert np.allclose(np.asarray(bin_edges_1), np.asarray(bin_edges_2))
+
+    def test_histogram_granularity_exceeds_maximum(self, simple_data):
+        """Test that requesting granularity higher than max uses most granular."""
+        # Request a very high granularity
+        densities_high, bin_edges_high = histogram(simple_data, granularity=1000)
+
+        # Should still return valid results (capped at max granularity)
+        assert len(densities_high) > 0
+        assert len(bin_edges_high) == len(densities_high) + 1
+
+    def test_histogram_granularity_with_cumulative(self, normal_data):
+        """Test granularity parameter works with cumulative parameter."""
+        cum_probs_0, _ = histogram(normal_data, granularity=0, cumulative=True)
+        cum_probs_1, _ = histogram(normal_data, granularity=1, cumulative=True)
+
+        # Both should end at approximately 1
+        assert np.isclose(np.asarray(cum_probs_0)[-1], 1.0, rtol=1e-5)
+        assert np.isclose(np.asarray(cum_probs_1)[-1], 1.0, rtol=1e-5)
+
+    def test_histogram_granularity_negative_raises_error(self, simple_data):
+        """Test that negative granularity raises ValueError."""
+        with pytest.raises(ValueError, match="granularity must be"):
+            histogram(simple_data, granularity=-1)
+
+    def test_histogram_bin_edges_granularity_best(self, normal_data):
+        """Test histogram_bin_edges with granularity='best'."""
+        bin_edges = histogram_bin_edges(normal_data, granularity="best")
+
+        assert len(bin_edges) > 1
+        # Should be sorted
+        assert all(bin_edges[i] <= bin_edges[i + 1] for i in range(len(bin_edges) - 1))
+
+    def test_histogram_bin_edges_granularity_integer(self, normal_data):
+        """Test histogram_bin_edges with integer granularity."""
+        bin_edges_0 = histogram_bin_edges(normal_data, granularity=0)
+        bin_edges_1 = histogram_bin_edges(normal_data, granularity=1)
+
+        assert len(bin_edges_0) > 1
+        assert len(bin_edges_1) > 1
+
+        # Higher granularity should have at least as many bins
+        assert len(bin_edges_1) >= len(bin_edges_0)
+
+    def test_histogram_bin_edges_granularity_consistency_with_histogram(
+        self, uniform_data
+    ):
+        """Test that bin_edges from histogram match histogram_bin_edges for same granularity."""
+        _, bin_edges_hist = histogram(uniform_data, granularity=1)
+        bin_edges_func = histogram_bin_edges(uniform_data, granularity=1)
+
+        assert np.allclose(np.asarray(bin_edges_hist), np.asarray(bin_edges_func))
+
+    def test_histogram_bin_edges_granularity_exceeds_maximum(self, simple_data):
+        """Test histogram_bin_edges with granularity exceeding maximum."""
+        bin_edges = histogram_bin_edges(simple_data, granularity=1000)
+
+        # Should still return valid results
+        assert len(bin_edges) > 1
+
+    def test_histogram_bin_edges_granularity_negative_raises_error(self, simple_data):
+        """Test that negative granularity raises ValueError for histogram_bin_edges."""
+        with pytest.raises(ValueError, match="granularity must be"):
+            histogram_bin_edges(simple_data, granularity=-1)
+
+    def test_histogram_granularity_with_different_backends(self, normal_data):
+        """Test granularity parameter with different array backends."""
+        # Test with list
+        densities_list, _ = histogram(normal_data, granularity=1)
+        assert isinstance(densities_list, list)
+
+        # Test with numpy
+        np_array = np.array(normal_data)
+        densities_np, _ = histogram(np_array, granularity=1)
+        assert hasattr(densities_np, "__array_namespace__")
+
+        # Test with pyarrow
+        pa_array = pa.array(normal_data)
+        densities_pa, _ = histogram(pa_array, granularity=1)
+        assert isinstance(densities_pa, pa.Array)
+
+    def test_histogram_multiple_granularities_different_results(self, bimodal_data):
+        """Test that different granularities produce different histograms."""
+        densities_0, bin_edges_0 = histogram(bimodal_data, granularity=0)
+        densities_2, bin_edges_2 = histogram(bimodal_data, granularity=2)
+
+        # Different granularities should generally produce different numbers of bins
+        # (though not guaranteed in all edge cases)
+        # At minimum, both should be valid
+        assert len(densities_0) > 0
+        assert len(densities_2) > 0
+        assert len(bin_edges_0) == len(densities_0) + 1
+        assert len(bin_edges_2) == len(densities_2) + 1

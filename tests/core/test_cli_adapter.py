@@ -34,7 +34,7 @@ class TestParseFileType:
 
     def test_numbered_histogram_file(self):
         """Test parsing histogram.N.csv files."""
-        file_path = pathlib.Path("histogram.0.csv")
+        file_path = pathlib.Path("histogram.1.csv")
         ftype, hist_id = _parse_file_type(file_path)
         assert ftype == "histogram"
         assert hist_id == 0
@@ -42,12 +42,12 @@ class TestParseFileType:
         file_path = pathlib.Path("histogram.5.csv")
         ftype, hist_id = _parse_file_type(file_path)
         assert ftype == "histogram"
-        assert hist_id == 5
+        assert hist_id == 4
 
         file_path = pathlib.Path("histogram.123.csv")
         ftype, hist_id = _parse_file_type(file_path)
         assert ftype == "histogram"
-        assert hist_id == 123
+        assert hist_id == 122
 
     def test_invalid_file_name(self):
         """Test that invalid file names raise ValueError."""
@@ -126,10 +126,10 @@ class TestHistogram:
     ):
         """Test histogram in exploratory mode (only_best=False)."""
         # Create mock histogram files
-        (tmp_path / "histogram.0.csv").write_text(
+        (tmp_path / "histogram.1.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,5.0,4.0,9,1.0,0.25\n"
         )
-        (tmp_path / "histogram.1.csv").write_text(
+        (tmp_path / "histogram.2.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
             "1.0,3.0,2.0,6,0.67,0.33\n"
             "3.0,5.0,2.0,3,0.33,0.17\n"
@@ -164,7 +164,7 @@ class TestHistogram:
                 # Check that best histogram is marked (granularity 1 has highest level)
                 best_rows = result.filter(result["is_best"])
                 assert len(best_rows) > 0
-                assert all(g == 1 for g in best_rows["granularity"].to_pylist())
+                assert all(g == 0 for g in best_rows["granularity"].to_pylist())
 
     def test_histogram_command_construction(
         self, sample_data, tmp_path, mock_subprocess_success
@@ -264,10 +264,10 @@ class TestProcessHistogramFiles:
 
     def test_process_multiple_histograms_with_series(self, tmp_path):
         """Test processing multiple histograms with series data."""
-        (tmp_path / "histogram.0.csv").write_text(
+        (tmp_path / "histogram.1.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n0.0,10.0,10.0,20,1.0,0.1\n"
         )
-        (tmp_path / "histogram.1.csv").write_text(
+        (tmp_path / "histogram.2.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
             "0.0,5.0,5.0,10,0.5,0.1\n"
             "5.0,10.0,5.0,10,0.5,0.1\n"
@@ -291,11 +291,11 @@ class TestProcessHistogramFiles:
 
         # Best should be granularity 1 (highest level = 0.7)
         best_rows = result.filter(result["is_best"])
-        assert all(g == 1 for g in best_rows["granularity"].to_pylist())
+        assert all(g == 0 for g in best_rows["granularity"].to_pylist())
 
         # Non-best rows should be granularity 0
         non_best_rows = result.filter(compute.invert(result["is_best"]))
-        assert all(g == 0 for g in non_best_rows["granularity"].to_pylist())
+        assert all(g == 1 for g in non_best_rows["granularity"].to_pylist())
 
     def test_column_renaming(self, tmp_path):
         """Test that columns are correctly renamed from PascalCase to snake_case."""

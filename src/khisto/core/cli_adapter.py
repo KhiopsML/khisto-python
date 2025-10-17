@@ -46,7 +46,7 @@ def _parse_file_type(
     # Check for histogram.(number).csv pattern
     stem = file_path.stem
     if stem.startswith("histogram.") and stem.split(".")[-1].isdigit():
-        return "histogram", int(stem.split(".")[-1])
+        return "histogram", int(stem.split(".")[-1]) - 1
 
     raise ValueError(f"Unrecognized histogram file name: {name}")
 
@@ -212,9 +212,12 @@ def _process_histogram_files(
     # Mark the best histogram if series data is available
     if histogram_series_df is not None:
         max_level = compute.max(histogram_series_df["Level"]).as_py()
-        best_granularity = histogram_series_df.filter(
-            compute.equal(histogram_series_df["Level"], max_level)
-        )["Granularity"][0].as_py()
+        best_granularity = (
+            histogram_series_df.filter(
+                compute.equal(histogram_series_df["Level"], max_level)
+            )["Granularity"][0].as_py()
+            - 1
+        )
 
         histogram_df = histogram_df.append_column(
             "is_best",
