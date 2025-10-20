@@ -211,9 +211,9 @@ class TestHistogramBinEdges:
 class TestHistogramSeries:
     """Test cases for histogram_series function."""
 
-    def test_histogram_series_only_best(self, simple_data):
-        """Test histogram_series with only_best=True."""
-        df = histogram_series(simple_data, only_best=True)
+    def test_histogram_series_best_granularity(self, simple_data):
+        """Test histogram_series with granularity='best'."""
+        df = histogram_series(simple_data, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
 
@@ -233,8 +233,8 @@ class TestHistogramSeries:
         assert len(df) > 0
 
     def test_histogram_series_all_histograms(self, normal_data):
-        """Test histogram_series with only_best=False."""
-        df = histogram_series(normal_data, only_best=False)
+        """Test histogram_series with granularity=None."""
+        df = histogram_series(normal_data, granularity=None)
 
         assert isinstance(df, nw.DataFrame)
 
@@ -259,7 +259,7 @@ class TestHistogramSeries:
     def test_histogram_series_with_numpy(self, uniform_data):
         """Test histogram_series with NumPy array."""
         np_array = np.array(uniform_data)
-        df = histogram_series(np_array, only_best=True)
+        df = histogram_series(np_array, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         assert len(df) > 0
@@ -267,7 +267,7 @@ class TestHistogramSeries:
     def test_histogram_series_with_pandas_series(self, normal_data):
         """Test histogram_series with Pandas Series."""
         series = pd.Series(normal_data)
-        df = histogram_series(series, only_best=True)
+        df = histogram_series(series, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         # Check that backend is pandas
@@ -277,7 +277,7 @@ class TestHistogramSeries:
     def test_histogram_series_with_polars_series(self, bimodal_data):
         """Test histogram_series with Polars Series."""
         series = pl.Series(bimodal_data)
-        df = histogram_series(series, only_best=True)
+        df = histogram_series(series, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         # Check that backend is polars
@@ -286,14 +286,14 @@ class TestHistogramSeries:
 
     def test_histogram_series_probability_sum(self, uniform_data):
         """Test that probabilities sum to 1."""
-        df = histogram_series(uniform_data, only_best=True)
+        df = histogram_series(uniform_data, granularity="best")
 
         total_prob = df["probability"].sum()
         assert np.isclose(total_prob, 1.0, rtol=1e-5)
 
     def test_histogram_series_density_calculation(self, simple_data):
         """Test that density = probability / length."""
-        df = histogram_series(simple_data, only_best=True)
+        df = histogram_series(simple_data, granularity="best")
 
         for row in df.iter_rows(named=True):
             expected_density = (
@@ -302,8 +302,8 @@ class TestHistogramSeries:
             assert np.isclose(row["density"], expected_density, rtol=1e-5)
 
     def test_histogram_series_best_marked(self, normal_data):
-        """Test that best histogram is marked when only_best=False."""
-        df = histogram_series(normal_data, only_best=False)
+        """Test that best histogram is marked when granularity=None."""
+        df = histogram_series(normal_data, granularity=None)
 
         # Should have is_best column
         assert "is_best" in df.columns
@@ -314,14 +314,14 @@ class TestHistogramSeries:
 
     def test_histogram_series_bin_bounds(self, simple_data):
         """Test that upper_bound > lower_bound for all bins."""
-        df = histogram_series(simple_data, only_best=True)
+        df = histogram_series(simple_data, granularity="best")
 
         for row in df.iter_rows(named=True):
             assert row["upper_bound"] >= row["lower_bound"]
 
     def test_histogram_series_length_calculation(self, uniform_data):
         """Test that length = upper_bound - lower_bound."""
-        df = histogram_series(uniform_data, only_best=True)
+        df = histogram_series(uniform_data, granularity="best")
 
         for row in df.iter_rows(named=True):
             expected_length = row["upper_bound"] - row["lower_bound"]
@@ -402,14 +402,14 @@ class TestReturnTypeConsistency:
     def test_pandas_series_backend(self, simple_data):
         """Test histogram_series with Pandas maintains backend."""
         series = pd.Series(simple_data)
-        df = histogram_series(series, only_best=True)
+        df = histogram_series(series, granularity="best")
         native = nw.to_native(df)
         assert isinstance(native, pd.DataFrame)
 
     def test_polars_series_backend(self, simple_data):
         """Test histogram_series with Polars maintains backend."""
         series = pl.Series(simple_data)
-        df = histogram_series(series, only_best=True)
+        df = histogram_series(series, granularity="best")
         native = nw.to_native(df)
         assert isinstance(native, pl.DataFrame)
 
@@ -445,8 +445,8 @@ class TestCumulativeParameter:
         # Last cumulative probability should be approximately 1
         assert np.isclose(cumulative_probs_np[-1], 1.0, rtol=1e-5)
 
-        # First cumulative probability should be positive
-        assert cumulative_probs_np[0] > 0
+        # First cumulative probability should be 0
+        assert np.isclose(cumulative_probs_np[0], 0.0, rtol=1e-5)
 
     def test_histogram_cumulative_monotonic(self, normal_data):
         """Test that cumulative histogram is strictly monotonic."""
@@ -458,12 +458,12 @@ class TestCumulativeParameter:
         diffs = np.diff(cumulative_probs_np)
         assert np.all(diffs >= 0)
 
-    def test_histogram_cumulative_starts_positive(self, simple_data):
-        """Test that cumulative histogram starts with a positive value."""
+    def test_histogram_cumulative_starts_zero(self, simple_data):
+        """Test that cumulative histogram starts with 0.0."""
         cumulative_probs, _ = histogram(simple_data, cumulative=True)
 
         first_value = np.asarray(cumulative_probs)[0]
-        assert first_value > 0
+        assert np.isclose(first_value, 0.0, rtol=1e-5)
 
     def test_histogram_cumulative_with_different_backends(self, simple_data):
         """Test cumulative histogram with different array backends."""
@@ -488,7 +488,7 @@ class TestCumulativeParameter:
 
     def test_histogram_series_cumulative_column(self, normal_data):
         """Test histogram_series adds cumulative_probability column when cumulative=True."""
-        df = histogram_series(normal_data, only_best=True, cumulative=True)
+        df = histogram_series(normal_data, granularity="best", cumulative=True)
 
         # Check that cumulative_probability column exists
         assert "cumulative_probability" in df.columns
@@ -502,14 +502,14 @@ class TestCumulativeParameter:
 
     def test_histogram_series_cumulative_false(self, uniform_data):
         """Test histogram_series without cumulative column when cumulative=False."""
-        df = histogram_series(uniform_data, only_best=True, cumulative=False)
+        df = histogram_series(uniform_data, granularity="best", cumulative=False)
 
         # Check that cumulative_probability column does not exist
         assert "cumulative_probability" not in df.columns
 
     def test_histogram_series_cumulative_with_multiple_granularities(self, normal_data):
-        """Test histogram_series cumulative with only_best=False."""
-        df = histogram_series(normal_data, only_best=False, cumulative=True)
+        """Test histogram_series cumulative with granularity=None."""
+        df = histogram_series(normal_data, granularity=None, cumulative=True)
 
         # Check that cumulative_probability column exists
         assert "cumulative_probability" in df.columns
@@ -581,10 +581,10 @@ class TestGranularityParameter:
         assert np.isclose(np.asarray(cum_probs_0)[-1], 1.0, rtol=1e-5)
         assert np.isclose(np.asarray(cum_probs_1)[-1], 1.0, rtol=1e-5)
 
-    def test_histogram_granularity_negative_raises_error(self, simple_data):
-        """Test that negative granularity raises ValueError."""
+    def test_histogram_granularity_none_raises_error(self, simple_data):
+        """Test that None granularity raises ValueError."""
         with pytest.raises(ValueError, match="granularity must be"):
-            histogram(simple_data, granularity=-1)
+            histogram(simple_data, granularity=None)  # type: ignore
 
     def test_histogram_bin_edges_granularity_best(self, normal_data):
         """Test histogram_bin_edges with granularity='best'."""
@@ -621,10 +621,10 @@ class TestGranularityParameter:
         # Should still return valid results
         assert len(bin_edges) > 1
 
-    def test_histogram_bin_edges_granularity_negative_raises_error(self, simple_data):
-        """Test that negative granularity raises ValueError for histogram_bin_edges."""
+    def test_histogram_bin_edges_granularity_none_raises_error(self, simple_data):
+        """Test that None granularity raises ValueError for histogram_bin_edges."""
         with pytest.raises(ValueError, match="granularity must be"):
-            histogram_bin_edges(simple_data, granularity=-1)
+            histogram_bin_edges(simple_data, granularity=None)  # type: ignore
 
     def test_histogram_granularity_with_different_backends(self, normal_data):
         """Test granularity parameter with different array backends."""

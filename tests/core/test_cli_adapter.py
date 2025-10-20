@@ -76,10 +76,8 @@ class TestHistogram:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
             yield mock_run
 
-    def test_histogram_only_best_mode(
-        self, sample_data, tmp_path, mock_subprocess_success
-    ):
-        """Test histogram in only_best mode."""
+    def test_histogram_best_mode(self, sample_data, tmp_path, mock_subprocess_success):
+        """Test histogram with granularity='best'."""
         # Create mock histogram file
         histogram_file = tmp_path / "histogram.csv"
         histogram_file.write_text(
@@ -100,7 +98,7 @@ class TestHistogram:
                 mock_file.__exit__ = MagicMock(return_value=False)
                 mock_temp.return_value = mock_file
 
-                result = compute_histogram(sample_data, only_best=True)
+                result = compute_histogram(sample_data, granularity="best")
 
                 # Check columns exist
                 expected_columns = {
@@ -121,10 +119,10 @@ class TestHistogram:
                 # Check granularity is 0
                 assert all(g == 0 for g in result["granularity"].to_pylist())
 
-    def test_histogram_exploratory_mode(
+    def test_histogram_all_granularities_mode(
         self, sample_data, tmp_path, mock_subprocess_success
     ):
-        """Test histogram in exploratory mode (only_best=False)."""
+        """Test histogram with granularity=None (all granularities)."""
         # Create mock histogram files
         (tmp_path / "histogram.1.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,5.0,4.0,9,1.0,0.25\n"
@@ -138,8 +136,8 @@ class TestHistogram:
             "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
             "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
             "RemovedSingularityNumber,Raw\n"
-            "histogram,0,1,0,0,0,0.5,0.8,0.01,0,false\n"
-            "histogram,1,2,1,0,0,0.9,0.95,0.01,0,false\n"
+            "histogram,1,1,0,0,0,0.5,0.8,0.01,0,false\n"
+            "histogram,2,2,1,0,0,0.9,0.95,0.01,0,false\n"
         )
 
         with patch(
@@ -154,23 +152,23 @@ class TestHistogram:
                 mock_file.__exit__ = MagicMock(return_value=False)
                 mock_temp.return_value = mock_file
 
-                result = compute_histogram(sample_data, only_best=False)
+                result = compute_histogram(sample_data, granularity=None)
 
                 # Check we have rows from both granularities
                 granularities = set(result["granularity"].to_pylist())
                 assert 0 in granularities
                 assert 1 in granularities
 
-                # Check that best histogram is marked (granularity 1 has highest level)
+                # Check that best histogram is marked (granularity 2 has highest level)
                 best_rows = result.filter(result["is_best"])
                 assert len(best_rows) > 0
-                assert all(g == 0 for g in best_rows["granularity"].to_pylist())
+                assert all(g == 1 for g in best_rows["granularity"].to_pylist())
 
     def test_histogram_command_construction(
         self, sample_data, tmp_path, mock_subprocess_success
     ):
         """Test that the correct command is constructed for khisto CLI."""
-        # Test only_best mode
+        # Test granularity='best' mode
         with patch(
             "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
         ):
@@ -189,13 +187,13 @@ class TestHistogram:
                     "1.0,5.0,4.0,9,1.0,0.25\n"
                 )
 
-                compute_histogram(sample_data, only_best=True)
+                compute_histogram(sample_data, granularity="best")
                 args = mock_subprocess_success.call_args[0][0]
                 assert "-e" not in args
 
         mock_subprocess_success.reset_mock()
 
-        # Test exploratory mode with a fresh tmp directory
+        # Test exploratory mode (granularity=None) with a fresh tmp directory
         tmp_path2 = tmp_path / "exploratory"
         tmp_path2.mkdir(parents=True, exist_ok=True)
 
@@ -212,12 +210,12 @@ class TestHistogram:
                 mock_temp.return_value = mock_file
 
                 # Create histogram file for exploratory mode
-                (tmp_path2 / "histogram.0.csv").write_text(
+                (tmp_path2 / "histogram.1.csv").write_text(
                     "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
                     "1.0,5.0,4.0,9,1.0,0.25\n"
                 )
 
-                compute_histogram(sample_data, only_best=False)
+                compute_histogram(sample_data, granularity=None)
                 args = mock_subprocess_success.call_args[0][0]
                 assert "-e" in args
 
@@ -241,13 +239,61 @@ class TestHistogram:
                     mock_temp.return_value = mock_file
 
                     with pytest.raises(subprocess.CalledProcessError):
-                        compute_histogram(sample_data, only_best=True)
+                        compute_histogram(sample_data, granularity="best")
+
+    def test_histogram_specific_granularity(
+        self, sample_data, tmp_path, mock_subprocess_success
+    ):
+        """Test histogram with a specific granularity level."""
+        # Create mock histogram files with multiple granularities
+        (tmp_path / "histogram.1.csv").write_text(
+            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,5.0,4.0,9,1.0,0.25\n"
+        )
+        (tmp_path / "histogram.2.csv").write_text(
+            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
+            "1.0,3.0,2.0,6,0.67,0.33\n"
+            "3.0,5.0,2.0,3,0.33,0.17\n"
+        )
+        (tmp_path / "histogram.3.csv").write_text(
+            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
+            "1.0,2.0,1.0,3,0.33,0.33\n"
+            "2.0,3.0,1.0,3,0.33,0.33\n"
+            "3.0,5.0,2.0,3,0.33,0.17\n"
+        )
+        (tmp_path / "histogram.series.csv").write_text(
+            "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
+            "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
+            "RemovedSingularityNumber,Raw\n"
+            "histogram,1,1,0,0,0,0.3,0.6,0.01,0,false\n"
+            "histogram,2,2,1,0,0,0.7,0.85,0.01,0,false\n"
+            "histogram,3,3,1,0,0,0.9,0.95,0.01,0,false\n"
+        )
+
+        with patch(
+            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
+        ):
+            with patch(
+                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
+            ) as mock_temp:
+                mock_file = MagicMock()
+                mock_file.name = str(tmp_path / "input.txt")
+                mock_file.__enter__ = MagicMock(return_value=mock_file)
+                mock_file.__exit__ = MagicMock(return_value=False)
+                mock_temp.return_value = mock_file
+
+                # Request granularity 1 (second histogram)
+                result = compute_histogram(sample_data, granularity=1)
+
+                # Should only have rows from granularity 1
+                granularities = set(result["granularity"].to_pylist())
+                assert granularities == {1}
+                assert len(result) == 2  # histogram.2.csv has 2 rows
 
 
 class TestProcessHistogramFiles:
     """Tests for _process_histogram_files function."""
 
-    def test_process_single_histogram(self, tmp_path):
+    def test_process_single_best_histogram(self, tmp_path):
         """Test processing a single best histogram file."""
         (tmp_path / "histogram.csv").write_text(
             "LowerBound,UpperBound,Length,Frequency,Probability,Density\n0.0,5.0,5.0,10,1.0,0.2\n"
@@ -276,8 +322,8 @@ class TestProcessHistogramFiles:
             "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
             "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
             "RemovedSingularityNumber,Raw\n"
-            "histogram,0,1,0,0,0,0.3,0.5,0.01,0,false\n"
-            "histogram,1,2,1,0,0,0.7,0.9,0.01,0,false\n"
+            "histogram,1,1,0,0,0,0.3,0.5,0.01,0,false\n"
+            "histogram,2,2,1,0,0,0.7,0.9,0.01,0,false\n"
         )
 
         result = _process_histogram_files(str(tmp_path), "histogram", only_best=False)
@@ -289,13 +335,13 @@ class TestProcessHistogramFiles:
         assert 0 in result["granularity"].to_pylist()
         assert 1 in result["granularity"].to_pylist()
 
-        # Best should be granularity 1 (highest level = 0.7)
+        # Best should be granularity 1 (highest level = 0.7 from Granularity 2)
         best_rows = result.filter(result["is_best"])
-        assert all(g == 0 for g in best_rows["granularity"].to_pylist())
+        assert all(g == 1 for g in best_rows["granularity"].to_pylist())
 
         # Non-best rows should be granularity 0
         non_best_rows = result.filter(compute.invert(result["is_best"]))
-        assert all(g == 1 for g in non_best_rows["granularity"].to_pylist())
+        assert all(g == 0 for g in non_best_rows["granularity"].to_pylist())
 
     def test_column_renaming(self, tmp_path):
         """Test that columns are correctly renamed from PascalCase to snake_case."""
