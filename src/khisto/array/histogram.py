@@ -171,13 +171,11 @@ def histogram_series(
         # Compute cumulative sum within each granularity group
         # Since data is sorted by granularity, we can use a manual approach
         cumsum_parts = []
-        for granularity in df["granularity"].unique():
+        for granularity in df["granularity"].unique(maintain_order=True):
             group_df = df.filter(nw.col("granularity") == granularity)
             group_df = group_df.with_columns(
                 nw.col("probability").cum_sum().alias("cumulative_probability")
             )
             cumsum_parts.append(group_df)
         df = nw.concat(cumsum_parts)
-        # Sort back to original order if needed
-        df = df.sort("granularity")
     return df

@@ -1,10 +1,17 @@
+"""Plotly histogram visualization with optimal binning.
+
+This module provides a Plotly Express-compatible histogram function that uses
+Khisto's optimal binning algorithm for automatic bin selection.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, Optional, Union
 
+import pyarrow as pa
+import narwhals as nw
 
 from khisto.array import histogram_series
-import narwhals as nw
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -16,11 +23,305 @@ from plotly.express._core import (
     one_group,
     apply_default_cascade,
 )
+from plotly.basedatatypes import BasePlotlyType
 import plotly.graph_objects as go
 
 if TYPE_CHECKING:
-    from khisto.typing import ArrayT
+    from khisto.typing import ArrayT, GranularityT
     from narwhals.typing import IntoDataFrame, IntoSeries
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+
+def _compute_histogram_for_groups(
+    groups: dict,
+    x_column_name: str,
+    granularity: Optional[GranularityT],
+    grouped_mappings: list,
+) -> list[nw.DataFrame]:
+    """Compute histogram data for each group in the data.
+
+    Parameters
+    ----------
+    groups : dict
+        Dictionary mapping group identifiers to DataFrames
+    x_column_name : str
+        Name of the column containing values to histogram
+    granularity : int, 'best', or None
+        Granularity level for histogram computation
+    grouped_mappings : list
+        List of grouping mappings from Plotly Express
+
+    Returns
+    -------
+    list[nw.DataFrame]
+        List of DataFrames containing histogram data for each group
+    """
+    histo_df_list: list[nw.DataFrame] = []
+
+    for group_key, group_df in groups.items():
+        # Determine the actual column name in this group's DataFrame
+        value_column_name = x_column_name if x_column_name in group_df.columns else "x"
+
+        # Compute histogram data for all granularities or specified level
+        histo_df = histogram_series(
+            group_df[value_column_name], granularity=granularity
+        )
+
+        # Add bin center and group identifier columns
+        histo_df = (
+            histo_df.with_columns(
+                center=((histo_df["lower_bound"] + histo_df["upper_bound"]) / 2),
+                offsetgroup=nw.lit(", ".join(str(v) for v in group_key if v)),
+            )
+            .rename({"center": "x", "density": "y", "length": "width"})
+            .with_columns(
+                **{
+                    mapping.grouper: nw.lit(value)
+                    for mapping, value in zip(grouped_mappings, group_key)
+                    if mapping is not None and mapping.grouper is not None
+                }
+            )
+        )
+
+        histo_df_list.append(histo_df)
+
+    return histo_df_list
+
+
+def _fill_missing_granularities(
+    histo_df_list: list[nw.DataFrame],
+) -> list[nw.DataFrame]:
+    """Fill missing granularity levels across all groups.
+
+    When different groups have different maximum granularities, this function
+    duplicates the highest granularity level to fill in missing levels. This
+    ensures all groups have the same granularity levels for synchronized
+    animation.
+
+    Parameters
+    ----------
+    histo_df_list : list[nw.DataFrame]
+        List of histogram DataFrames, possibly with different max granularities
+
+    Returns
+    -------
+    list[nw.DataFrame]
+        List of histogram DataFrames with consistent granularity levels
+    """
+    if not histo_df_list:
+        return histo_df_list
+
+    # Find the maximum granularity across all groups
+    max_granularity = max(df["granularity"].max() for df in histo_df_list)
+
+    # Fill missing granularity levels for each group
+    filled_list = []
+    for histo_df in histo_df_list:
+        actual_max_granularity = histo_df["granularity"].max()
+
+        if actual_max_granularity < max_granularity:
+            # Duplicate the highest granularity data for missing levels
+            duplicates = [
+                histo_df.filter(
+                    nw.col("granularity") == actual_max_granularity
+                ).with_columns(
+                    granularity=nw.lit(g),
+                    is_best=nw.lit(False),
+                )
+                for g in range(actual_max_granularity + 1, max_granularity + 1)
+            ]
+            filled_list.append(nw.concat([histo_df, *duplicates]))
+        else:
+            filled_list.append(histo_df)
+
+    return filled_list
+
+
+def _create_empty_histogram_dataframe() -> nw.DataFrame:
+    """Create an empty histogram DataFrame with correct schema.
+
+    Returns
+    -------
+    nw.DataFrame
+        Empty DataFrame with histogram columns
+    """
+    return nw.from_dict(
+        {
+            "x": pa.array([]),
+            "y": pa.array([]),
+            "width": pa.array([]),
+            "offsetgroup": pa.array([]),
+            "granularity": pa.array([]),
+        },
+        backend="pyarrow",
+    )
+
+
+def _combine_histogram_dataframes(
+    histo_df_list: list[nw.DataFrame],
+) -> nw.DataFrame:
+    """Combine histogram DataFrames from all groups into a single DataFrame.
+
+    Parameters
+    ----------
+    histo_df_list : list[nw.DataFrame]
+        List of histogram DataFrames for each group
+
+    Returns
+    -------
+    nw.DataFrame
+        Combined and sorted histogram DataFrame
+    """
+    if not histo_df_list:
+        return _create_empty_histogram_dataframe()
+
+    combined_df = nw.concat(histo_df_list)
+    return combined_df.sort(["granularity", "offsetgroup", "x"])
+
+
+def _determine_best_granularity(
+    combined_histo_df: nw.DataFrame,
+    granularity: Optional[GranularityT],
+) -> int:
+    """Determine the best granularity level to display initially.
+
+    Parameters
+    ----------
+    combined_histo_df : nw.DataFrame
+        Combined histogram DataFrame with all granularities
+    granularity : int, 'best', or None
+        User-specified granularity preference
+
+    Returns
+    -------
+    int
+        The granularity level to display initially
+    """
+    if isinstance(granularity, int):
+        return granularity
+    elif granularity == "best":
+        return combined_histo_df["granularity"].max()
+    else:  # granularity is None
+        return combined_histo_df.filter(nw.col("is_best"))["granularity"].max()
+
+
+def _configure_animation_axes(
+    fig: go.Figure,
+    combined_histo_df: nw.DataFrame,
+    orientation: str,
+    best_granularity: int,
+) -> None:
+    """Configure axis ranges for animated histograms.
+
+    Sets fixed axis ranges based on the overall data range to prevent
+    axes from jumping during animation.
+
+    Parameters
+    ----------
+    fig : go.Figure
+        The Plotly Figure to configure
+    combined_histo_df : nw.DataFrame
+        Combined histogram DataFrame with all granularities
+    orientation : str
+        'v' for vertical or 'h' for horizontal bars
+    best_granularity : int
+        The best granularity level for initial display
+    """
+    # Calculate data range with margin
+    min_x = combined_histo_df["x"].min()
+    max_x = combined_histo_df["x"].max()
+    max_y = combined_histo_df["y"].max()
+    axis_margin = 0.2 * (max_x - min_x)
+
+    # Set appropriate axis ranges based on orientation
+    if orientation == "v":
+        fig.update_xaxes(
+            range=(min_x - axis_margin, max_x + axis_margin),
+            selector={"type": "bar"},
+        )
+        fig.update_yaxes(range=(0, max_y * 1.1), selector={"type": "bar"})
+    else:
+        fig.update_yaxes(
+            range=(min_x - axis_margin, max_x + axis_margin),
+            selector={"type": "bar"},
+        )
+        fig.update_xaxes(range=(0, max_y * 1.1), selector={"type": "bar"})
+
+
+def _update_widths(
+    df: nw.DataFrame,
+    traces: list[BasePlotlyType],
+    granularity: int,
+    orientation: Literal["v", "h"],
+    x_column_name: str,
+    groups: dict,
+) -> None:
+    """Update bar widths for histogram traces based on bin sizes.
+
+    This function sets the appropriate bar widths for histogram traces to match
+    the variable-width bins computed by Khisto. It handles both bar traces
+    (which get histogram bin widths) and other trace types like marginal plots
+    (which get their original data positions).
+
+    Parameters
+    ----------
+    df : nw.DataFrame
+        Histogram DataFrame containing bin information for a specific granularity
+        level. Must include columns: 'offsetgroup', 'granularity', 'width'
+    traces : list[BasePlotlyType]
+        List of Plotly trace objects to update
+    granularity : int
+        The granularity level being displayed
+    orientation : {'v', 'h'}
+        Histogram orientation - 'v' for vertical, 'h' for horizontal
+    x_column_name : str
+        Name of the column containing the original data values
+    groups : dict
+        Dictionary mapping group keys to their DataFrames, used for marginal plots
+
+    Notes
+    -----
+    Bar traces get updated with variable widths from the histogram bins.
+    Non-bar traces (e.g., rug or box plots) get updated with original data positions.
+    """
+    # Extract unique group identifiers in the correct order
+    offsetgroups = df["offsetgroup"].unique(maintain_order=True).to_list()
+
+    # Separate bar traces from marginal plot traces
+    bar_traces = [trace for trace in traces if getattr(trace, "type", None) == "bar"]
+    other_traces = [trace for trace in traces if getattr(trace, "type", None) != "bar"]
+
+    # Update bar widths for histogram bars
+    for trace, offsetgroup in zip(bar_traces, offsetgroups):
+        # Filter to this specific group and granularity level
+        group_df = df.filter(
+            (nw.col("offsetgroup") == offsetgroup)
+            & (nw.col("granularity") == granularity)
+        )
+
+        if len(group_df) > 0:
+            widths = group_df["width"].to_list()
+            trace.update(width=widths)
+
+    # Update positions for marginal plots (rug, box, etc.)
+    if other_traces:
+        for trace, group_key in zip(other_traces, groups.keys()):
+            # Determine the column name in this group's DataFrame
+            value_column = (
+                x_column_name if x_column_name in groups[group_key].columns else "x"
+            )
+
+            original_values = groups[group_key][value_column]
+
+            # Set appropriate axis based on orientation
+            if orientation == "v":
+                trace.update(x=original_values)
+            else:
+                trace.update(y=original_values)
 
 
 def histogram(
@@ -52,6 +353,7 @@ def histogram(
     range_x: Optional[list] = None,
     range_y: Optional[list] = None,
     cumulative: bool = False,
+    granularity: Optional[GranularityT] = "best",
     text_auto: Union[bool, str] = False,
     title: Optional[str] = None,
     subtitle: Optional[str] = None,
@@ -169,6 +471,13 @@ def histogram(
     cumulative : bool, default False
         If True, create cumulative histogram where each bar shows the cumulative
         sum/density up to that point.
+    granularity : int or 'best' or None, default 'best'
+        Granularity level to use for histogram binning.
+        - 'best': Uses the optimal granularity level (default)
+        - int: Uses the specified granularity level
+        - None: Creates an interactive slider to explore all granularity levels
+        When None and multiple groups exist (via color, facets, etc.), the slider
+        synchronizes across all groups to show the same granularity level.
     text_auto : bool or str, default False
         If True, automatically display density values on bars. If a format string
         (e.g., '.2f'), use that format for the text. Example: '.3f' for 3 decimals.
@@ -288,79 +597,83 @@ def histogram(
     bins independently for each group, ensuring the best representation for each
     subset of data.
     """
+    # Step 1: Prepare arguments and build dataframe structure
     args = locals().copy()
+    granularity = args.pop("granularity")
 
     apply_default_cascade(args)
     args = build_dataframe(args, go.Bar)
+
+    # Step 2: Infer plot configuration and group data
     trace_specs, grouped_mappings, sizeref, show_colorbar = infer_config(
         args.copy(), go.Bar, {}, {}
     )
     grouper = [x.grouper or one_group for x in grouped_mappings] or [one_group]
     groups, orders = get_groups_and_orders(args.copy(), grouper)
 
-    histo_df_list = []
+    # Step 3: Compute histogram data for each group
     x_column_name = "_value" if not isinstance(x, str) else args["x"]
-    for g, g_df in groups.items():
-        value_column_name = x_column_name
-        if value_column_name not in g_df.columns:
-            value_column_name = "x"
-        histo_df = histogram_series(g_df[value_column_name], only_best=True)
-        histo_df = (
-            histo_df.with_columns(
-                center=((histo_df["lower_bound"] + histo_df["upper_bound"]) / 2),
-                offsetgroup=nw.lit(", ".join(str(v) for v in g if v)),
-            )
-            .rename(
-                {
-                    "center": "x",
-                    "density": "y",
-                    "length": "width",
-                }
-            )
-            .select(["x", "y", "width", "offsetgroup"])
-            .with_columns(
-                **{
-                    k.grouper: nw.lit(v)
-                    for k, v in zip(grouped_mappings, g)
-                    if k is not None and k.grouper is not None
-                }
-            )
-        )
+    histo_df_list = _compute_histogram_for_groups(
+        groups, x_column_name, granularity, grouped_mappings
+    )
 
-        histo_df_list.append(histo_df)
+    # Step 4: Ensure consistent granularity levels across groups (for animation)
+    if granularity is None:
+        histo_df_list = _fill_missing_granularities(histo_df_list)
 
-    if not histo_df_list:
-        combined_histo_df: nw.DataFrame = nw.from_dict(
-            {"x": [], "y": [], "width": [], "offsetgroup": []}, backend="pyarrow"
-        )
-    else:
-        combined_histo_df: nw.DataFrame = nw.concat(histo_df_list)
+    # Step 5: Combine all histogram data into a single DataFrame
+    combined_histo_df = _combine_histogram_dataframes(histo_df_list)
 
+    # Step 6: Prepare data for Plotly figure creation
     args["data_frame"] = nw.to_native(combined_histo_df)
     args["x"] = "x" if orientation == "v" else "y"
     args["y"] = "y" if orientation == "v" else "x"
 
-    offsetgroups = combined_histo_df["offsetgroup"].unique().to_list()
+    # Enable animation slider when granularity is None
+    if granularity is None:
+        args["animation_frame"] = "granularity"
 
-    # Use make_figure with our Histogram constructor
-    fig = make_figure(args, go.Bar)
+    # Step 7: Determine the best granularity level to display initially
+    best_granularity = _determine_best_granularity(combined_histo_df, granularity)
 
-    bar_traces = [trace for trace in fig.data if trace.type == "bar"]
-    other_traces = [trace for trace in fig.data if trace.type != "bar"]
+    # Step 8: Create the Plotly figure
+    fig: go.Figure = make_figure(args, go.Bar)
 
-    # Update bar widths for histogram bars
-    for trace, offsetgroup in zip(bar_traces, offsetgroups):
-        mask = combined_histo_df["offsetgroup"] == offsetgroup
-        widths = combined_histo_df.filter(mask)["width"].to_list()
-        trace.update(width=widths)
+    # Step 9: Configure animation if granularity slider is enabled
+    if granularity is None:
+        # Set initial frame to best granularity
+        fig = go.Figure(
+            data=fig.frames[best_granularity].data,
+            frames=fig.frames,
+            layout=fig.layout,
+        )
+        fig.layout["sliders"][0]["active"] = best_granularity
 
-    # Update marginal traces with original data
-    for trace, offsetgroup in zip(other_traces, groups.keys()):
-        value_column_name = x_column_name
-        if value_column_name not in groups[offsetgroup].columns:
-            value_column_name = "x"
-        original_x = groups[offsetgroup][value_column_name]
-        trace.update(x=original_x if orientation == "v" else None)
-        trace.update(y=original_x if orientation == "h" else None)
+        # Configure fixed axis ranges to prevent jumping during animation
+        _configure_animation_axes(
+            fig, combined_histo_df, orientation or "v", best_granularity
+        )
+
+    # Step 10: Update bar widths for the initial display
+    _update_widths(
+        combined_histo_df.filter(nw.col("granularity") == best_granularity),
+        fig.data,
+        granularity=best_granularity,
+        orientation=orientation if orientation else "v",
+        x_column_name=x_column_name,
+        groups=groups,
+    )
+
+    # Step 11: Update bar widths for all animation frames (if applicable)
+    if hasattr(fig, "frames") and fig.frames:
+        for granularity_level, frame in enumerate(fig.frames):
+            _update_widths(
+                combined_histo_df.filter(nw.col("granularity") == granularity_level),
+                frame.data,
+                granularity=granularity_level,
+                orientation=orientation if orientation else "v",
+                x_column_name=x_column_name,
+                groups=groups,
+            )
 
     return fig
