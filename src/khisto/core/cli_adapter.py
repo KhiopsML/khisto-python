@@ -4,12 +4,16 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
-from typing import Literal, Optional, Tuple
+from typing import TYPE_CHECKING, Literal, Optional, Tuple
 
 import pyarrow as pa
+import pyarrow.compute as pc
 from pyarrow import compute, csv
 
 from khisto import KHISTO_BIN_DIR, logger
+
+if TYPE_CHECKING:
+    from khisto.typing import GranularityT
 
 
 def _parse_file_type(
@@ -46,81 +50,9 @@ def _parse_file_type(
     # Check for histogram.(number).csv pattern
     stem = file_path.stem
     if stem.startswith("histogram.") and stem.split(".")[-1].isdigit():
-        return "histogram", int(stem.split(".")[-1])
+        return "histogram", int(stem.split(".")[-1]) - 1
 
     raise ValueError(f"Unrecognized histogram file name: {name}")
-
-
-def compute_histogram(x: pa.Array, only_best: bool = False) -> pa.Table:
-    """Compute histogram of an array using khisto CLI.
-
-    Parameters
-    ----------
-    x : pa.Array
-        PyArrow Array of numeric values.
-    only_best : bool, default False
-        If True, return only the best histogram.
-        If False, return all histograms with granularity information.
-
-    Returns
-    -------
-    pa.Table
-        A PyArrow Table with histogram data including columns:
-        - lower_bound : float64
-            Lower bound of each bin.
-        - upper_bound : float64
-            Upper bound of each bin.
-        - length : float64
-            Length of each bin.
-        - frequency : int64
-            Frequency count in each bin.
-        - probability : float64
-            Probability of each bin.
-        - density : float64
-            Density of each bin.
-        - granularity : int32
-            Histogram granularity level.
-        - is_best : bool
-            Whether this is the best histogram.
-
-    Raises
-    ------
-    subprocess.CalledProcessError
-        If khisto CLI execution fails.
-    """
-    # Create temporary input file with array values
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False
-    ) as temp_input:
-        csv.write_csv(
-            pa.Table.from_arrays([x], names=["value"]),
-            temp_input.name,
-            write_options=csv.WriteOptions(include_header=False),
-        )
-        temp_input_path = temp_input.name
-
-    # Create temporary directory for output files
-    temp_dir = tempfile.mkdtemp(prefix="khisto_output_")
-    output_file = pathlib.Path(temp_dir) / "histogram.csv"
-    cmd = []
-    try:
-        # Build command arguments
-        cmd = [str(KHISTO_BIN_DIR), temp_input_path, str(output_file)]
-        if not only_best:
-            cmd.insert(1, "-e")  # Exploratory mode for all histograms
-
-        # Execute khisto CLI
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        return _process_histogram_files(temp_dir, output_file.stem, only_best)
-
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error executing khisto: {e.stderr} \n Command: {' '.join(cmd)}")
-        raise
-    finally:
-        # Clean up temporary input file and directory
-        pathlib.Path(temp_input_path).unlink(missing_ok=True)
-        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
 def _process_histogram_files(
@@ -212,9 +144,12 @@ def _process_histogram_files(
     # Mark the best histogram if series data is available
     if histogram_series_df is not None:
         max_level = compute.max(histogram_series_df["Level"]).as_py()
-        best_granularity = histogram_series_df.filter(
-            compute.equal(histogram_series_df["Level"], max_level)
-        )["Granularity"][0].as_py()
+        best_granularity = (
+            histogram_series_df.filter(
+                compute.equal(histogram_series_df["Level"], max_level)
+            )["Granularity"][0].as_py()
+            - 1
+        )
 
         histogram_df = histogram_df.append_column(
             "is_best",
@@ -222,3 +157,94 @@ def _process_histogram_files(
         )
 
     return histogram_df
+
+
+def compute_histogram(
+    x: pa.Array, granularity: Optional[GranularityT] = None
+) -> pa.Table:
+    """Compute histogram of an array using khisto CLI.
+
+    Parameters
+    ----------
+    x : pa.Array
+        PyArrow Array of numeric values.
+    granularity : int or 'best', optional
+        Desired histogram granularity level.
+        If None, all granularities are computed.
+        If 'best', only the best histogram is computed.
+        If an integer, the histogram with that granularity is returned.
+
+    Returns
+    -------
+    pa.Table
+        A PyArrow Table with histogram data including columns:
+        - lower_bound : float64
+            Lower bound of each bin.
+        - upper_bound : float64
+            Upper bound of each bin.
+        - length : float64
+            Length of each bin.
+        - frequency : int64
+            Frequency count in each bin.
+        - probability : float64
+            Probability of each bin.
+        - density : float64
+            Density of each bin.
+        - granularity : int32
+            Histogram granularity level.
+        - is_best : bool
+            Whether this is the best histogram.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If khisto CLI execution fails.
+    ValueError
+        If granularity is not specified correctly.
+    TypeError
+        If input array is not numeric.
+    """
+    # Create temporary input file with array values
+    if not pa.types.is_floating(x.type) and not pa.types.is_integer(x.type):
+        raise TypeError(f"Array must be numeric, got {x.type}")
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".txt", delete=False
+    ) as temp_input:
+        csv.write_csv(
+            pa.Table.from_arrays([x], names=["value"]),
+            temp_input.name,
+            write_options=csv.WriteOptions(include_header=False),
+        )
+        temp_input_path = temp_input.name
+
+    # Create temporary directory for output files
+    temp_dir = tempfile.mkdtemp(prefix="khisto_output_")
+    output_file = pathlib.Path(temp_dir) / "histogram.csv"
+    cmd = []
+    try:
+        # Build command arguments
+        cmd = [str(KHISTO_BIN_DIR), temp_input_path, str(output_file)]
+        if granularity != "best":
+            cmd.insert(1, "-e")  # Exploratory mode for all histograms
+
+        # Execute khisto CLI
+        subprocess.run(cmd, capture_output=True, text=True, check=True)
+
+        df = _process_histogram_files(temp_dir, output_file.stem, granularity == "best")
+        if granularity != "best" and granularity is not None:
+            max_granularity = pc.max(df["granularity"]).as_py()
+            selected_granularity = min(granularity, max_granularity)
+            df = df.filter(
+                pc.equal(
+                    df["granularity"], pa.scalar(selected_granularity, type=pa.int32())
+                )
+            )
+        return df
+
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error executing khisto: {e.stderr} \n Command: {' '.join(cmd)}")
+        raise
+    finally:
+        # Clean up temporary input file and directory
+        pathlib.Path(temp_input_path).unlink(missing_ok=True)
+        shutil.rmtree(temp_dir, ignore_errors=True)
