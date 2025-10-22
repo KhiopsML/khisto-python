@@ -35,14 +35,6 @@ class TestPlotlyHistogram:
         assert fig is not None
         # Khisto automatically uses density values
 
-    def test_histogram_cumulative(self):
-        """Test cumulative histogram."""
-        data = np.random.normal(0, 1, 1000)
-        fig = histogram(x=data, cumulative=True)
-
-        assert fig is not None
-        # Cumulative values should be increasing
-
     def test_histogram_with_opacity(self):
         """Test histogram with custom opacity."""
         data = np.random.normal(0, 1, 1000)

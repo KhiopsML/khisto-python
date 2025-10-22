@@ -352,7 +352,6 @@ def histogram(
     log_y: bool = False,
     range_x: Optional[list] = None,
     range_y: Optional[list] = None,
-    cumulative: bool = False,
     granularity: Optional[GranularityT] = "best",
     text_auto: Union[bool, str] = False,
     title: Optional[str] = None,
@@ -468,9 +467,6 @@ def histogram(
     range_y : list, optional
         Range for y-axis as [min, max]. Restricts the visible range of the
         density axis. Example: [0, 0.5]
-    cumulative : bool, default False
-        If True, create cumulative histogram where each bar shows the cumulative
-        sum/density up to that point.
     granularity : int or 'best' or None, default 'best'
         Granularity level to use for histogram binning.
         - 'best': Uses the optimal granularity level (default)
@@ -548,11 +544,6 @@ def histogram(
     ...     barmode='overlay',
     ...     opacity=0.6
     ... )
-    >>> fig.show()
-
-    Create a cumulative distribution plot:
-
-    >>> fig = histogram(x=data, cumulative=True)
     >>> fig.show()
 
     Create a histogram with custom axis ranges and labels:
