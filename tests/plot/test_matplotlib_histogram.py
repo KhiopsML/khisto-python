@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from khisto.plot.matplotlib import histogram
+from khisto.matplotlib import histogram
 
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt

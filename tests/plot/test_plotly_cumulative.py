@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 import plotly.graph_objects as go
-from khisto.plot.plotly import cumulative
+from khisto.plotly import cumulative
 
 
 import pandas as pd

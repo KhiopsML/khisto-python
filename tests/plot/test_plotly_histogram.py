@@ -4,7 +4,7 @@ import pandas as pd
 
 import numpy as np
 
-from khisto.plot.plotly import histogram
+from khisto.plotly import histogram
 
 
 class TestPlotlyHistogram:

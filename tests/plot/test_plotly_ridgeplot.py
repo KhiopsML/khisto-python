@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import pytest
 
-from khisto.plot.plotly import ridgeplot
+from khisto.plotly import ridgeplot
 
 
 class TestPlotlyRidgeplot:

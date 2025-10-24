@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from khisto.plot.matplotlib import cumulative
+from khisto.matplotlib import cumulative
 
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
