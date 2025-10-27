@@ -1,13 +1,25 @@
+"""Density histogram functions using optimal binning.
+
+This module provides functions to compute density-based histograms using the
+Khiops optimal binning algorithm. For cumulative distribution functions (CDF),
+see :mod:`khisto.array.cumulative`.
+"""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
+import narwhals as nw
 
 from khisto.core import compute_histogram
-import pyarrow as pa
-from pyarrow import compute as pc
-import narwhals as nw
-from khisto.utils import get_array_backend, parse_narwhals_series, to_arrow
+
+from ._shared import (
+    build_edge_positions,
+    extract_bin_edges,
+    prepare_input,
+    prepare_input_for_df,
+    validate_granularity,
+)
 
 if TYPE_CHECKING:
     from khisto.typing import ArrayT, GranularityT
@@ -16,72 +28,75 @@ if TYPE_CHECKING:
 
 def histogram(
     x: Union[ArrayT, IntoSeries],
-    cumulative: bool = False,
     granularity: GranularityT = "best",
 ) -> tuple[ArrayT, ArrayT]:
-    """Compute histogram of an array.
+    """Compute density histogram using optimal binning.
+
+    This function computes a density-based histogram. The bins are determined using
+    the Khiops optimal binning algorithm which adapts to the data distribution.
 
     Parameters
     ----------
     x : ArrayT or IntoSeries
-        Array supporting the Python Array API standard, or a list, tuple, array.array,
-        or Narwhals Series.
-    cumulative : bool, default False
-        If True, return cumulative probability distribution instead of densities.
-        The cumulative values are computed by taking into account the length of each bin.
-        The returned densities start with 0.0 as the first value and end with 1.0 with
-        as many values as there are bin edges.
+        Input data. Accepts any Python Array API compliant array, list/tuple,
+        array.array, or a Narwhals Series.
     granularity : int or "best", default "best"
-        Granularity level to use. If "best", uses the best histogram.
-        If an integer, uses the histogram at that granularity level.
-        If the provided granularity is higher than the most granular, uses the most granular.
+        Granularity level to use. "best" selects the heuristic best histogram.
+        If an integer, uses that granularity level (capped to the maximum available).
 
     Returns
     -------
     densities : ArrayT
-        Array of density values for each bin (or cumulative probabilities if cumulative=True).
+        Density values for each bin. For unequal bin widths, the integral of
+        density × width over all bins equals 1.
     bin_edges : ArrayT
-        Sorted array of bin edges (lower and upper bounds).
+        Sorted bin boundary array of length ``len(densities) + 1``.
+
+    See Also
+    --------
+    histogram_df : Histogram as a DataFrame with additional metadata.
+    histogram_bin_edges : Get only the bin edges.
+    khisto.array.cumulative_distribution : Cumulative distribution function.
+
+    Notes
+    -----
+    * This function returns density values, not counts or probabilities.
+    * Bins may have unequal widths; density normalizes for bin width.
+    * For cumulative distributions, use :func:`~khisto.array.cumulative_distribution`.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from khisto.array import histogram
+    >>> data = np.random.normal(0, 1, 1000)
+    >>> densities, edges = histogram(data)
+    >>> # Verify normalization: sum(densities * np.diff(edges)) ≈ 1.0
     """
-    # Detect narwhals Series by type or attribute
-    series = parse_narwhals_series(x)
-    if series is not None:
-        x = series.to_arrow()
-    backend = get_array_backend(x)
-    x = to_arrow(x)
+    arrow_array, backend = prepare_input(x)
+    validate_granularity(granularity)
 
-    if granularity is None:
-        raise ValueError("granularity must be specified as an integer or 'best'")
-    df = compute_histogram(x, granularity=granularity)
+    df = compute_histogram(arrow_array, granularity=granularity)
 
-    lower_bounds = df["lower_bound"]
-    last_upper_bound = df["upper_bound"][-1]
+    lower_bounds, last_upper_bound = extract_bin_edges(df)
+    densities = df["density"].combine_chunks()
+    bin_edges = build_edge_positions(lower_bounds, last_upper_bound)
 
-    if cumulative:
-        densities = pc.cumulative_sum(df["probability"])
-        densities = pa.concat_arrays([pa.array([0.0]), densities.combine_chunks()])
-    else:
-        densities = df["density"].combine_chunks()
-
-    bin_edges = pa.concat_arrays(
-        [lower_bounds.combine_chunks(), pa.array([last_upper_bound])]
-    ).sort()
-
-    bin_edges = backend.asarray(bin_edges)
-    densities = backend.asarray(densities)
-    return densities, bin_edges
+    return backend.asarray(densities), backend.asarray(bin_edges)
 
 
 def histogram_bin_edges(
     x: Union[ArrayT, IntoSeries], granularity: GranularityT = "best"
 ) -> ArrayT:
-    """Compute histogram bin edges of an array.
+    """Compute histogram bin edges using optimal binning.
+
+    This function returns only the bin edge positions determined by the Khiops
+    optimal binning algorithm, without computing densities or probabilities.
 
     Parameters
     ----------
     x : ArrayT or IntoSeries
-        Array supporting the Python Array API standard, or a list, tuple, array.array,
-        or Narwhals Series.
+        Input data. Accepts any Python Array API compliant array, list/tuple,
+        array.array, or a Narwhals Series.
     granularity : int or "best", default "best"
         Granularity level to use. If "best", uses the best histogram.
         If an integer, uses the histogram at that granularity level.
@@ -91,93 +106,80 @@ def histogram_bin_edges(
     -------
     ArrayT
         Sorted array of bin edges (lower and upper bounds).
+
+    See Also
+    --------
+    histogram : Compute density histogram with bin edges.
+    histogram_df : Histogram as a DataFrame.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from khisto.array import histogram_bin_edges
+    >>> data = np.random.normal(0, 1, 1000)
+    >>> edges = histogram_bin_edges(data)
+    >>> # Use edges with np.histogram or other tools
     """
-    series = parse_narwhals_series(x)
-    if series is not None:
-        x = series.to_list()
-    backend = get_array_backend(x)
-    x = to_arrow(x)
+    arrow_array, backend = prepare_input(x)
+    validate_granularity(granularity)
 
-    if granularity is None:
-        raise ValueError("granularity must be specified as an integer or 'best'")
-    df = compute_histogram(x, granularity=granularity)
+    df = compute_histogram(arrow_array, granularity=granularity)
 
-    lower_bounds = df["lower_bound"]
-    last_upper_bound = df["upper_bound"][-1]
+    lower_bounds, last_upper_bound = extract_bin_edges(df)
+    bin_edges = build_edge_positions(lower_bounds, last_upper_bound)
 
-    bin_edges = pa.concat_arrays(
-        [lower_bounds.combine_chunks(), pa.array([last_upper_bound])]
-    ).sort()
-
-    bin_edges = backend.asarray(bin_edges)
-    return bin_edges
+    return backend.asarray(bin_edges)
 
 
-def histogram_series(
+def histogram_df(
     x: Union[ArrayT, IntoSeries],
     granularity: Optional[GranularityT] = None,
-    cumulative: bool = False,
 ) -> nw.DataFrame:
-    """Compute histogram series of an array.
+    """Return detailed histogram information as a DataFrame.
+
+    This function provides comprehensive histogram metadata including bin bounds,
+    frequencies, probabilities, and densities. For cumulative distribution data,
+    use :func:`~khisto.array.cumulative_distribution_df`.
 
     Parameters
     ----------
     x : ArrayT or IntoSeries
-        Array supporting the Python Array API standard, or a list, tuple, array.array,
-        or Narwhals Series.
-    granularity : int or 'best', optional
-        Desired histogram granularity level.
-        If None, all granularities are computed.
-        If 'best', only the best histogram is computed.
-        If an integer, the histogram with that granularity is returned.
-        If the provided granularity is higher than the most granular, uses the most granular.
-    cumulative : bool, default False
-        If True, add a cumulative_probability column to the output.
-        The cumulative values are computed by taking into account the length of each bin.
+        Input data. Accepts any Python Array API compliant array, list/tuple,
+        array.array, or a Narwhals Series.
+    granularity : int | 'best' | None, optional
+        * ``None`` -> return all granularities.
+        * ``'best'`` -> only best histogram.
+        * integer -> that granularity level. If the provided granularity is higher
+          than the most granular, uses the most granular.
 
     Returns
     -------
     nw.DataFrame
-        A Narwhals DataFrame with histogram data including columns:
-        - lower_bound : float64
-            Lower bound of each bin.
-        - upper_bound : float64
-            Upper bound of each bin.
-        - length : float64
-            Length of each bin.
-        - frequency : int64
-            Frequency count in each bin.
-        - probability : float64
-            Probability of each bin.
-        - density : float64
-            Density of each bin.
-        - cumulative_probability : float64
-            Cumulative probability (if cumulative=True).
-        - granularity : int32
-            Histogram granularity level. Start at 0 for the least granular.
-        - is_best : bool
-            Whether this is the best histogram.
-    """
-    backend = pa
-    series = parse_narwhals_series(x)
-    if series is not None:
-        backend = nw.get_native_namespace(series)
-        x = series.to_arrow()
-    x = to_arrow(x)
-    df = compute_histogram(x, granularity=granularity)
-    df = nw.from_arrow(df, backend=backend)
+        Columns include:
 
-    if cumulative:
-        # Compute cumulative sum within each granularity group
-        # Since data is sorted by granularity, we can use a manual approach
-        cumsum_parts = []
-        for granularity in df["granularity"].unique():
-            group_df = df.filter(nw.col("granularity") == granularity)
-            group_df = group_df.with_columns(
-                nw.col("probability").cum_sum().alias("cumulative_probability")
-            )
-            cumsum_parts.append(group_df)
-        df = nw.concat(cumsum_parts)
-        # Sort back to original order if needed
-        df = df.sort("granularity")
-    return df
+        - ``lower_bound``: Lower edge of each bin
+        - ``upper_bound``: Upper edge of each bin
+        - ``length``: Number of values in the bin
+        - ``frequency``: Relative frequency (length / total_count)
+        - ``probability``: Bin probability (same as frequency)
+        - ``density``: Probability density (frequency / bin_width)
+        - ``center``: Bin center position
+        - ``granularity``: Granularity level
+        - ``is_best``: Boolean indicating the best histogram
+
+    See Also
+    --------
+    histogram : Return arrays of densities and bin edges.
+    khisto.array.cumulative_distribution_df : CDF as a DataFrame.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from khisto.array import histogram_df
+    >>> data = np.random.normal(0, 1, 1000)
+    >>> df = histogram_df(data, granularity="best")
+    >>> # df contains detailed bin information
+    """
+    arrow_array, narwhals_backend = prepare_input_for_df(x)
+    table = compute_histogram(arrow_array, granularity=granularity)
+    return nw.from_arrow(table, backend=narwhals_backend)

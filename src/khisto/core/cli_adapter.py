@@ -156,6 +156,14 @@ def _process_histogram_files(
             compute.equal(histogram_df["granularity"], best_granularity),
         )
 
+    histogram_df = histogram_df.append_column(
+        "center",
+        compute.divide(
+            compute.add(histogram_df["lower_bound"], histogram_df["upper_bound"]),
+            pa.scalar(2.0, type=pa.float64()),
+        ),
+    )
+
     return histogram_df
 
 
@@ -182,6 +190,8 @@ def compute_histogram(
             Lower bound of each bin.
         - upper_bound : float64
             Upper bound of each bin.
+        - center : float64
+            Center of each bin.
         - length : float64
             Length of each bin.
         - frequency : int64
@@ -231,6 +241,8 @@ def compute_histogram(
         subprocess.run(cmd, capture_output=True, text=True, check=True)
 
         df = _process_histogram_files(temp_dir, output_file.stem, granularity == "best")
+
+        # Filter by specified granularity if needed. Takes the most granular if too high.
         if granularity != "best" and granularity is not None:
             max_granularity = pc.max(df["granularity"]).as_py()
             selected_granularity = min(granularity, max_granularity)
@@ -239,6 +251,7 @@ def compute_histogram(
                     df["granularity"], pa.scalar(selected_granularity, type=pa.int32())
                 )
             )
+
         return df
 
     except subprocess.CalledProcessError as e:
