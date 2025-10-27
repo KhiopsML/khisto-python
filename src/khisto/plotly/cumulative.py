@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_series
+from khisto.array import histogram_df
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -65,10 +65,8 @@ def _compute_cumulative_for_groups(
         # Determine the actual column name in this group's DataFrame
         value_column_name = x_column_name if x_column_name in group_df.columns else "x"
 
-        # Compute histogram data with cumulative probabilities
-        histo_df = histogram_series(
-            group_df[value_column_name], granularity=granularity, cumulative=True
-        )
+        # Compute histogram data first
+        histo_df = histogram_df(group_df[value_column_name], granularity=granularity)
 
         # Create line plot data points from bin edges
         # For each bin, we need points at lower_bound and upper_bound
@@ -76,6 +74,11 @@ def _compute_cumulative_for_groups(
 
         for g in histo_df["granularity"].unique(maintain_order=True):
             granularity_df = histo_df.filter(nw.col("granularity") == g)
+
+            # Add cumulative probability column
+            granularity_df = granularity_df.with_columns(
+                nw.col("probability").cum_sum().alias("cumulative_probability")
+            )
 
             # Build x and y coordinates for the cumulative line
             x_coords = []

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union, Any
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_series
+from khisto.array import histogram_df
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("matplotlib", extra=Extras.MATPLOTLIB, errors="raise")
@@ -107,32 +107,11 @@ def _compute_histogram_data(
     # Compute histogram for each group
     histo_data = {}
     for group_key, group_df in groups.items():
-        # Pass granularity directly to histogram_series
-        # If None, it returns all granularities; if 'best' or int, it handles it
-        if granularity is None:
-            # Return all granularities
-            histo_df = histogram_series(
-                group_df[x_column],
-                granularity=None,
-                cumulative=False,
-            )
-        elif granularity == "best":
-            # Let histogram_series handle 'best' directly
-            histo_df = histogram_series(
-                group_df[x_column],
-                granularity="best",
-                cumulative=False,
-            )
-        else:
-            # Specific granularity level
-            histo_df = histogram_series(
-                group_df[x_column],
-                granularity=None,
-                cumulative=False,
-            )
-            max_granularity = histo_df["granularity"].max()
-            target_granularity = min(granularity, max_granularity)
-            histo_df = histo_df.filter(nw.col("granularity") == target_granularity)
+        # Use histogram_df which returns histogram data
+        histo_df = histogram_df(
+            group_df[x_column],
+            granularity=granularity,
+        )
 
         histo_data[group_key] = histo_df
 
@@ -356,9 +335,7 @@ def histogram(
 
     See Also
     --------
-    khisto.array.histogram : Compute histogram arrays (densities and bin edges)
-    khisto.array.histogram_bin_edges : Compute only the bin edges
-    khisto.array.histogram_series : Get full histogram information as DataFrame
+    khisto.array.histogram_df : Get histogram information as DataFrame
     khisto.plot.matplotlib.cumulative : Create cumulative distribution plots
     matplotlib.pyplot.hist : Standard matplotlib histogram function
 

@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_series
+from khisto.array import histogram_df
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -67,14 +67,11 @@ def _compute_histogram_for_groups(
         value_column_name = x_column_name if x_column_name in group_df.columns else "x"
 
         # Compute histogram data for all granularities or specified level
-        histo_df = histogram_series(
-            group_df[value_column_name], granularity=granularity
-        )
+        histo_df = histogram_df(group_df[value_column_name], granularity=granularity)
 
         # Add bin center and group identifier columns
         histo_df = (
             histo_df.with_columns(
-                center=((histo_df["lower_bound"] + histo_df["upper_bound"]) / 2),
                 offsetgroup=nw.lit(", ".join(str(v) for v in group_key if v)),
             )
             .rename({"center": "x", "density": "y", "length": "width"})

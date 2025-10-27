@@ -104,6 +104,7 @@ class TestHistogram:
                 expected_columns = {
                     "lower_bound",
                     "upper_bound",
+                    "center",
                     "length",
                     "frequency",
                     "probability",
@@ -354,6 +355,7 @@ class TestProcessHistogramFiles:
         expected_columns = {
             "lower_bound",
             "upper_bound",
+            "center",
             "length",
             "frequency",
             "probability",

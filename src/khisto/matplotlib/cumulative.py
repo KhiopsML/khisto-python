@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union, Any
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_series
+from khisto.array import cumulative_distribution_df
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("matplotlib", extra=Extras.MATPLOTLIB, errors="raise")
@@ -107,55 +107,10 @@ def _compute_cumulative_data(
     # Compute cumulative data for each group
     cumulative_data = {}
     for group_key, group_df in groups.items():
-        # Compute histogram with cumulative probabilities
-        histo_df = histogram_series(
+        # Use cumulative_distribution_df to get cumulative distribution
+        cumulative_df = cumulative_distribution_df(
             group_df[x_column],
-            granularity=None,
-            cumulative=True,
-        )
-
-        # Handle granularity selection
-        if granularity == "best":
-            best_df = histo_df.filter(nw.col("is_best"))
-            # If no "best" granularity found, use the highest granularity
-            if len(best_df) == 0 and len(histo_df) > 0:
-                max_gran = histo_df["granularity"].max()
-                histo_df = histo_df.filter(nw.col("granularity") == max_gran)
-            else:
-                histo_df = best_df
-        elif isinstance(granularity, int):
-            max_granularity = histo_df["granularity"].max()
-            target_granularity = min(granularity, max_granularity)
-            histo_df = histo_df.filter(nw.col("granularity") == target_granularity)
-
-        # Skip if no data after filtering
-        if len(histo_df) == 0:
-            continue
-
-        # Create line plot data points from bin edges
-        # For each bin, we need points at lower_bound and upper_bound
-        x_coords = []
-        y_coords = []
-
-        # Add starting point (0 probability at first lower bound)
-        first_lower = histo_df["lower_bound"][0]
-        x_coords.append(first_lower)
-        y_coords.append(0.0)
-
-        # Add points at each upper bound with cumulative probability
-        for i in range(len(histo_df)):
-            upper = histo_df["upper_bound"][i]
-            cum_prob = histo_df["cumulative_probability"][i]
-            x_coords.append(upper)
-            y_coords.append(cum_prob)
-
-        # Create dataframe for this group
-        cumulative_df = nw.from_dict(
-            {
-                "x": x_coords,
-                "y": y_coords,
-            },
-            backend=nw.get_native_namespace(histo_df),
+            granularity=granularity,
         )
 
         cumulative_data[group_key] = cumulative_df
@@ -176,7 +131,7 @@ def _plot_cumulative_line(
     ax : Axes
         Matplotlib axes to plot on
     cumulative_df : nw.DataFrame
-        Cumulative distribution data
+        Cumulative distribution data with 'position' and 'cumulative_probability'
     orientation : {'vertical', 'horizontal'}
         Line orientation
     **kwargs : dict
@@ -188,8 +143,8 @@ def _plot_cumulative_line(
         The plotted line object
     """
     # Extract cumulative data
-    x_coords = cumulative_df["x"].to_list()
-    y_coords = cumulative_df["y"].to_list()
+    x_coords = cumulative_df["position"].to_list()
+    y_coords = cumulative_df["cumulative_probability"].to_list()
 
     # Plot line based on orientation
     if orientation == "vertical":
@@ -394,8 +349,7 @@ def cumulative(
 
     See Also
     --------
-    khisto.array.histogram : Compute histogram arrays (densities and bin edges)
-    khisto.array.histogram_series : Get full histogram information as DataFrame
+    khisto.array.cumulative_distribution_df : Get cumulative distribution as DataFrame
     khisto.plot.matplotlib.histogram : Create histogram plots with optimal binning
     matplotlib.pyplot.plot : Standard matplotlib line plotting function
 

@@ -12,6 +12,18 @@ KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
 __version__ = version("khisto")
 
-from .array import histogram, histogram_series, histogram_bin_edges  # noqa: E402
+from .array import (  # noqa: E402
+    histogram,
+    cumulative_distribution,
+    histogram_bin_edges,
+    histogram_df,
+    cumulative_distribution_df,
+)
 
-__all__ = ["histogram", "histogram_series", "histogram_bin_edges"]
+__all__ = [
+    "histogram",
+    "cumulative_distribution",
+    "histogram_bin_edges",
+    "histogram_df",
+    "cumulative_distribution_df",
+]
