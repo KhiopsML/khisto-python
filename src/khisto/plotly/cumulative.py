@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_df
+from khisto.array import cumulative_distribution_df
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -65,48 +65,25 @@ def _compute_cumulative_for_groups(
         # Determine the actual column name in this group's DataFrame
         value_column_name = x_column_name if x_column_name in group_df.columns else "x"
 
-        # Compute histogram data first
-        histo_df = histogram_df(group_df[value_column_name], granularity=granularity)
+        # Compute cumulative distribution directly
+        cdf_df = cumulative_distribution_df(
+            group_df[value_column_name], granularity=granularity
+        )
 
-        # Create line plot data points from bin edges
-        # For each bin, we need points at lower_bound and upper_bound
+        # Create line plot data points from CDF
         cumulative_points = []
 
-        for g in histo_df["granularity"].unique(maintain_order=True):
-            granularity_df = histo_df.filter(nw.col("granularity") == g)
+        for g in cdf_df["granularity"].unique(maintain_order=True):
+            granularity_df = cdf_df.filter(nw.col("granularity") == g)
 
-            # Add cumulative probability column
-            granularity_df = granularity_df.with_columns(
-                nw.col("probability").cum_sum().alias("cumulative_probability")
+            # Rename position to x and cumulative_probability to y for plotting
+            points_df = granularity_df.rename(
+                {"position": "x", "cumulative_probability": "y"}
             )
 
-            # Build x and y coordinates for the cumulative line
-            x_coords = []
-            y_coords = []
-
-            # Add starting point (0 probability at first lower bound)
-            first_lower = granularity_df["lower_bound"][0]
-            x_coords.append(first_lower)
-            y_coords.append(0.0)
-
-            # Add points at each upper bound with cumulative probability
-            for i in range(len(granularity_df)):
-                upper = granularity_df["upper_bound"][i]
-                cum_prob = granularity_df["cumulative_probability"][i]
-                x_coords.append(upper)
-                y_coords.append(cum_prob)
-
-            # Create dataframe for this granularity level
-            points_df = nw.from_dict(
-                {
-                    "x": x_coords,
-                    "y": y_coords,
-                    "granularity": [g] * len(x_coords),
-                    "is_best": [granularity_df["is_best"][0]] * len(x_coords),
-                    "offsetgroup": [", ".join(str(v) for v in group_key if v)]
-                    * len(x_coords),
-                },
-                backend=nw.get_native_namespace(granularity_df),
+            # Add offsetgroup for proper trace grouping
+            points_df = points_df.with_columns(
+                offsetgroup=nw.lit(", ".join(str(v) for v in group_key if v))
             )
 
             # Add group identifiers
@@ -541,8 +518,8 @@ def cumulative(
 
     See Also
     --------
-    khisto.array.histogram : Compute histogram arrays (densities and bin edges)
-    khisto.array.histogram_series : Get full histogram information as DataFrame
+    khisto.array.cumulative_distribution : Compute CDF arrays
+    khisto.array.cumulative_distribution_df : Get full CDF information as DataFrame
     khisto.plot.plotly.histogram : Create histogram plots with optimal binning
 
     Notes
