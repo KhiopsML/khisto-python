@@ -15,7 +15,7 @@ import pyarrow.compute as pc
 
 from khisto.core import compute_histogram
 
-from ._shared import (
+from .._shared import (
     build_edge_positions,
     extract_bin_edges,
     prepare_input,
@@ -137,6 +137,7 @@ def histogram(
     column_name = "density" if density else "frequency"
     output_column = df[column_name].combine_chunks()
 
+    print(backend, "rrrrrrrrrr")
     return backend.asarray(output_column), backend.asarray(bin_edges)
 
 

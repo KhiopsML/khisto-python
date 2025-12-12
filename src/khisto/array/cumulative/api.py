@@ -10,285 +10,22 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Literal, Optional, Union, cast, overload
 
 import narwhals as nw
-import numpy as np
 import pyarrow as pa
-from pyarrow import compute as pc
+import pyarrow.compute as pc
 
 from khisto.core import compute_histogram
 
-from ._shared import (
-    build_edge_positions,
-    extract_bin_edges,
-    prepare_input,
-    validate_granularity,
+from .._shared import prepare_input, validate_granularity
+from .core import ECDFResult, ECDFResultCollection
+from .utils import (
+    _compute_cdf_positions,
+    _compute_cdf_values,
+    _create_granularity_cdf_df,
 )
 
 if TYPE_CHECKING:
     from khisto.typing import ArrayT, GranularityT
     from narwhals.typing import IntoSeries
-
-
-# ============================================================================
-# ECDF Class for evaluating CDF at arbitrary points
-# ============================================================================
-
-
-class ECDF:
-    """Empirical Cumulative Distribution Function with linear interpolation.
-
-    This class represents an ECDF computed from optimal histogram bins.
-    It supports evaluation at arbitrary points using linear interpolation
-    between the discrete CDF values at bin edges.
-
-    Parameters
-    ----------
-    positions : np.ndarray
-        Sorted array of bin edge positions.
-    cdf_values : np.ndarray
-        CDF values at each position (same length as positions).
-    granularity : int
-        The granularity level used to compute this ECDF.
-    is_best : bool
-        Whether this is the "best" granularity according to heuristics.
-
-    Attributes
-    ----------
-    positions : np.ndarray
-        The bin edge positions.
-    cdf_values : np.ndarray
-        The CDF values at each bin edge.
-    granularity : int
-        The granularity level.
-    is_best : bool
-        Whether this is the best granularity.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from khisto.array import ecdf
-    >>> data = np.random.normal(0, 1, 1000)
-    >>> cdf_func = ecdf(data)
-    >>> # Evaluate at single point
-    >>> cdf_func(0.0)
-    >>> # Evaluate at multiple points
-    >>> cdf_func(np.array([-1, 0, 1]))
-    """
-
-    def __init__(
-        self,
-        positions: np.ndarray,
-        cdf_values: np.ndarray,
-        granularity: int,
-        is_best: bool,
-    ) -> None:
-        self._positions = positions
-        self._cdf_values = cdf_values
-        self._granularity = granularity
-        self._is_best = is_best
-
-    @property
-    def positions(self) -> np.ndarray:
-        """Bin edge positions."""
-        return self._positions
-
-    @property
-    def cdf_values(self) -> np.ndarray:
-        """CDF values at each bin edge."""
-        return self._cdf_values
-
-    @property
-    def granularity(self) -> int:
-        """Granularity level used for this ECDF."""
-        return self._granularity
-
-    @property
-    def is_best(self) -> bool:
-        """Whether this is the best granularity."""
-        return self._is_best
-
-    def __call__(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        """Evaluate the ECDF at given point(s) using linear interpolation.
-
-        Parameters
-        ----------
-        x : float or np.ndarray
-            Point(s) at which to evaluate the CDF.
-
-        Returns
-        -------
-        float or np.ndarray
-            CDF value(s) at the given point(s). Values outside the data range
-            are clipped to 0.0 (below minimum) or 1.0 (above maximum).
-
-        Examples
-        --------
-        >>> cdf_func = ecdf(data)
-        >>> cdf_func(0.5)  # Single point
-        0.723
-        >>> cdf_func(np.array([0, 1, 2]))  # Multiple points
-        array([0.5, 0.84, 0.98])
-        """
-        return self.evaluate(x)
-
-    def evaluate(self, x: Union[float, np.ndarray]) -> Union[float, np.ndarray]:
-        """Evaluate the ECDF at given point(s) using linear interpolation.
-
-        Parameters
-        ----------
-        x : float or np.ndarray
-            Point(s) at which to evaluate the CDF.
-
-        Returns
-        -------
-        float or np.ndarray
-            CDF value(s) at the given point(s). Values outside the data range
-            are clipped to 0.0 (below minimum) or 1.0 (above maximum).
-        """
-        return np.interp(x, self._positions, self._cdf_values)
-
-    def __repr__(self) -> str:
-        return (
-            f"ECDF(granularity={self._granularity}, is_best={self._is_best}, "
-            f"n_points={len(self._positions)}, "
-            f"range=[{self._positions[0]:.4g}, {self._positions[-1]:.4g}])"
-        )
-
-
-class ECDFCollection:
-    """Collection of ECDF objects for multiple granularity levels.
-
-    This class holds multiple ECDF objects, one for each granularity level,
-    and provides convenient access to them.
-
-    Parameters
-    ----------
-    ecdfs : list[ECDF]
-        List of ECDF objects, one per granularity level.
-
-    Attributes
-    ----------
-    granularities : list[int]
-        List of available granularity levels.
-    best : ECDF
-        The ECDF for the "best" granularity level.
-
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from khisto.array import ecdf
-    >>> data = np.random.normal(0, 1, 1000)
-    >>> cdf_collection = ecdf(data, granularity=None)
-    >>> # Access by granularity
-    >>> cdf_collection[0]  # Granularity 0
-    >>> cdf_collection[2]  # Granularity 2
-    >>> # Access best
-    >>> cdf_collection.best
-    >>> # Evaluate best at a point
-    >>> cdf_collection.best(0.0)
-    """
-
-    def __init__(self, ecdfs: list[ECDF]) -> None:
-        self._ecdfs = {e.granularity: e for e in ecdfs}
-        self._best = next((e for e in ecdfs if e.is_best), ecdfs[-1])
-        self._granularities = sorted(self._ecdfs.keys())
-
-    @property
-    def granularities(self) -> list[int]:
-        """List of available granularity levels."""
-        return self._granularities
-
-    @property
-    def best(self) -> ECDF:
-        """The ECDF for the best granularity level."""
-        return self._best
-
-    def __getitem__(self, granularity: int) -> ECDF:
-        """Get ECDF for a specific granularity level.
-
-        Parameters
-        ----------
-        granularity : int
-            The granularity level.
-
-        Returns
-        -------
-        ECDF
-            The ECDF for that granularity.
-
-        Raises
-        ------
-        KeyError
-            If the granularity level doesn't exist.
-        """
-        if granularity not in self._ecdfs:
-            raise KeyError(
-                f"Granularity {granularity} not found. Available: {self._granularities}"
-            )
-        return self._ecdfs[granularity]
-
-    def __iter__(self):
-        """Iterate over ECDFs in order of granularity."""
-        for g in self._granularities:
-            yield self._ecdfs[g]
-
-    def __len__(self) -> int:
-        """Number of granularity levels."""
-        return len(self._ecdfs)
-
-    def __repr__(self) -> str:
-        return (
-            f"ECDFCollection(n_granularities={len(self._ecdfs)}, "
-            f"granularities={self._granularities}, "
-            f"best_granularity={self._best.granularity})"
-        )
-
-
-# ============================================================================
-# Internal helper functions
-# ============================================================================
-
-
-def _compute_cdf_values(df: pa.Table, density: bool = True) -> pa.Array:
-    """Compute cumulative distribution function values from histogram bins.
-
-    Parameters
-    ----------
-    df : pa.Table
-        Histogram table containing probability and frequency columns.
-    density : bool, default True
-        If True, accumulate probability values (result ranges from 0.0 to 1.0).
-        If False, accumulate frequency counts.
-
-    Returns
-    -------
-    pa.Array
-        CDF values aligned with bin edges (prepended with 0.0 or 0).
-    """
-    column_name = "probability" if density else "frequency"
-    values = df[column_name].combine_chunks()
-    cumsum = pc.cumulative_sum(values)
-    # cumsum[i] corresponds to cumulative value up to and including bin i.
-    # Build edge-aligned CDF: prepend 0.0 (or 0 for frequency), append final value.
-    if not density:
-        return pa.concat_arrays([pa.array([0], type=values.type), cumsum])
-    return pa.concat_arrays([pa.array([0.0]), cumsum])
-
-
-def _compute_cdf_positions(df: pa.Table) -> pa.Array:
-    """Compute position array for CDF values.
-
-    Parameters
-    ----------
-    df : pa.Table
-        Histogram table containing lower_bound and upper_bound columns.
-
-    Returns
-    -------
-    pa.Array
-        Complete position array including all bin edges.
-    """
-    lower_bounds, last_upper_bound = extract_bin_edges(df)
-    return build_edge_positions(lower_bounds, last_upper_bound)
 
 
 # ============================================================================
@@ -300,20 +37,20 @@ def _compute_cdf_positions(df: pa.Table) -> pa.Array:
 def ecdf(
     x: Union[ArrayT, IntoSeries],
     granularity: None,
-) -> ECDFCollection: ...
+) -> ECDFResultCollection: ...
 
 
 @overload
 def ecdf(
     x: Union[ArrayT, IntoSeries],
     granularity: Union[int, Literal["best"]] = ...,
-) -> ECDF: ...
+) -> ECDFResult: ...
 
 
 def ecdf(
     x: Union[ArrayT, IntoSeries],
     granularity: Optional[GranularityT] = "best",
-) -> Union[ECDF, ECDFCollection]:
+) -> Union[ECDFResult, ECDFResultCollection]:
     """Compute an empirical CDF that can be evaluated at any point.
 
     Returns an ECDF object (or collection of objects) that supports evaluation
@@ -360,7 +97,7 @@ def ecdf(
     >>> cdf_collection.best(0.0)  # Use best granularity
     >>> cdf_collection[2](0.0)  # Use granularity level 2
     """
-    arrow_array, _ = prepare_input(x)
+    arrow_array, backend = prepare_input(x)
 
     validate_granularity(granularity)
     df = compute_histogram(arrow_array, granularity=granularity)
@@ -387,15 +124,15 @@ def ecdf(
             positions = _compute_cdf_positions(g_df)
 
             ecdfs.append(
-                ECDF(
-                    positions=positions.to_numpy(),
-                    cdf_values=cdf_vals.to_numpy(),
+                ECDFResult(
+                    positions=backend.asarray(positions),
+                    cdf_values=backend.asarray(cdf_vals),
                     granularity=g,
                     is_best=(g == best_granularity),
                 )
             )
 
-        return ECDFCollection(ecdfs)
+        return ECDFResultCollection(ecdfs)
 
     # Single granularity
     cdf_vals = _compute_cdf_values(df, density=True)
@@ -405,9 +142,9 @@ def ecdf(
     is_best = df["is_best"][0].as_py() if "is_best" in df.column_names else True
     gran = df["granularity"][0].as_py() if "granularity" in df.column_names else 0
 
-    return ECDF(
-        positions=positions.to_numpy(),
-        cdf_values=cdf_vals.to_numpy(),
+    return ECDFResult(
+        positions=backend.asarray(positions),
+        cdf_values=backend.asarray(cdf_vals),
         granularity=gran,
         is_best=is_best,
     )
@@ -518,45 +255,6 @@ def ecdf_values(
     return backend.asarray(cdf_vals), backend.asarray(positions)
 
 
-def _create_granularity_cdf_df(gran_df: nw.DataFrame) -> nw.DataFrame:
-    """Create CDF DataFrame for a single granularity level.
-
-    Parameters
-    ----------
-    gran_df : nw.DataFrame
-        Histogram DataFrame for one granularity level.
-
-    Returns
-    -------
-    nw.DataFrame
-        CDF DataFrame with position, cumulative_probability, and cumulative_frequency columns.
-    """
-    # Add cumulative probability and cumulative frequency columns
-    gran_df = gran_df.with_columns(
-        nw.col("probability").cum_sum().alias("cumulative_probability"),
-        nw.col("frequency").cum_sum().alias("cumulative_frequency"),
-    )
-
-    # Drop unnecessary columns and prepare for edge alignment
-    gran_df = gran_df.drop(["length", "frequency", "probability", "density", "center"])
-    gran_df = gran_df.rename({"upper_bound": "position"})
-
-    # Create first row with lower bound and 0 cumulative values
-    first_row = (
-        gran_df.head(1)
-        .with_columns(
-            nw.lit(0.0).alias("cumulative_probability"),
-            nw.lit(0).cast(nw.Int64).alias("cumulative_frequency"),
-        )
-        .drop("position")
-        .rename({"lower_bound": "position"})
-    )
-
-    # Drop lower_bound from main dataframe and concatenate with first row
-    gran_df = gran_df.drop("lower_bound")
-    return nw.concat([first_row, gran_df])
-
-
 # ============================================================================
 # Public API: ecdf_values_table (returns DataFrame)
 # ============================================================================
@@ -626,7 +324,7 @@ def ecdf_values_table(
     >>> # cdf_df has columns: position, cumulative_probability, cumulative_frequency, ...
     """
     # Import here to avoid circular dependency
-    from .histogram import histogram_table
+    from khisto.array.histogram import histogram_table
 
     df = histogram_table(x, granularity=granularity)
 

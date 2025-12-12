@@ -34,16 +34,16 @@ def prepare_input(x: Union[ArrayT, IntoSeries]) -> tuple[pa.Array, ModuleType]:
     backend : object
         The original array backend for result conversion.
     """
-    series = parse_narwhals_series(x)
-    if series is not None:
-        x = series.to_arrow()
     backend = get_array_backend(x)
+
+    if isinstance(x, (float, int, complex)):
+        x = [x]
     arrow_array = to_arrow(x)
     return arrow_array, backend
 
 
 def validate_granularity(granularity: Optional[GranularityT]) -> None:
-    """Validate that granularity parameter is not None.
+    """Validate that granularity parameter.
 
     Parameters
     ----------
@@ -55,8 +55,14 @@ def validate_granularity(granularity: Optional[GranularityT]) -> None:
     ValueError
         If granularity is None.
     """
-    if granularity is None:
-        raise ValueError("granularity must be specified as an integer or 'best'")
+    if isinstance(granularity, (float, int)):
+        if granularity < 0:
+            raise ValueError("Granularity cannot be negative.")
+    elif isinstance(granularity, str):
+        if granularity != "best":
+            raise ValueError('Granularity string must be "best".')
+    elif granularity is not None:
+        raise ValueError("Granularity must be an integer, 'best', or None.")
 
 
 def extract_bin_edges(df: pa.Table) -> tuple[pa.Array, float]:
