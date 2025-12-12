@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from khisto.matplotlib import cumulative
+from khisto.matplotlib import ecdf
 
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
@@ -18,7 +18,7 @@ class TestCumulativeBasic:
         """Test cumulative plot with simple numpy array."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax)
+        line = ecdf(x=data, ax=ax)
 
         assert line is not None
         # line is a Line2D when hue is None
@@ -31,7 +31,7 @@ class TestCumulativeBasic:
     def test_without_ax(self):
         """Test cumulative plot without explicit ax parameter."""
         data = np.random.normal(0, 1, 1000)
-        line = cumulative(x=data)
+        line = ecdf(x=data)
 
         assert line is not None
         if isinstance(line, list):
@@ -43,7 +43,7 @@ class TestCumulativeBasic:
         """Test cumulative plot with title."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax, title="Test Cumulative")
+        ecdf(x=data, ax=ax, title="Test Cumulative")
 
         assert ax.get_title() == "Test Cumulative"
         plt.close(fig)
@@ -52,7 +52,7 @@ class TestCumulativeBasic:
         """Test horizontal cumulative plot."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, orientation="horizontal")
+        line = ecdf(x=data, ax=ax, orientation="horizontal")
 
         assert line is not None
         if isinstance(line, list):
@@ -64,7 +64,7 @@ class TestCumulativeBasic:
         """Test that cumulative values go from 0 to 1."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax)
+        line = ecdf(x=data, ax=ax)
 
         assert line is not None
         if isinstance(line, list):
@@ -92,7 +92,7 @@ class TestCumulativeWithDataFrame:
         )
 
         fig, ax = plt.subplots()
-        lines = cumulative(data=df, x="value", ax=ax)
+        lines = ecdf(data=df, x="value", ax=ax)
 
         assert lines is not None
         plt.close(fig)
@@ -109,7 +109,7 @@ class TestCumulativeWithDataFrame:
         )
 
         fig, ax = plt.subplots()
-        lines = cumulative(data=df, x="value", hue="category", ax=ax)
+        lines = ecdf(data=df, x="value", hue="category", ax=ax)
         assert lines is not None
         assert isinstance(lines, list)
         assert len(lines) == 2
@@ -127,7 +127,7 @@ class TestCumulativeWithDataFrame:
         )
 
         fig, ax = plt.subplots()
-        lines = cumulative(data=df, x="value", ax=ax)
+        lines = ecdf(data=df, x="value", ax=ax)
 
         assert lines is not None
         plt.close(fig)
@@ -140,7 +140,7 @@ class TestCumulativeStyling:
         """Test cumulative plot with custom color."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, color="red")
+        line = ecdf(x=data, ax=ax, color="red")
         assert line is not None
         if isinstance(line, list):
             assert len(line) > 0
@@ -153,7 +153,7 @@ class TestCumulativeStyling:
         """Test cumulative plot with alpha transparency."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, alpha=0.5)
+        line = ecdf(x=data, ax=ax, alpha=0.5)
 
         assert line is not None
         if isinstance(line, list):
@@ -166,7 +166,7 @@ class TestCumulativeStyling:
         """Test cumulative plot with custom line width."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, linewidth=2.0)
+        line = ecdf(x=data, ax=ax, linewidth=2.0)
 
         assert line is not None
         if isinstance(line, list):
@@ -179,7 +179,7 @@ class TestCumulativeStyling:
         """Test cumulative plot with custom line style."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, linestyle="--")
+        line = ecdf(x=data, ax=ax, linestyle="--")
 
         assert line is not None
         if isinstance(line, list):
@@ -192,7 +192,7 @@ class TestCumulativeStyling:
         """Test cumulative plot with markers."""
         data = np.random.normal(0, 1, 100)  # Smaller dataset for markers
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, marker="o", markevery=10)
+        line = ecdf(x=data, ax=ax, marker="o", markevery=10)
         assert line is not None
         if isinstance(line, list):
             assert len(line) > 0
@@ -209,7 +209,7 @@ class TestCumulativeLabels:
         """Test cumulative plot with custom x label."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax, xlabel="Custom X")
+        ecdf(x=data, ax=ax, xlabel="Custom X")
 
         assert ax.get_xlabel() == "Custom X"
         plt.close(fig)
@@ -218,7 +218,7 @@ class TestCumulativeLabels:
         """Test cumulative plot with custom y label."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax, ylabel="Custom Y")
+        ecdf(x=data, ax=ax, ylabel="Custom Y")
 
         assert ax.get_ylabel() == "Custom Y"
         plt.close(fig)
@@ -227,7 +227,7 @@ class TestCumulativeLabels:
         """Test default labels for vertical cumulative plot."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax)
+        ecdf(x=data, ax=ax)
 
         assert ax.get_xlabel() == "_value"
         assert ax.get_ylabel() == "Cumulative Probability"
@@ -237,7 +237,7 @@ class TestCumulativeLabels:
         """Test default labels for horizontal cumulative plot."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax, orientation="horizontal")
+        ecdf(x=data, ax=ax, orientation="horizontal")
 
         assert ax.get_ylabel() == "_value"
         assert ax.get_xlabel() == "Cumulative Probability"
@@ -251,7 +251,7 @@ class TestCumulativeGranularity:
         """Test cumulative plot with best granularity."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, granularity="best")
+        line = ecdf(x=data, ax=ax, granularity="best")
 
         assert line is not None
         if isinstance(line, list):
@@ -263,7 +263,7 @@ class TestCumulativeGranularity:
         """Test cumulative plot with specific granularity level."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        line = cumulative(x=data, ax=ax, granularity=0)
+        line = ecdf(x=data, ax=ax, granularity=0)
 
         assert line is not None
         if isinstance(line, list):
@@ -279,14 +279,14 @@ class TestCumulativeErrors:
         """Test that error is raised when no data provided."""
         fig, ax = plt.subplots()
         with pytest.raises(ValueError, match="Either 'data' or 'x' must be provided"):
-            cumulative(ax=ax)
+            ecdf(ax=ax)
         plt.close(fig)
 
     def test_string_x_without_data_error(self):
         """Test that error is raised when x is string but no data."""
         fig, ax = plt.subplots()
         with pytest.raises(ValueError, match="x must be an array"):
-            cumulative(x="column_name", ax=ax)
+            ecdf(x="column_name", ax=ax)
         plt.close(fig)
 
     def test_no_x_with_data_error(self):
@@ -296,7 +296,7 @@ class TestCumulativeErrors:
 
         fig, ax = plt.subplots()
         with pytest.raises(ValueError, match="x column name must be specified"):
-            cumulative(data=df, ax=ax)
+            ecdf(data=df, ax=ax)
         plt.close(fig)
 
 
@@ -307,7 +307,7 @@ class TestCumulativeAxisRanges:
         """Test that vertical cumulative plot has correct y-axis range."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax)
+        ecdf(x=data, ax=ax)
 
         y_min, y_max = ax.get_ylim()
         assert y_min == pytest.approx(-0.05, abs=0.01)
@@ -318,7 +318,7 @@ class TestCumulativeAxisRanges:
         """Test that horizontal cumulative plot has correct x-axis range."""
         data = np.random.normal(0, 1, 1000)
         fig, ax = plt.subplots()
-        cumulative(x=data, ax=ax, orientation="horizontal")
+        ecdf(x=data, ax=ax, orientation="horizontal")
 
         x_min, x_max = ax.get_xlim()
         assert x_min == pytest.approx(-0.05, abs=0.01)

@@ -1,5 +1,5 @@
 from .histogram import histogram
 from .ridgeplot import ridgeplot
-from .cumulative import cumulative
+from .ecdf import ecdf
 
-__all__ = ["histogram", "ridgeplot", "cumulative"]
+__all__ = ["histogram", "ridgeplot", "ecdf"]

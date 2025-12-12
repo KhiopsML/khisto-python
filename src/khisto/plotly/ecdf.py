@@ -271,7 +271,7 @@ def _configure_animation_axes(
         fig.update_xaxes(range=(-0.05, 1.05))
 
 
-def cumulative(
+def ecdf(
     data_frame: Optional[IntoDataFrame] = None,
     x: Optional[Union[str, ArrayT, IntoSeries]] = None,
     y: Optional[Union[str, ArrayT, IntoSeries]] = None,

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 import plotly.graph_objects as go
-from khisto.plotly import cumulative
+from khisto.plotly import ecdf
 
 
 import pandas as pd
@@ -17,7 +17,7 @@ class TestCumulativeBasic:
     def test_cumulative_simple_array(self):
         """Test cumulative with a simple NumPy array."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data)
+        fig = ecdf(x=data)
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -26,7 +26,7 @@ class TestCumulativeBasic:
     def test_cumulative_with_list(self):
         """Test cumulative with a Python list."""
         data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        fig = cumulative(x=data)
+        fig = ecdf(x=data)
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -34,7 +34,7 @@ class TestCumulativeBasic:
     def test_cumulative_orientation_vertical(self):
         """Test cumulative with vertical orientation."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, orientation="v")
+        fig = ecdf(x=data, orientation="v")
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -42,7 +42,7 @@ class TestCumulativeBasic:
     def test_cumulative_orientation_horizontal(self):
         """Test cumulative with horizontal orientation."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, orientation="h")
+        fig = ecdf(x=data, orientation="h")
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -54,7 +54,7 @@ class TestCumulativeGranularity:
     def test_cumulative_granularity_best(self):
         """Test cumulative with best granularity."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, granularity="best")
+        fig = ecdf(x=data, granularity="best")
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -62,7 +62,7 @@ class TestCumulativeGranularity:
     def test_cumulative_granularity_int(self):
         """Test cumulative with integer granularity."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, granularity=2)
+        fig = ecdf(x=data, granularity=2)
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -70,7 +70,7 @@ class TestCumulativeGranularity:
     def test_cumulative_granularity_none_creates_animation(self):
         """Test that granularity=None creates animation frames."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, granularity=None)
+        fig = ecdf(x=data, granularity=None)
 
         assert isinstance(fig, go.Figure)
         assert hasattr(fig, "frames")
@@ -83,7 +83,7 @@ class TestCumulativeStyling:
     def test_cumulative_with_title(self):
         """Test cumulative with custom title."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, title="Test CDF")
+        fig = ecdf(x=data, title="Test CDF")
 
         assert isinstance(fig, go.Figure)
         assert fig.layout.title.text == "Test CDF"
@@ -91,7 +91,7 @@ class TestCumulativeStyling:
     def test_cumulative_with_template(self):
         """Test cumulative with custom template."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, template="plotly_white")
+        fig = ecdf(x=data, template="plotly_white")
 
         assert isinstance(fig, go.Figure)
         assert fig.layout.template is not None
@@ -99,7 +99,7 @@ class TestCumulativeStyling:
     def test_cumulative_with_size(self):
         """Test cumulative with custom width and height."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, width=800, height=600)
+        fig = ecdf(x=data, width=800, height=600)
 
         assert isinstance(fig, go.Figure)
         assert fig.layout.width == 800
@@ -108,7 +108,7 @@ class TestCumulativeStyling:
     def test_cumulative_with_markers(self):
         """Test cumulative with markers enabled."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, markers=True)
+        fig = ecdf(x=data, markers=True)
 
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
@@ -118,7 +118,7 @@ class TestCumulativeStyling:
         data = np.random.normal(0, 1, 100)
 
         for line_shape in ["linear", "hv", "vh", "spline"]:
-            fig = cumulative(x=data, line_shape=line_shape)  # type: ignore[arg-type]
+            fig = ecdf(x=data, line_shape=line_shape)  # type: ignore[arg-type]
             assert isinstance(fig, go.Figure)
 
 
@@ -134,7 +134,7 @@ class TestCumulativeDataFrame:
             }
         )
 
-        fig = cumulative(df, x="value")  # type: ignore[arg-type]
+        fig = ecdf(df, x="value")  # type: ignore[arg-type]
         assert isinstance(fig, go.Figure)
         assert len(fig.data) > 0
 
@@ -147,7 +147,7 @@ class TestCumulativeDataFrame:
             }
         )
 
-        fig = cumulative(df, x="value", color="category")  # type: ignore[arg-type]
+        fig = ecdf(df, x="value", color="category")  # type: ignore[arg-type]
         assert isinstance(fig, go.Figure)
         # Should have multiple traces for different categories
         assert len(fig.data) >= 1
@@ -161,7 +161,7 @@ class TestCumulativeDataFrame:
             }
         )
 
-        fig = cumulative(df, x="value", facet_col="category")  # type: ignore[arg-type]
+        fig = ecdf(df, x="value", facet_col="category")  # type: ignore[arg-type]
         assert isinstance(fig, go.Figure)
 
     def test_cumulative_with_line_dash(self):
@@ -173,7 +173,7 @@ class TestCumulativeDataFrame:
             }
         )
 
-        fig = cumulative(df, x="value", line_dash="category")  # type: ignore[arg-type]
+        fig = ecdf(df, x="value", line_dash="category")  # type: ignore[arg-type]
         assert isinstance(fig, go.Figure)
 
 
@@ -183,28 +183,28 @@ class TestCumulativeAxisConfiguration:
     def test_cumulative_log_x(self):
         """Test cumulative with logarithmic x-axis."""
         data = np.random.lognormal(0, 1, 100)
-        fig = cumulative(x=data, log_x=True)
+        fig = ecdf(x=data, log_x=True)
 
         assert isinstance(fig, go.Figure)
 
     def test_cumulative_range_x(self):
         """Test cumulative with custom x-axis range."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, range_x=[-3, 3])
+        fig = ecdf(x=data, range_x=[-3, 3])
 
         assert isinstance(fig, go.Figure)
 
     def test_cumulative_range_y(self):
         """Test cumulative with custom y-axis range."""
         data = np.random.normal(0, 1, 100)
-        fig = cumulative(x=data, range_y=[0, 1])
+        fig = ecdf(x=data, range_y=[0, 1])
 
         assert isinstance(fig, go.Figure)
 
     def test_cumulative_with_labels(self):
         """Test cumulative with custom axis labels."""
         df = pd.DataFrame({"value": np.random.normal(0, 1, 100)})
-        fig = cumulative(
+        fig = ecdf(
             df,  # type: ignore[arg-type]
             x="value",
             labels={"value": "Temperature (°C)", "y": "Cumulative Probability"},
@@ -223,7 +223,7 @@ class TestCumulativeEdgeCases:
         # This might raise an error or return an empty figure
         # depending on the implementation
         try:
-            fig = cumulative(x=data)
+            fig = ecdf(x=data)
             # If it doesn't raise, check it's a valid figure
             assert isinstance(fig, go.Figure)
         except (ValueError, IndexError):
@@ -235,7 +235,7 @@ class TestCumulativeEdgeCases:
         data = np.array([5.0])
 
         try:
-            fig = cumulative(x=data)
+            fig = ecdf(x=data)
             assert isinstance(fig, go.Figure)
         except (ValueError, IndexError):
             # It's acceptable to raise an error for single value
@@ -245,5 +245,5 @@ class TestCumulativeEdgeCases:
         """Test cumulative with all constant values."""
         data = np.ones(100)
 
-        fig = cumulative(x=data)
+        fig = ecdf(x=data)
         assert isinstance(fig, go.Figure)

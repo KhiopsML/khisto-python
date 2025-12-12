@@ -122,6 +122,7 @@ def _plot_cumulative_line(
     ax: Axes,
     cumulative_df: nw.DataFrame,
     orientation: Literal["vertical", "horizontal"],
+    value_column: str = "cumulative_probability",
     **kwargs: Any,
 ) -> Line2D:
     """Plot cumulative distribution line on the given axes.
@@ -134,6 +135,8 @@ def _plot_cumulative_line(
         Cumulative distribution data with 'position' and 'cumulative_probability'
     orientation : {'vertical', 'horizontal'}
         Line orientation
+    value_column : str
+        Column name to use for cumulative values
     **kwargs : dict
         Additional arguments passed to plot()
 
@@ -144,7 +147,7 @@ def _plot_cumulative_line(
     """
     # Extract cumulative data
     x_coords = cumulative_df["position"].to_list()
-    y_coords = cumulative_df["cumulative_probability"].to_list()
+    y_coords = cumulative_df[value_column].to_list()
 
     # Plot line based on orientation
     if orientation == "vertical":
@@ -161,6 +164,7 @@ def _setup_axes_labels(
     orientation: Literal["vertical", "horizontal"],
     xlabel: Optional[str],
     ylabel: Optional[str],
+    density: bool = True,
 ) -> None:
     """Setup axis labels based on plot configuration.
 
@@ -176,20 +180,22 @@ def _setup_axes_labels(
         Custom x-axis label
     ylabel : str or None
         Custom y-axis label
+    density : bool
+        Whether plotting density or counts
     """
     # Cumulative probability label
-    cumulative_label = "Cumulative Probability"
+    y_default_label = "Cumulative Probability" if density else "Cumulative Count"
 
     # Apply labels based on orientation
     if orientation == "vertical":
         ax.set_xlabel(xlabel if xlabel is not None else x_column)
-        ax.set_ylabel(ylabel if ylabel is not None else cumulative_label)
+        ax.set_ylabel(ylabel if ylabel is not None else y_default_label)
     else:
         ax.set_ylabel(ylabel if ylabel is not None else x_column)
-        ax.set_xlabel(xlabel if xlabel is not None else cumulative_label)
+        ax.set_xlabel(xlabel if xlabel is not None else y_default_label)
 
 
-def cumulative(
+def ecdf(
     data: Optional[IntoDataFrame] = None,
     *,
     x: Optional[Union[str, ArrayT, IntoSeries]] = None,
@@ -197,6 +203,7 @@ def cumulative(
     ax: Optional[Axes] = None,
     orientation: Literal["vertical", "horizontal"] = "vertical",
     granularity: Optional[GranularityT] = "best",
+    density: bool = True,
     alpha: Optional[float] = None,
     linewidth: Optional[float] = None,
     linestyle: Optional[str] = None,
@@ -387,17 +394,18 @@ def cumulative(
     cumulative_data = _compute_cumulative_data(df, x_column, hue, granularity)
 
     # Setup axis labels (do this even if no data)
-    _setup_axes_labels(ax, x_column, orientation, xlabel, ylabel)
+    _setup_axes_labels(ax, x_column, orientation, xlabel, ylabel, density=density)
 
     # Add title if provided
     if title is not None:
         ax.set_title(title)
 
     # Set y-axis range for vertical orientation (cumulative probability)
-    if orientation == "vertical":
-        ax.set_ylim(-0.05, 1.05)
-    else:
-        ax.set_xlim(-0.05, 1.05)
+    if density:
+        if orientation == "vertical":
+            ax.set_ylim(-0.05, 1.05)
+        else:
+            ax.set_xlim(-0.05, 1.05)
 
     # If all groups are empty, return None
     if not cumulative_data or all(len(cdf) == 0 for cdf in cumulative_data.values()):
@@ -438,6 +446,9 @@ def cumulative(
     if markevery is not None:
         line_kwargs["markevery"] = markevery
 
+    # Determine value column
+    value_column = "cumulative_probability" if density else "cumulative_frequency"
+
     # Plot cumulative lines for each group
     lines = []
     for idx, (group_key, cumulative_df) in enumerate(cumulative_data.items()):
@@ -447,7 +458,9 @@ def cumulative(
         group_kwargs["color"] = colors[idx % len(colors)]
         if hue is not None and group_key is not None:
             group_kwargs["label"] = str(group_key)
-        line = _plot_cumulative_line(ax, cumulative_df, orientation, **group_kwargs)
+        line = _plot_cumulative_line(
+            ax, cumulative_df, orientation, value_column=value_column, **group_kwargs
+        )
         lines.append(line)
 
     # Add legend if using hue and legend is True

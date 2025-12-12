@@ -122,6 +122,7 @@ def _plot_histogram_bars(
     ax: Axes,
     histo_df: nw.DataFrame,
     orientation: Literal["vertical", "horizontal"],
+    value_column: str = "density",
     **kwargs: Any,
 ) -> BarContainer:
     """Plot histogram bars on the given axes.
@@ -134,6 +135,8 @@ def _plot_histogram_bars(
         Histogram data
     orientation : {'vertical', 'horizontal'}
         Bar orientation
+    value_column : str
+        Column name to use for bar heights
     **kwargs : dict
         Additional arguments passed to bar()
 
@@ -146,7 +149,7 @@ def _plot_histogram_bars(
     lower_bounds = histo_df["lower_bound"].to_list()
     upper_bounds = histo_df["upper_bound"].to_list()
     widths = histo_df["length"].to_list()
-    heights = histo_df["density"].to_list()
+    heights = histo_df[value_column].to_list()
 
     # Compute bin centers for positioning
     centers = [(lower + upper) / 2 for lower, upper in zip(lower_bounds, upper_bounds)]
@@ -178,6 +181,7 @@ def _setup_axes_labels(
     orientation: Literal["vertical", "horizontal"],
     xlabel: Optional[str],
     ylabel: Optional[str],
+    density: bool = True,
 ) -> None:
     """Setup axis labels based on plot configuration.
 
@@ -193,17 +197,19 @@ def _setup_axes_labels(
         Custom x-axis label
     ylabel : str or None
         Custom y-axis label
+    density : bool
+        Whether plotting density or counts
     """
-    # Density label
-    density_label = "Density"
+    # Default y-axis label
+    y_default_label = "Density" if density else "Count"
 
     # Apply labels based on orientation
     if orientation == "vertical":
         ax.set_xlabel(xlabel if xlabel is not None else x_column)
-        ax.set_ylabel(ylabel if ylabel is not None else density_label)
+        ax.set_ylabel(ylabel if ylabel is not None else y_default_label)
     else:
         ax.set_ylabel(ylabel if ylabel is not None else x_column)
-        ax.set_xlabel(xlabel if xlabel is not None else density_label)
+        ax.set_xlabel(xlabel if xlabel is not None else y_default_label)
 
 
 def histogram(
@@ -214,6 +220,7 @@ def histogram(
     ax: Optional[Axes] = None,
     orientation: Literal["vertical", "horizontal"] = "vertical",
     granularity: Optional[GranularityT] = "best",
+    density: bool = True,
     alpha: Optional[float] = None,
     edgecolor: Optional[str] = None,
     linewidth: Optional[float] = None,
@@ -263,6 +270,8 @@ def histogram(
         - 'best': Uses the optimal granularity level (default)
         - int: Uses the specified granularity level
         - None: Uses all available granularities (returns list of containers)
+    density : bool, default True
+        If True, plot probability density. If False, plot counts.
     alpha : float, optional
         Transparency level for bars (0.0 to 1.0). Lower values create
         transparency, useful for overlapping histograms.
@@ -397,6 +406,9 @@ def histogram(
     if linewidth is not None:
         bar_kwargs["linewidth"] = linewidth
 
+    # Determine value column
+    value_column = "density" if density else "frequency"
+
     # Plot histogram bars for each group
     containers = []
     for idx, (group_key, histo_df) in enumerate(histo_data.items()):
@@ -409,11 +421,13 @@ def histogram(
             group_kwargs["label"] = str(group_key)
 
         # Plot bars
-        container = _plot_histogram_bars(ax, histo_df, orientation, **group_kwargs)
+        container = _plot_histogram_bars(
+            ax, histo_df, orientation, value_column=value_column, **group_kwargs
+        )
         containers.append(container)
 
     # Setup axis labels
-    _setup_axes_labels(ax, x_column, orientation, xlabel, ylabel)
+    _setup_axes_labels(ax, x_column, orientation, xlabel, ylabel, density=density)
 
     # Add title if provided
     if title is not None:

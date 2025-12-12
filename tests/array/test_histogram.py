@@ -106,8 +106,8 @@ class TestHistogram:
         densities, bin_edges = histogram(series)
 
         # Should return PyArrow arrays when input is Pandas Series
-        assert isinstance(densities, pa.Array)
-        assert isinstance(bin_edges, pa.Array)
+        assert isinstance(densities, nw.Series)
+        assert isinstance(bin_edges, nw.Series)
         assert len(densities) > 0
 
     def test_histogram_with_polars_series(self, normal_data):
@@ -116,8 +116,8 @@ class TestHistogram:
         densities, bin_edges = histogram(series)
 
         # Should return Polars Series when input is Polars Series
-        assert isinstance(densities, pa.Array)
-        assert isinstance(bin_edges, pa.Array)
+        assert isinstance(densities, nw.Series)
+        assert isinstance(bin_edges, nw.Series)
         assert len(densities) > 0
 
     def test_histogram_density_sum(self, uniform_data):

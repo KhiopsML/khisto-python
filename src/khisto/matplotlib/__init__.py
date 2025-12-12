@@ -1,6 +1,7 @@
 """Matplotlib plotting functions for Khisto histograms."""
 
 from .histogram import histogram
-from .cumulative import cumulative
+from .ecdf import ecdf
+from .hist import hist
 
-__all__ = ["histogram", "cumulative"]
+__all__ = ["histogram", "ecdf", "hist"]
