@@ -14,16 +14,22 @@ __version__ = version("khisto")
 
 from .array import (  # noqa: E402
     histogram,
-    cumulative_distribution,
     histogram_bin_edges,
-    histogram_df,
-    cumulative_distribution_df,
+    histogram_table,
+    ECDF,
+    ECDFCollection,
+    ecdf,
+    ecdf_values,
+    ecdf_values_table,
 )
 
 __all__ = [
     "histogram",
-    "cumulative_distribution",
     "histogram_bin_edges",
-    "histogram_df",
-    "cumulative_distribution_df",
+    "histogram_table",
+    "ECDF",
+    "ECDFCollection",
+    "ecdf",
+    "ecdf_values",
+    "ecdf_values_table",
 ]

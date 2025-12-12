@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union, Any
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import cumulative_distribution_df
+from khisto.array import ecdf_values_table
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("matplotlib", extra=Extras.MATPLOTLIB, errors="raise")
@@ -107,8 +107,8 @@ def _compute_cumulative_data(
     # Compute cumulative data for each group
     cumulative_data = {}
     for group_key, group_df in groups.items():
-        # Use cumulative_distribution_df to get cumulative distribution
-        cumulative_df = cumulative_distribution_df(
+        # Use ecdf_values_table to get cumulative distribution
+        cumulative_df = ecdf_values_table(
             group_df[x_column],
             granularity=granularity,
         )
@@ -349,7 +349,7 @@ def cumulative(
 
     See Also
     --------
-    khisto.array.cumulative_distribution_df : Get cumulative distribution as DataFrame
+    khisto.array.ecdf_values_table : Get cumulative distribution as DataFrame
     khisto.plot.matplotlib.histogram : Create histogram plots with optimal binning
     matplotlib.pyplot.plot : Standard matplotlib line plotting function
 

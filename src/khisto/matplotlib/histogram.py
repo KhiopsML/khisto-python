@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union, Any
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_df
+from khisto.array import histogram_table
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("matplotlib", extra=Extras.MATPLOTLIB, errors="raise")
@@ -107,8 +107,8 @@ def _compute_histogram_data(
     # Compute histogram for each group
     histo_data = {}
     for group_key, group_df in groups.items():
-        # Use histogram_df which returns histogram data
-        histo_df = histogram_df(
+        # Use histogram_table which returns histogram data
+        histo_df = histogram_table(
             group_df[x_column],
             granularity=granularity,
         )
@@ -335,7 +335,7 @@ def histogram(
 
     See Also
     --------
-    khisto.array.histogram_df : Get histogram information as DataFrame
+    khisto.array.histogram_table : Get histogram information as DataFrame
     khisto.plot.matplotlib.cumulative : Create cumulative distribution plots
     matplotlib.pyplot.hist : Standard matplotlib histogram function
 

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Optional, Any
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import histogram_df
+from khisto.array import histogram_table
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -69,7 +69,7 @@ def _compute_ridge_histogram_for_groups(
             continue
 
         # Compute histogram for this category
-        histo_df = histogram_df(group_df[value_column_name], granularity=granularity)
+        histo_df = histogram_table(group_df[value_column_name], granularity=granularity)
 
         # Convert group_key to string (it's usually a tuple from plotly grouping)
         group_key_str = (
@@ -79,7 +79,7 @@ def _compute_ridge_histogram_for_groups(
         )
 
         # Create ridge plot DataFrame with offsetgroup for this category
-        # Note: center is already computed by histogram_df
+        # Note: center is already computed by histogram_table
         ridge_df = histo_df.with_columns(
             [
                 nw.col("center").alias("x"),

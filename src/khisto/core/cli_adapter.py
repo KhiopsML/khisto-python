@@ -143,6 +143,7 @@ def _process_histogram_files(
 
     # Mark the best histogram if series data is available
     if histogram_series_df is not None:
+        # TODO: change the best selection criteria
         max_level = compute.max(histogram_series_df["Level"]).as_py()
         best_granularity = (
             histogram_series_df.filter(
@@ -214,9 +215,10 @@ def compute_histogram(
     TypeError
         If input array is not numeric.
     """
-    # Create temporary input file with array values
     if not pa.types.is_floating(x.type) and not pa.types.is_integer(x.type):
         raise TypeError(f"Array must be numeric, got {x.type}")
+
+    # Create temporary input file with array values
     with tempfile.NamedTemporaryFile(
         mode="w", suffix=".txt", delete=False
     ) as temp_input:

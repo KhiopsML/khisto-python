@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Literal, Optional, Union
 import pyarrow as pa
 import narwhals as nw
 
-from khisto.array import cumulative_distribution_df
+from khisto.array import ecdf_values_table
 from khisto.utils._compat._optional import import_optional_dependency, Extras
 
 import_optional_dependency("plotly", extra=Extras.PLOTLY, errors="raise")
@@ -66,9 +66,7 @@ def _compute_cumulative_for_groups(
         value_column_name = x_column_name if x_column_name in group_df.columns else "x"
 
         # Compute cumulative distribution directly
-        cdf_df = cumulative_distribution_df(
-            group_df[value_column_name], granularity=granularity
-        )
+        cdf_df = ecdf_values_table(group_df[value_column_name], granularity=granularity)
 
         # Create line plot data points from CDF
         cumulative_points = []
@@ -518,8 +516,8 @@ def cumulative(
 
     See Also
     --------
-    khisto.array.cumulative_distribution : Compute CDF arrays
-    khisto.array.cumulative_distribution_df : Get full CDF information as DataFrame
+    khisto.array.ecdf : Compute callable ECDF object
+    khisto.array.ecdf_values_table : Get full CDF information as DataFrame
     khisto.plot.plotly.histogram : Create histogram plots with optimal binning
 
     Notes

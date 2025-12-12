@@ -1,17 +1,23 @@
 from .cumulative import (
-    cumulative_distribution,
-    cumulative_distribution_df,
+    ECDF,
+    ECDFCollection,
+    ecdf,
+    ecdf_values,
+    ecdf_values_table,
 )
 from .histogram import (
     histogram,
     histogram_bin_edges,
-    histogram_df,
+    histogram_table,
 )
 
 __all__ = [
     "histogram",
-    "cumulative_distribution",
     "histogram_bin_edges",
-    "histogram_df",
-    "cumulative_distribution_df",
+    "histogram_table",
+    "ECDF",
+    "ECDFCollection",
+    "ecdf",
+    "ecdf_values",
+    "ecdf_values_table",
 ]

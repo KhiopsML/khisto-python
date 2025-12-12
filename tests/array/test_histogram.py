@@ -14,9 +14,9 @@ import pytest
 from khisto.array import (
     histogram,
     histogram_bin_edges,
-    histogram_df,
-    cumulative_distribution,
-    cumulative_distribution_df,
+    histogram_table,
+    ecdf_values,
+    ecdf_values_table,
 )
 
 
@@ -215,11 +215,11 @@ class TestHistogramBinEdges:
 
 
 class TestHistogramDataFrame:
-    """Test cases for histogram_df function (formerly histogram_series)."""
+    """Test cases for histogram_table function (formerly histogram_series)."""
 
-    def test_histogram_df_best_granularity(self, simple_data):
-        """Test histogram_df with granularity='best'."""
-        df = histogram_df(simple_data, granularity="best")
+    def test_histogram_table_best_granularity(self, simple_data):
+        """Test histogram_table with granularity='best'."""
+        df = histogram_table(simple_data, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
 
@@ -238,9 +238,9 @@ class TestHistogramDataFrame:
         # Check data types
         assert len(df) > 0
 
-    def test_histogram_df_all_histograms(self, normal_data):
-        """Test histogram_df with granularity=None."""
-        df = histogram_df(normal_data, granularity=None)
+    def test_histogram_table_all_histograms(self, normal_data):
+        """Test histogram_table with granularity=None."""
+        df = histogram_table(normal_data, granularity=None)
 
         assert isinstance(df, nw.DataFrame)
 
@@ -262,44 +262,44 @@ class TestHistogramDataFrame:
         granularities = df["granularity"].unique()
         assert len(granularities) > 1
 
-    def test_histogram_df_with_numpy(self, uniform_data):
-        """Test histogram_df with NumPy array."""
+    def test_histogram_table_with_numpy(self, uniform_data):
+        """Test histogram_table with NumPy array."""
         np_array = np.array(uniform_data)
-        df = histogram_df(np_array, granularity="best")
+        df = histogram_table(np_array, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         assert len(df) > 0
 
-    def test_histogram_df_with_pandas_series(self, normal_data):
-        """Test histogram_df with Pandas Series."""
+    def test_histogram_table_with_pandas_series(self, normal_data):
+        """Test histogram_table with Pandas Series."""
         series = pd.Series(normal_data)
-        df = histogram_df(series, granularity="best")
+        df = histogram_table(series, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         # Check that backend is pandas
         native = nw.to_native(df)
         assert isinstance(native, pd.DataFrame)
 
-    def test_histogram_df_with_polars_series(self, bimodal_data):
-        """Test histogram_df with Polars Series."""
+    def test_histogram_table_with_polars_series(self, bimodal_data):
+        """Test histogram_table with Polars Series."""
         series = pl.Series(bimodal_data)
-        df = histogram_df(series, granularity="best")
+        df = histogram_table(series, granularity="best")
 
         assert isinstance(df, nw.DataFrame)
         # Check that backend is polars
         native = nw.to_native(df)
         assert isinstance(native, pl.DataFrame)
 
-    def test_histogram_df_probability_sum(self, uniform_data):
+    def test_histogram_table_probability_sum(self, uniform_data):
         """Test that probabilities sum to 1."""
-        df = histogram_df(uniform_data, granularity="best")
+        df = histogram_table(uniform_data, granularity="best")
 
         total_prob = df["probability"].sum()
         assert np.isclose(total_prob, 1.0, rtol=1e-5)
 
-    def test_histogram_df_density_calculation(self, simple_data):
+    def test_histogram_table_density_calculation(self, simple_data):
         """Test that density = probability / length."""
-        df = histogram_df(simple_data, granularity="best")
+        df = histogram_table(simple_data, granularity="best")
 
         for row in df.iter_rows(named=True):
             expected_density = (
@@ -307,9 +307,9 @@ class TestHistogramDataFrame:
             )
             assert np.isclose(row["density"], expected_density, rtol=1e-5)
 
-    def test_histogram_df_best_marked(self, normal_data):
+    def test_histogram_table_best_marked(self, normal_data):
         """Test that best histogram is marked when granularity=None."""
-        df = histogram_df(normal_data, granularity=None)
+        df = histogram_table(normal_data, granularity=None)
 
         # Should have is_best column
         assert "is_best" in df.columns
@@ -318,15 +318,15 @@ class TestHistogramDataFrame:
         best_count = df.filter(nw.col("is_best")).shape[0]
         assert best_count > 0
 
-    def test_histogram_df_bin_bounds(self, simple_data):
+    def test_histogram_table_bin_bounds(self, simple_data):
         """Test that upper_bound >= lower_bound for all bins."""
-        df = histogram_df(simple_data, granularity="best")
+        df = histogram_table(simple_data, granularity="best")
         for row in df.iter_rows(named=True):
             assert row["upper_bound"] >= row["lower_bound"]
 
-    def test_histogram_df_length_calculation(self, uniform_data):
+    def test_histogram_table_length_calculation(self, uniform_data):
         """Test that length = upper_bound - lower_bound."""
-        df = histogram_df(uniform_data, granularity="best")
+        df = histogram_table(uniform_data, granularity="best")
 
         for row in df.iter_rows(named=True):
             expected_length = row["upper_bound"] - row["lower_bound"]
@@ -405,18 +405,88 @@ class TestReturnTypeConsistency:
         assert isinstance(bin_edges, pa.Array)
 
     def test_pandas_series_backend(self, simple_data):
-        """Test histogram_df with Pandas maintains backend."""
+        """Test histogram_table with Pandas maintains backend."""
         series = pd.Series(simple_data)
-        df = histogram_df(series, granularity="best")
+        df = histogram_table(series, granularity="best")
         native = nw.to_native(df)
         assert isinstance(native, pd.DataFrame)
 
     def test_polars_series_backend(self, simple_data):
-        """Test histogram_df with Polars maintains backend."""
+        """Test histogram_table with Polars maintains backend."""
         series = pl.Series(simple_data)
-        df = histogram_df(series, granularity="best")
+        df = histogram_table(series, granularity="best")
         native = nw.to_native(df)
         assert isinstance(native, pl.DataFrame)
+
+
+class TestDensityParameter:
+    """Tests for the density parameter in histogram and ecdf_values."""
+
+    def test_histogram_density_true_default(self, uniform_data):
+        """Test histogram with density=True (default) returns density values."""
+        densities, bin_edges = histogram(uniform_data)
+        densities_np = np.asarray(densities)
+        bin_edges_np = np.asarray(bin_edges)
+        widths = bin_edges_np[1:] - bin_edges_np[:-1]
+        total = np.sum(densities_np * widths)
+        # Density should integrate to 1
+        assert np.isclose(total, 1.0, rtol=1e-5)
+
+    def test_histogram_density_false_returns_frequency(self, uniform_data):
+        """Test histogram with density=False returns frequency counts."""
+        frequencies, bin_edges = histogram(uniform_data, density=False)
+        freq_np = np.asarray(frequencies)
+        # Frequency should sum to total count
+        total = np.sum(freq_np)
+        assert total == len(uniform_data)
+        # All frequencies should be non-negative integers
+        assert np.all(freq_np >= 0)
+
+    def test_histogram_density_consistency(self, normal_data):
+        """Test that density and frequency histograms have same bin edges."""
+        densities, bin_edges_d = histogram(normal_data, density=True)
+        frequencies, bin_edges_f = histogram(normal_data, density=False)
+        assert np.allclose(np.asarray(bin_edges_d), np.asarray(bin_edges_f))
+
+    def test_cumulative_density_true_default(self, uniform_data):
+        """Test ecdf_values with density=True (default) returns probability CDF."""
+        cdf, positions = ecdf_values(uniform_data)
+        cdf_np = np.asarray(cdf)
+        assert np.isclose(cdf_np[0], 0.0, atol=1e-10)
+        assert np.isclose(cdf_np[-1], 1.0, rtol=1e-5)
+        assert np.all(np.diff(cdf_np) >= 0)
+
+    def test_cumulative_density_false_returns_frequency(self, uniform_data):
+        """Test ecdf_values with density=False returns cumulative frequency."""
+        cdf, positions = ecdf_values(uniform_data, density=False)
+        cdf_np = np.asarray(cdf)
+        assert cdf_np[0] == 0  # Starts at 0
+        assert cdf_np[-1] == len(uniform_data)  # Ends at total count
+        assert np.all(np.diff(cdf_np) >= 0)  # Monotonic
+
+    def test_cumulative_density_consistency(self, normal_data):
+        """Test that density and frequency CDFs have same positions."""
+        cdf_d, positions_d = ecdf_values(normal_data, density=True)
+        cdf_f, positions_f = ecdf_values(normal_data, density=False)
+        assert np.allclose(np.asarray(positions_d), np.asarray(positions_f))
+
+    def test_histogram_granularity_none_with_density_false(self, normal_data):
+        """Test histogram with granularity=None and density=False."""
+        results = histogram(normal_data, granularity=None, density=False)
+        assert isinstance(results, list)
+        for frequencies, bin_edges in results:
+            freq_np = np.asarray(frequencies)
+            # Each granularity's frequencies should sum to total count
+            assert np.sum(freq_np) == len(normal_data)
+
+    def test_cumulative_granularity_none_with_density_false(self, normal_data):
+        """Test ecdf_values with granularity=None and density=False."""
+        results = ecdf_values(normal_data, granularity=None, density=False)
+        assert isinstance(results, list)
+        for cdf, positions in results:
+            cdf_np = np.asarray(cdf)
+            assert cdf_np[0] == 0
+            assert cdf_np[-1] == len(normal_data)
 
 
 class TestCumulativeAPIs:
@@ -430,31 +500,56 @@ class TestCumulativeAPIs:
         total = np.sum(densities_np * widths)
         assert np.isclose(total, 1.0, rtol=1e-5)
 
-    def test_cumulative_distribution_basic(self, uniform_data):
-        cdf, bin_edges = cumulative_distribution(uniform_data)
+    def test_ecdf_values_basic(self, uniform_data):
+        cdf, bin_edges = ecdf_values(uniform_data)
         cdf_np = np.asarray(cdf)
         assert np.isclose(cdf_np[0], 0.0, rtol=1e-5)
         assert np.isclose(cdf_np[-1], 1.0, rtol=1e-5)
         assert np.all(np.diff(cdf_np) >= 0)
         assert len(cdf_np) == len(bin_edges)
 
-    def test_cumulative_distribution_backends(self, simple_data):
-        cdf_list, _ = cumulative_distribution(simple_data)
+    def test_ecdf_values_backends(self, simple_data):
+        cdf_list, _ = ecdf_values(simple_data)
         assert isinstance(cdf_list, list)
         np_array = np.array(simple_data)
-        cdf_np, _ = cumulative_distribution(np_array)
+        cdf_np, _ = ecdf_values(np_array)
         assert hasattr(cdf_np, "__array_namespace__")
         pa_array = pa.array(simple_data)
-        cdf_pa, _ = cumulative_distribution(pa_array)
+        cdf_pa, _ = ecdf_values(pa_array)
         assert isinstance(cdf_pa, pa.Array)
 
-    def test_cumulative_distribution_df_best(self, normal_data):
-        """Test cumulative_distribution_df returns position-based CDF for best granularity."""
-        df = cumulative_distribution_df(normal_data, granularity="best")
+    def test_ecdf_values_granularity_none_returns_list(self, normal_data):
+        """Test that ecdf_values with granularity=None returns list of tuples."""
+        results = ecdf_values(normal_data, granularity=None)
 
-        # Schema: has position and cumulative_probability, no bounds
+        # Should return a list
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+        # Each element should be a tuple of (cdf, positions)
+        for cdf, positions in results:
+            cdf_np = np.asarray(cdf)
+            pos_np = np.asarray(positions)
+
+            # CDF properties
+            assert np.isclose(cdf_np[0], 0.0, atol=1e-10)
+            assert np.isclose(cdf_np[-1], 1.0, rtol=1e-5)
+            assert np.all(np.diff(cdf_np) >= 0)
+
+            # Positions are sorted
+            assert np.all(np.diff(pos_np) >= 0)
+
+            # Length consistency
+            assert len(cdf_np) == len(pos_np)
+
+    def test_ecdf_values_table_best(self, normal_data):
+        """Test ecdf_values_table returns position-based CDF for best granularity."""
+        df = ecdf_values_table(normal_data, granularity="best")
+
+        # Schema: has position, cumulative_probability, and cumulative_frequency
         assert "position" in df.columns
         assert "cumulative_probability" in df.columns
+        assert "cumulative_frequency" in df.columns
         assert "lower_bound" not in df.columns
         assert "upper_bound" not in df.columns
 
@@ -470,16 +565,23 @@ class TestCumulativeAPIs:
         assert np.isclose(cum[-1], 1.0, rtol=1e-5)  # Ends at 1
         assert np.all(np.diff(cum) >= 0)  # Monotonic non-decreasing
 
+        # Cumulative frequency properties
+        cum_freq = df["cumulative_frequency"].to_numpy()
+        assert cum_freq[0] == 0  # Starts at 0
+        assert cum_freq[-1] > 0  # Ends at total count
+        assert np.all(np.diff(cum_freq) >= 0)  # Monotonic non-decreasing
+
         # Positions are sorted
         pos = df["position"].to_numpy()
         assert np.all(np.diff(pos) >= 0)
 
-    def test_cumulative_distribution_df_all_granularities(self, normal_data):
-        """Test cumulative_distribution_df with granularity=None returns all levels."""
-        df = cumulative_distribution_df(normal_data, granularity=None)
+    def test_ecdf_values_table_all_granularities(self, normal_data):
+        """Test ecdf_values_table with granularity=None returns all levels."""
+        df = ecdf_values_table(normal_data, granularity=None)
 
         assert "position" in df.columns
         assert "cumulative_probability" in df.columns
+        assert "cumulative_frequency" in df.columns
         assert "granularity" in df.columns
         assert "is_best" in df.columns
 
@@ -493,16 +595,22 @@ class TestCumulativeAPIs:
             assert np.isclose(cum[-1], 1.0, rtol=1e-5)
             assert np.all(np.diff(cum) >= 0)  # Monotonic
 
+            # Check cumulative frequency
+            cum_freq = sub["cumulative_frequency"].to_numpy()
+            assert cum_freq[0] == 0
+            assert cum_freq[-1] > 0
+            assert np.all(np.diff(cum_freq) >= 0)
+
             # Positions within each granularity are sorted
             pos = sub["position"].to_numpy()
             assert np.all(np.diff(pos) >= 0)
 
-    def test_cumulative_distribution_df_step_function_structure(self, simple_data):
-        """Test that cumulative_distribution_df includes bin edge positions."""
-        df = cumulative_distribution_df(simple_data, granularity="best")
+    def test_ecdf_values_table_step_function_structure(self, simple_data):
+        """Test that ecdf_values_table includes bin edge positions."""
+        df = ecdf_values_table(simple_data, granularity="best")
 
         # Get corresponding histogram to compare bin count
-        hist_df = histogram_df(simple_data, granularity="best")
+        hist_df = histogram_table(simple_data, granularity="best")
         n_bins = len(hist_df)
 
         # CDF should have n_bins + 1 positions (all bin edges)
@@ -517,9 +625,9 @@ class TestCumulativeAPIs:
         assert np.isclose(positions[0], first_lower, rtol=1e-10)
         assert np.isclose(positions[-1], last_upper, rtol=1e-10)
 
-    def test_histogram_df_no_cumulative_column(self, uniform_data):
-        df = histogram_df(uniform_data, granularity="best")
-        # histogram_df keeps bounds and does not include cumulative or position
+    def test_histogram_table_no_cumulative_column(self, uniform_data):
+        df = histogram_table(uniform_data, granularity="best")
+        # histogram_table keeps bounds and does not include cumulative or position
         assert "cumulative_probability" not in df.columns
         assert "position" not in df.columns
 
@@ -572,17 +680,39 @@ class TestGranularityParameter:
 
     def test_histogram_granularity_with_cumulative(self, normal_data):
         """Test granularity parameter works with cumulative parameter."""
-        cum_probs_0, _ = cumulative_distribution(normal_data, granularity=0)
-        cum_probs_1, _ = cumulative_distribution(normal_data, granularity=1)
+        cum_probs_0, _ = ecdf_values(normal_data, granularity=0)
+        cum_probs_1, _ = ecdf_values(normal_data, granularity=1)
 
         # Both should end at approximately 1
         assert np.isclose(np.asarray(cum_probs_0)[-1], 1.0, rtol=1e-5)
         assert np.isclose(np.asarray(cum_probs_1)[-1], 1.0, rtol=1e-5)
 
-    def test_histogram_granularity_none_raises_error(self, simple_data):
-        """Test that None granularity raises ValueError."""
-        with pytest.raises(ValueError, match="granularity must be"):
-            histogram(simple_data, granularity=None)  # type: ignore
+    def test_histogram_granularity_none_returns_list(self, normal_data):
+        """Test that None granularity returns list of tuples for all granularities."""
+        results = histogram(normal_data, granularity=None)
+
+        # Should return a list
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+        # Each element should be a tuple of (densities, bin_edges)
+        for densities, bin_edges in results:
+            assert len(densities) > 0
+            assert len(bin_edges) == len(densities) + 1
+            # Check bin edges are sorted
+            bin_edges_list = (
+                list(bin_edges) if not isinstance(bin_edges, list) else bin_edges
+            )
+            assert all(
+                bin_edges_list[i] <= bin_edges_list[i + 1]
+                for i in range(len(bin_edges_list) - 1)
+            )
+
+        # Verify increasing number of bins with higher granularity (generally)
+        # First element is coarsest, last is finest
+        first_bins = len(results[0][1])
+        last_bins = len(results[-1][1])
+        assert last_bins >= first_bins
 
     def test_histogram_bin_edges_granularity_best(self, normal_data):
         """Test histogram_bin_edges with granularity='best'."""
@@ -619,10 +749,25 @@ class TestGranularityParameter:
         # Should still return valid results
         assert len(bin_edges) > 1
 
-    def test_histogram_bin_edges_granularity_none_raises_error(self, simple_data):
-        """Test that None granularity raises ValueError for histogram_bin_edges."""
-        with pytest.raises(ValueError, match="granularity must be"):
-            histogram_bin_edges(simple_data, granularity=None)  # type: ignore
+    def test_histogram_bin_edges_granularity_none_returns_list(self, normal_data):
+        """Test that None granularity returns list of bin edge arrays."""
+        results = histogram_bin_edges(normal_data, granularity=None)
+
+        # Should return a list
+        assert isinstance(results, list)
+        assert len(results) > 0
+
+        # Each element should be a bin edges array
+        for bin_edges in results:
+            assert len(bin_edges) > 1
+            # Check bin edges are sorted
+            bin_edges_list = (
+                list(bin_edges) if not isinstance(bin_edges, list) else bin_edges
+            )
+            assert all(
+                bin_edges_list[i] <= bin_edges_list[i + 1]
+                for i in range(len(bin_edges_list) - 1)
+            )
 
     def test_histogram_granularity_with_different_backends(self, normal_data):
         """Test granularity parameter with different array backends."""
