@@ -6,7 +6,7 @@ that uses Khisto's optimal binning algorithm for automatic bin selection.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union, Any
+from typing import TYPE_CHECKING, Literal, Optional, Union, Any, overload
 
 import pyarrow as pa
 import narwhals as nw
@@ -193,6 +193,58 @@ def _setup_axes_labels(
     else:
         ax.set_ylabel(ylabel if ylabel is not None else x_column)
         ax.set_xlabel(xlabel if xlabel is not None else y_default_label)
+
+
+@overload
+def ecdf(
+    data: Optional[IntoDataFrame] = None,
+    *,
+    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
+    hue: None = None,
+    ax: Optional[Axes] = None,
+    orientation: Literal["vertical", "horizontal"] = "vertical",
+    granularity: Optional[GranularityT] = "best",
+    density: bool = True,
+    alpha: Optional[float] = None,
+    linewidth: Optional[float] = None,
+    linestyle: Optional[str] = None,
+    color: Optional[Union[str, list[str]]] = None,
+    palette: Optional[Union[str, list[str]]] = None,
+    marker: Optional[str] = None,
+    markersize: Optional[float] = None,
+    markevery: Optional[Union[int, tuple]] = None,
+    xlabel: Optional[str] = None,
+    ylabel: Optional[str] = None,
+    title: Optional[str] = None,
+    legend: bool = True,
+    **kwargs: Any,
+) -> Line2D | None: ...
+
+
+@overload
+def ecdf(
+    data: Optional[IntoDataFrame] = None,
+    *,
+    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
+    hue: str,
+    ax: Optional[Axes] = None,
+    orientation: Literal["vertical", "horizontal"] = "vertical",
+    granularity: Optional[GranularityT] = "best",
+    density: bool = True,
+    alpha: Optional[float] = None,
+    linewidth: Optional[float] = None,
+    linestyle: Optional[str] = None,
+    color: Optional[Union[str, list[str]]] = None,
+    palette: Optional[Union[str, list[str]]] = None,
+    marker: Optional[str] = None,
+    markersize: Optional[float] = None,
+    markevery: Optional[Union[int, tuple]] = None,
+    xlabel: Optional[str] = None,
+    ylabel: Optional[str] = None,
+    title: Optional[str] = None,
+    legend: bool = True,
+    **kwargs: Any,
+) -> list[Line2D]: ...
 
 
 def ecdf(

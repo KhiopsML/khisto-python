@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union, Any
+from typing import TYPE_CHECKING, Literal, Optional, Union, Any, overload
 
 import numpy as np
 
@@ -21,6 +21,60 @@ from khisto.array import histogram_table, ecdf_values_table
 if TYPE_CHECKING:
     from khisto.typing import ArrayT, GranularityT
     from narwhals.typing import IntoDataFrame, IntoSeries
+
+
+@overload
+def hist(
+    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
+    bins: Optional[GranularityT] = None,
+    range=None,
+    density: bool = False,
+    weights=None,
+    cumulative: bool = False,
+    bottom=None,
+    histtype: str = "bar",
+    align: str = "mid",
+    orientation: Literal["vertical", "horizontal"] = "vertical",
+    rwidth=None,
+    log: bool = False,
+    color: Optional[Union[str, list[str]]] = None,
+    label: Optional[str] = None,
+    stacked: bool = False,
+    *,
+    data: Optional[IntoDataFrame] = None,
+    hue: None = None,
+    granularity: Optional[GranularityT] = "best",
+    palette: Optional[Union[str, list[str]]] = None,
+    ax: Optional[Axes] = None,
+    **kwargs: Any,
+) -> tuple[Any, Any, Union[BarContainer, Line2D, None]]: ...
+
+
+@overload
+def hist(
+    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
+    bins: Optional[GranularityT] = None,
+    range=None,
+    density: bool = False,
+    weights=None,
+    cumulative: bool = False,
+    bottom=None,
+    histtype: str = "bar",
+    align: str = "mid",
+    orientation: Literal["vertical", "horizontal"] = "vertical",
+    rwidth=None,
+    log: bool = False,
+    color: Optional[Union[str, list[str]]] = None,
+    label: Optional[str] = None,
+    stacked: bool = False,
+    *,
+    data: Optional[IntoDataFrame] = None,
+    hue: str,
+    granularity: Optional[GranularityT] = "best",
+    palette: Optional[Union[str, list[str]]] = None,
+    ax: Optional[Axes] = None,
+    **kwargs: Any,
+) -> Union[BarContainer, list[BarContainer], list[Line2D], None]: ...
 
 
 def hist(
