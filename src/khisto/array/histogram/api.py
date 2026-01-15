@@ -137,7 +137,6 @@ def histogram(
     column_name = "density" if density else "frequency"
     output_column = df[column_name].combine_chunks()
 
-    print(backend, "rrrrrrrrrr")
     return backend.asarray(output_column), backend.asarray(bin_edges)
 
 
