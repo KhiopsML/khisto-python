@@ -1,259 +1,182 @@
-"""Matplotlib hist function combining histogram and cumulative."""
+"""Matplotlib hist function for optimal histograms."""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Union, Any, overload
+from typing import TYPE_CHECKING, Literal, Optional, Any
 
 import numpy as np
 
-from khisto.utils._compat._optional import import_optional_dependency, Extras
-
-import_optional_dependency("matplotlib", extra=Extras.MATPLOTLIB, errors="raise")
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.container import BarContainer
-from matplotlib.lines import Line2D
 
-from .histogram import histogram as histogram_plot, _process_input_data
-from .ecdf import ecdf as ecdf_plot
-from khisto.array import histogram_table, ecdf_values_table
+from khisto.array import histogram as khisto_histogram
 
 if TYPE_CHECKING:
-    from khisto.typing import ArrayT, GranularityT
-    from narwhals.typing import IntoDataFrame, IntoSeries
-
-
-@overload
-def hist(
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    bins: Optional[GranularityT] = None,
-    range=None,
-    density: bool = False,
-    weights=None,
-    cumulative: bool = False,
-    bottom=None,
-    histtype: str = "bar",
-    align: str = "mid",
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    rwidth=None,
-    log: bool = False,
-    color: Optional[Union[str, list[str]]] = None,
-    label: Optional[str] = None,
-    stacked: bool = False,
-    *,
-    data: Optional[IntoDataFrame] = None,
-    hue: None = None,
-    granularity: Optional[GranularityT] = "best",
-    palette: Optional[Union[str, list[str]]] = None,
-    ax: Optional[Axes] = None,
-    **kwargs: Any,
-) -> tuple[Any, Any, Union[BarContainer, Line2D, None]]: ...
-
-
-@overload
-def hist(
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    bins: Optional[GranularityT] = None,
-    range=None,
-    density: bool = False,
-    weights=None,
-    cumulative: bool = False,
-    bottom=None,
-    histtype: str = "bar",
-    align: str = "mid",
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    rwidth=None,
-    log: bool = False,
-    color: Optional[Union[str, list[str]]] = None,
-    label: Optional[str] = None,
-    stacked: bool = False,
-    *,
-    data: Optional[IntoDataFrame] = None,
-    hue: str,
-    granularity: Optional[GranularityT] = "best",
-    palette: Optional[Union[str, list[str]]] = None,
-    ax: Optional[Axes] = None,
-    **kwargs: Any,
-) -> Union[BarContainer, list[BarContainer], list[Line2D], None]: ...
+    from numpy.typing import ArrayLike
 
 
 def hist(
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    bins: Optional[GranularityT] = None,
-    range=None,
+    x: ArrayLike,
+    range: Optional[tuple[float, float]] = None,
+    max_bins: Optional[int] = None,
     density: bool = False,
-    weights=None,
     cumulative: bool = False,
-    bottom=None,
     histtype: str = "bar",
-    align: str = "mid",
     orientation: Literal["vertical", "horizontal"] = "vertical",
-    rwidth=None,
     log: bool = False,
-    color: Optional[Union[str, list[str]]] = None,
+    color: Optional[str] = None,
     label: Optional[str] = None,
-    stacked: bool = False,
     *,
-    data: Optional[IntoDataFrame] = None,
-    hue: Optional[str] = None,
-    granularity: Optional[GranularityT] = "best",
-    palette: Optional[Union[str, list[str]]] = None,
     ax: Optional[Axes] = None,
+    edgecolor: Optional[str] = None,
+    linewidth: Optional[float] = None,
+    alpha: Optional[float] = None,
     **kwargs: Any,
-) -> Union[
-    tuple[
-        Any,
-        Any,
-        Union[BarContainer, list[BarContainer], Line2D, list[Line2D], None],
-    ],
-    Union[BarContainer, list[BarContainer], Line2D, list[Line2D], None],
-]:
+) -> tuple[np.ndarray, np.ndarray, Any]:
     """
-    Compute and plot a histogram or cumulative distribution.
+    Compute and plot an optimal histogram.
 
-    This function combines the functionality of `khisto.matplotlib.histogram` and
-    `khisto.matplotlib.cumulative` to provide a familiar interface similar to
-    `matplotlib.pyplot.hist`, but using Khisto's optimal binning algorithm.
+    This function provides a matplotlib.pyplot.hist-like interface using
+    Khisto's optimal binning algorithm for automatic bin selection.
 
     Parameters
     ----------
-    x : str or ArrayT or IntoSeries, optional
-        Input data or column name.
-    bins : int or 'best' or None, optional
-        Alias for `granularity`. If provided, overrides `granularity`.
-    range : tuple or None, optional
-        Ignored. Khisto automatically determines the range.
+    x : array_like
+        Input data. The histogram is computed over the flattened array.
+    range : tuple of (float, float), optional
+        The lower and upper range of the bins. If not provided, range is
+        simply (x.min(), x.max()). Values outside the range are ignored.
+    max_bins : int, optional
+        Maximum number of bins. If not provided, the algorithm selects
+        the optimal number of bins automatically.
     density : bool, default False
-        If True, draw and return a probability density: each bin will display the
-        bin's raw count divided by the total number of counts and the bin width.
-    weights : array-like, optional
-        Not supported yet.
+        If True, draw a probability density histogram (normalized to
+        integrate to 1). If False, draw counts.
     cumulative : bool, default False
-        If True, then a histogram is computed where each bin gives the counts in
-        that bin plus all bins for smaller values. The last bin gives the total
-        number of data points.
-    bottom : array-like, scalar, or None
-        Not supported.
-    histtype : {'bar', 'barstacked', 'step', 'stepfilled'}, default 'bar'
+        Not supported. If True, raises NotImplementedError.
+    histtype : {'bar', 'step', 'stepfilled'}, default 'bar'
         The type of histogram to draw.
         - 'bar' is a traditional bar-type histogram.
-        - 'step' generates a lineplot (used for cumulative).
-    align : {'left', 'mid', 'right'}, default 'mid'
-        Ignored. Bars are always centered on the bin interval.
+        - 'step' generates a line plot.
+        - 'stepfilled' generates a filled line plot.
     orientation : {'vertical', 'horizontal'}, default 'vertical'
         If 'horizontal', barh will be used for bar-type histograms.
-    rwidth : float or None, default None
-        Ignored.
     log : bool, default False
         If True, the histogram axis will be set to a log scale.
-    color : color or array-like of colors or None, default None
-        Color spec or sequence of color specs.
-    label : str or None, default None
-        String, or sequence of strings to match multiple datasets.
-    stacked : bool, default False
-        If True, multiple data are stacked on top of each other.
-        Not fully supported (use hue for grouping).
-    data : IntoDataFrame, optional
-        If given, `x` can be a string column name.
-    hue : str, optional
-        Column name for grouping.
-    granularity : int or 'best' or None, default 'best'
-        Granularity level for optimal binning.
-    palette : str or list, optional
-        Colors for hue groups.
-    ax : Axes, optional
-        Axes to plot on.
+    color : str, optional
+        Color for the histogram.
+    label : str, optional
+        Label for the histogram (for legend).
+    ax : matplotlib.axes.Axes, optional
+        Axes to plot on. If None, uses current axes.
+    edgecolor : str, optional
+        Color of bar edges.
+    linewidth : float, optional
+        Width of bar edges.
+    alpha : float, optional
+        Transparency (0.0 to 1.0).
     **kwargs :
-        kwargs are passed to the underlying plotting function.
+        Additional keyword arguments passed to matplotlib bar/step functions.
 
     Returns
     -------
-    n : array or list of arrays
-        The values of the histogram bins.
-    bins : array
+    n : ndarray
+        The values of the histogram bins (counts or density).
+    bins : ndarray
         The edges of the bins.
-    patches : BarContainer or Line2D or list thereof
-        The return value from the plotting function.
-    """
-    # Handle bins alias
-    if bins is not None:
-        granularity = bins
+    patches : BarContainer
+        Container with the bar patches.
 
-    # Handle log scale
+    Raises
+    ------
+    NotImplementedError
+        If cumulative=True (not yet supported).
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> import matplotlib.pyplot as plt
+    >>> from khisto.matplotlib import hist
+    >>> data = np.random.normal(0, 1, 1000)
+    >>> n, bins, patches = hist(data)
+    >>> plt.show()
+    >>> # Density histogram
+    >>> n, bins, patches = hist(data, density=True)
+    >>> # Constrained bins
+    >>> n, bins, patches = hist(data, max_bins=10)
+    """
+    if cumulative:
+        raise NotImplementedError("Cumulative histograms are not yet supported")
+
+    # Get axes
     if ax is None:
         ax = plt.gca()
 
+    # Compute histogram using khisto
+    hist_values, bin_edges = khisto_histogram(
+        x, range=range, max_bins=max_bins, density=density
+    )
+
+    # Handle log scale
     if log:
         if orientation == "vertical":
             ax.set_yscale("log")
         else:
             ax.set_xscale("log")
 
-    # Plotting
-    if cumulative:
-        # Map histtype to cumulative style
-        if histtype in ["step", "stepfilled"]:
-            if "drawstyle" not in kwargs:
-                kwargs["drawstyle"] = "steps-post"
+    # Build kwargs for plotting
+    bar_kwargs: dict[str, Any] = {}
+    if color is not None:
+        bar_kwargs["color"] = color
+    if edgecolor is not None:
+        bar_kwargs["edgecolor"] = edgecolor
+    if linewidth is not None:
+        bar_kwargs["linewidth"] = linewidth
+    if alpha is not None:
+        bar_kwargs["alpha"] = alpha
+    if label is not None:
+        bar_kwargs["label"] = label
+    bar_kwargs.update(kwargs)
 
-        patches = ecdf_plot(
-            data=data,
-            x=x,
-            hue=hue,
-            ax=ax,
-            orientation=orientation,
-            granularity=granularity,
-            density=density,
-            color=color,
-            palette=palette,
-            label=label,
-            **kwargs,
-        )
-    else:
-        patches = histogram_plot(
-            data=data,
-            x=x,
-            hue=hue,
-            ax=ax,
-            orientation=orientation,
-            granularity=granularity,
-            density=density,
-            color=color,
-            palette=palette,
-            label=label,
-            **kwargs,
-        )
+    # Compute bin widths and centers
+    bin_widths = np.diff(bin_edges)
+    bin_centers = bin_edges[:-1] + bin_widths / 2
 
-    # If hue is None, return (n, bins, patches) to match matplotlib.pyplot.hist
-    if hue is None:
-        try:
-            df_processed, x_col = _process_input_data(data, x)
+    # Plot based on histtype
+    if histtype == "bar":
+        if orientation == "vertical":
+            patches = ax.bar(
+                bin_centers,
+                hist_values,
+                width=bin_widths,
+                align="center",
+                **bar_kwargs,
+            )
+        else:  # horizontal
+            patches = ax.barh(
+                bin_centers,
+                hist_values,
+                height=bin_widths,
+                align="center",
+                **bar_kwargs,
+            )
+    elif histtype in ("step", "stepfilled"):
+        # Create step plot data
+        step_x = np.repeat(bin_edges, 2)[1:-1]
+        step_y = np.repeat(hist_values, 2)
 
-            if cumulative:
-                # For cumulative, n is the cumulative values, bins are positions
-                cdf_df = ecdf_values_table(df_processed[x_col], granularity=granularity)
-                value_col = (
-                    "cumulative_probability" if density else "cumulative_frequency"
-                )
-                # Skip the first value (0) to match matplotlib behavior (values at upper edges)
-                n = np.array(cdf_df[value_col].to_list()[1:])
-                out_bins = np.array(cdf_df["position"].to_list())
+        if histtype == "stepfilled":
+            bar_kwargs.setdefault("alpha", 0.5)
+            if orientation == "vertical":
+                patches = ax.fill_between(step_x, step_y, step=None, **bar_kwargs)
             else:
-                # For histogram, n is density/count, bins are edges
-                histo_df = histogram_table(df_processed[x_col], granularity=granularity)
-                value_col = "density" if density else "frequency"
-                n = np.array(histo_df[value_col].to_list())
+                patches = ax.fill_betweenx(step_x, step_y, step=None, **bar_kwargs)
+        else:
+            if orientation == "vertical":
+                patches = ax.plot(step_x, step_y, **bar_kwargs)[0]
+            else:
+                patches = ax.plot(step_y, step_x, **bar_kwargs)[0]
+    else:
+        raise ValueError(f"Unknown histtype: {histtype}")
 
-                lower = histo_df["lower_bound"].to_list()
-                upper = histo_df["upper_bound"].to_list()
-                if len(upper) > 0:
-                    out_bins = np.array(lower + [upper[-1]])
-                else:
-                    out_bins = np.array([])
-
-            return n, out_bins, patches
-        except Exception:
-            # Fallback if data processing fails (e.g. complex input)
-            return patches
-
-    return patches
+    return hist_values, bin_edges, patches

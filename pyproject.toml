@@ -1,36 +1,27 @@
 [project]
 name = "khisto"
 version = "0.1.0"
-description = "Add your description here"
+description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = ["narwhals", "pyarrow", "array-api-compat"]
+dependencies = ["numpy>=2.0"]
 
 [project.optional-dependencies]
-matplotlib = ["matplotlib"]
-plotly = ["plotly"]
-all = ["matplotlib", "plotly"]
+matplotlib = ["matplotlib>=3.8"]
+all = ["matplotlib>=3.8"]
 
 
 [dependency-groups]
 dev = [
-    "pyarrow-stubs>=11.0",
     "pytest>=8.3",
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
     "pytest-sugar>=1.0",
-    "pytest-codspeed>=3.2",
-    "bandit>=1.8",
     "pre-commit>=4.1",
     "pre-commit-hooks>=5.0",
     "ruff>=0.9",
-    "pyrefly>=0.9",
     "ipykernel>=7",
-    "numpy>=2",
-    "jax>=0.7",
-    "pandas>=2",
-    "polars>=1.0",
-    "nbformat>=5.10.4",
+    "matplotlib>=3.8",
 ]
 
 [build-system]

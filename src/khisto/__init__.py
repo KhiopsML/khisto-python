@@ -12,24 +12,10 @@ KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
 __version__ = version("khisto")
 
-from .array import (  # noqa: E402
-    histogram,
-    histogram_bin_edges,
-    histogram_table,
-    ECDFResult,
-    ECDFResultCollection,
-    ecdf,
-    ecdf_values,
-    ecdf_values_table,
-)
+from .array import histogram  # noqa: E402
+from .core import HistogramResult  # noqa: E402
 
 __all__ = [
     "histogram",
-    "histogram_bin_edges",
-    "histogram_table",
-    "ECDFResult",
-    "ECDFResultCollection",
-    "ecdf",
-    "ecdf_values",
-    "ecdf_values_table",
+    "HistogramResult",
 ]

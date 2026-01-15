@@ -1,18 +1,14 @@
 """Tests for khisto.core.cli_adapter module."""
 
 import pathlib
-import subprocess
-from unittest.mock import MagicMock, patch
-
-import pyarrow as pa
-from pyarrow import compute
+import numpy as np
 import pytest
 
 from khisto.core.cli_adapter import (
     _parse_file_type,
-    _process_histogram_files,
-    compute_histogram,
+    HistogramResult,
 )
+from khisto.core import compute_histogram
 
 
 class TestParseFileType:
@@ -61,306 +57,97 @@ class TestParseFileType:
             _parse_file_type(pathlib.Path("histogram.abc.csv"))
 
 
-class TestHistogram:
-    """Tests for histogram function."""
+class TestHistogramResult:
+    """Tests for HistogramResult dataclass."""
+
+    def test_histogram_result_properties(self):
+        """Test HistogramResult properties."""
+        result = HistogramResult(
+            lower_bound=np.array([0.0, 1.0, 2.0]),
+            upper_bound=np.array([1.0, 2.0, 3.0]),
+            frequency=np.array([10, 20, 15]),
+            probability=np.array([0.222, 0.444, 0.333]),
+            density=np.array([0.222, 0.444, 0.333]),
+            is_best=True,
+            granularity=2,
+        )
+
+        # Test bin_edges property
+        expected_edges = np.array([0.0, 1.0, 2.0, 3.0])
+        np.testing.assert_array_equal(result.bin_edges, expected_edges)
+
+        # Test bin_widths property
+        expected_widths = np.array([1.0, 1.0, 1.0])
+        np.testing.assert_array_equal(result.bin_widths, expected_widths)
+
+        # Test bin_centers property
+        expected_centers = np.array([0.5, 1.5, 2.5])
+        np.testing.assert_array_equal(result.bin_centers, expected_centers)
+
+        # Test __len__
+        assert len(result) == 3
+
+        # Test is_best and granularity
+        assert result.is_best is True
+        assert result.granularity == 2
+
+
+class TestComputeHistogram:
+    """Tests for compute_histogram function."""
 
     @pytest.fixture
     def sample_data(self):
         """Create sample data for testing."""
-        return pa.array([1.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 5.0])
+        np.random.seed(42)
+        return np.random.normal(0, 1, 1000)
 
-    @pytest.fixture
-    def mock_subprocess_success(self):
-        """Mock successful subprocess execution."""
-        with patch("khisto.core.cli_adapter.subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
-            yield mock_run
+    def test_compute_histogram_basic(self, sample_data):
+        """Test basic histogram computation."""
+        result = compute_histogram(sample_data)
 
-    def test_histogram_best_mode(self, sample_data, tmp_path, mock_subprocess_success):
-        """Test histogram with granularity='best'."""
-        # Create mock histogram file
-        histogram_file = tmp_path / "histogram.csv"
-        histogram_file.write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-            "1.0,3.0,2.0,5,0.5,0.25\n"
-            "3.0,5.0,2.0,4,0.4,0.20\n"
-        )
+        assert isinstance(result, HistogramResult)
+        assert len(result) > 0
+        assert len(result.bin_edges) == len(result) + 1
 
-        with patch(
-            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
-        ):
-            with patch(
-                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-            ) as mock_temp:
-                mock_file = MagicMock()
-                mock_file.name = str(tmp_path / "input.txt")
-                mock_file.__enter__ = MagicMock(return_value=mock_file)
-                mock_file.__exit__ = MagicMock(return_value=False)
-                mock_temp.return_value = mock_file
+    def test_compute_histogram_with_range(self, sample_data):
+        """Test histogram with range parameter."""
+        result = compute_histogram(sample_data, range=(-1, 1))
 
-                result = compute_histogram(sample_data, granularity="best")
+        # All bin edges should be within range
+        assert result.bin_edges[0] >= -1
+        assert result.bin_edges[-1] <= 1
 
-                # Check columns exist
-                expected_columns = {
-                    "lower_bound",
-                    "upper_bound",
-                    "center",
-                    "length",
-                    "frequency",
-                    "probability",
-                    "density",
-                    "granularity",
-                    "is_best",
-                }
-                assert set(result.column_names) == expected_columns
+    def test_compute_histogram_with_max_bins(self, sample_data):
+        """Test histogram with max_bins parameter."""
+        result = compute_histogram(sample_data, max_bins=5)
 
-                # Check all rows are marked as best
-                assert all(result["is_best"].to_pylist())
+        assert len(result) <= 5
 
-                # Check granularity is 0
-                assert all(g == 0 for g in result["granularity"].to_pylist())
+    def test_compute_histogram_return_all(self, sample_data):
+        """Test histogram returning all granularities."""
+        results = compute_histogram(sample_data, return_all=True)
 
-    def test_histogram_all_granularities_mode(
-        self, sample_data, tmp_path, mock_subprocess_success
-    ):
-        """Test histogram with granularity=None (all granularities)."""
-        # Create mock histogram files
-        (tmp_path / "histogram.1.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,5.0,4.0,9,1.0,0.25\n"
-        )
-        (tmp_path / "histogram.2.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-            "1.0,3.0,2.0,6,0.67,0.33\n"
-            "3.0,5.0,2.0,3,0.33,0.17\n"
-        )
-        (tmp_path / "histogram.series.csv").write_text(
-            "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
-            "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
-            "RemovedSingularityNumber,Raw\n"
-            "histogram,1,1,0,0,0,0.5,0.8,0.01,0,false\n"
-            "histogram,2,2,1,0,0,0.9,0.95,0.01,0,false\n"
-        )
+        assert isinstance(results, list)
+        assert len(results) > 0
+        assert all(isinstance(r, HistogramResult) for r in results)
 
-        with patch(
-            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
-        ):
-            with patch(
-                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-            ) as mock_temp:
-                mock_file = MagicMock()
-                mock_file.name = str(tmp_path / "input.txt")
-                mock_file.__enter__ = MagicMock(return_value=mock_file)
-                mock_file.__exit__ = MagicMock(return_value=False)
-                mock_temp.return_value = mock_file
+        # Exactly one should be marked as best
+        best_count = sum(1 for r in results if r.is_best)
+        assert best_count == 1
 
-                result = compute_histogram(sample_data, granularity=None)
+        # Granularities should be sorted
+        granularities = [r.granularity for r in results]
+        assert granularities == sorted(granularities)
 
-                # Check we have rows from both granularities
-                granularities = set(result["granularity"].to_pylist())
-                assert 0 in granularities
-                assert 1 in granularities
+    def test_compute_histogram_empty_input(self):
+        """Test that empty input raises ValueError."""
+        with pytest.raises(ValueError, match="empty"):
+            compute_histogram(np.array([]))
 
-                # Check that best histogram is marked (granularity 2 has highest level)
-                best_rows = result.filter(result["is_best"])
-                assert len(best_rows) > 0
-                assert all(g == 1 for g in best_rows["granularity"].to_pylist())
+    def test_compute_histogram_nan_handling(self):
+        """Test that NaN values are filtered out."""
+        data = np.array([1.0, 2.0, np.nan, 3.0, np.nan, 4.0])
+        result = compute_histogram(data)
 
-    def test_histogram_command_construction(
-        self, sample_data, tmp_path, mock_subprocess_success
-    ):
-        """Test that the correct command is constructed for khisto CLI."""
-        # Test granularity='best' mode
-        with patch(
-            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
-        ):
-            with patch(
-                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-            ) as mock_temp:
-                mock_file = MagicMock()
-                mock_file.name = str(tmp_path / "input.txt")
-                mock_file.__enter__ = MagicMock(return_value=mock_file)
-                mock_file.__exit__ = MagicMock(return_value=False)
-                mock_temp.return_value = mock_file
-
-                # Create minimal histogram file to avoid errors
-                (tmp_path / "histogram.csv").write_text(
-                    "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-                    "1.0,5.0,4.0,9,1.0,0.25\n"
-                )
-
-                compute_histogram(sample_data, granularity="best")
-                args = mock_subprocess_success.call_args[0][0]
-                assert "-e" not in args
-
-        mock_subprocess_success.reset_mock()
-
-        # Test exploratory mode (granularity=None) with a fresh tmp directory
-        tmp_path2 = tmp_path / "exploratory"
-        tmp_path2.mkdir(parents=True, exist_ok=True)
-
-        with patch(
-            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path2)
-        ):
-            with patch(
-                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-            ) as mock_temp:
-                mock_file = MagicMock()
-                mock_file.name = str(tmp_path2 / "input.txt")
-                mock_file.__enter__ = MagicMock(return_value=mock_file)
-                mock_file.__exit__ = MagicMock(return_value=False)
-                mock_temp.return_value = mock_file
-
-                # Create histogram file for exploratory mode
-                (tmp_path2 / "histogram.1.csv").write_text(
-                    "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-                    "1.0,5.0,4.0,9,1.0,0.25\n"
-                )
-
-                compute_histogram(sample_data, granularity=None)
-                args = mock_subprocess_success.call_args[0][0]
-                assert "-e" in args
-
-    def test_histogram_subprocess_error(self, sample_data, tmp_path):
-        """Test that subprocess errors are properly handled."""
-        with patch("khisto.core.cli_adapter.subprocess.run") as mock_run:
-            mock_run.side_effect = subprocess.CalledProcessError(
-                1, "khisto", stderr="Error message"
-            )
-
-            with patch(
-                "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
-            ):
-                with patch(
-                    "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-                ) as mock_temp:
-                    mock_file = MagicMock()
-                    mock_file.name = str(tmp_path / "input.txt")
-                    mock_file.__enter__ = MagicMock(return_value=mock_file)
-                    mock_file.__exit__ = MagicMock(return_value=False)
-                    mock_temp.return_value = mock_file
-
-                    with pytest.raises(subprocess.CalledProcessError):
-                        compute_histogram(sample_data, granularity="best")
-
-    def test_histogram_specific_granularity(
-        self, sample_data, tmp_path, mock_subprocess_success
-    ):
-        """Test histogram with a specific granularity level."""
-        # Create mock histogram files with multiple granularities
-        (tmp_path / "histogram.1.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,5.0,4.0,9,1.0,0.25\n"
-        )
-        (tmp_path / "histogram.2.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-            "1.0,3.0,2.0,6,0.67,0.33\n"
-            "3.0,5.0,2.0,3,0.33,0.17\n"
-        )
-        (tmp_path / "histogram.3.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-            "1.0,2.0,1.0,3,0.33,0.33\n"
-            "2.0,3.0,1.0,3,0.33,0.33\n"
-            "3.0,5.0,2.0,3,0.33,0.17\n"
-        )
-        (tmp_path / "histogram.series.csv").write_text(
-            "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
-            "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
-            "RemovedSingularityNumber,Raw\n"
-            "histogram,1,1,0,0,0,0.3,0.6,0.01,0,false\n"
-            "histogram,2,2,1,0,0,0.7,0.85,0.01,0,false\n"
-            "histogram,3,3,1,0,0,0.9,0.95,0.01,0,false\n"
-        )
-
-        with patch(
-            "khisto.core.cli_adapter.tempfile.mkdtemp", return_value=str(tmp_path)
-        ):
-            with patch(
-                "khisto.core.cli_adapter.tempfile.NamedTemporaryFile"
-            ) as mock_temp:
-                mock_file = MagicMock()
-                mock_file.name = str(tmp_path / "input.txt")
-                mock_file.__enter__ = MagicMock(return_value=mock_file)
-                mock_file.__exit__ = MagicMock(return_value=False)
-                mock_temp.return_value = mock_file
-
-                # Request granularity 1 (second histogram)
-                result = compute_histogram(sample_data, granularity=1)
-
-                # Should only have rows from granularity 1
-                granularities = set(result["granularity"].to_pylist())
-                assert granularities == {1}
-                assert len(result) == 2  # histogram.2.csv has 2 rows
-
-
-class TestProcessHistogramFiles:
-    """Tests for _process_histogram_files function."""
-
-    def test_process_single_best_histogram(self, tmp_path):
-        """Test processing a single best histogram file."""
-        (tmp_path / "histogram.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n0.0,5.0,5.0,10,1.0,0.2\n"
-        )
-
-        result = _process_histogram_files(str(tmp_path), "histogram", only_best=True)
-
-        assert len(result) == 1
-        assert result["lower_bound"][0].as_py() == 0.0
-        assert result["upper_bound"][0].as_py() == 5.0
-        assert result["frequency"][0].as_py() == 10
-        assert result["is_best"][0].as_py() is True
-        assert result["granularity"][0].as_py() == 0
-
-    def test_process_multiple_histograms_with_series(self, tmp_path):
-        """Test processing multiple histograms with series data."""
-        (tmp_path / "histogram.1.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n0.0,10.0,10.0,20,1.0,0.1\n"
-        )
-        (tmp_path / "histogram.2.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n"
-            "0.0,5.0,5.0,10,0.5,0.1\n"
-            "5.0,10.0,5.0,10,0.5,0.1\n"
-        )
-        (tmp_path / "histogram.series.csv").write_text(
-            "FileName,Granularity,IntervalNumber,PeakIntervalNumber,SpikeIntervalNumber,"
-            "EmptyIntervalNumber,Level,InformationRate,TruncationEpsilon,"
-            "RemovedSingularityNumber,Raw\n"
-            "histogram,1,1,0,0,0,0.3,0.5,0.01,0,false\n"
-            "histogram,2,2,1,0,0,0.7,0.9,0.01,0,false\n"
-        )
-
-        result = _process_histogram_files(str(tmp_path), "histogram", only_best=False)
-
-        # Should have 3 rows total (1 from granularity 0, 2 from granularity 1)
-        assert len(result) == 3
-
-        # Check granularities
-        assert 0 in result["granularity"].to_pylist()
-        assert 1 in result["granularity"].to_pylist()
-
-        # Best should be granularity 1 (highest level = 0.7 from Granularity 2)
-        best_rows = result.filter(result["is_best"])
-        assert all(g == 1 for g in best_rows["granularity"].to_pylist())
-
-        # Non-best rows should be granularity 0
-        non_best_rows = result.filter(compute.invert(result["is_best"]))
-        assert all(g == 0 for g in non_best_rows["granularity"].to_pylist())
-
-    def test_column_renaming(self, tmp_path):
-        """Test that columns are correctly renamed from PascalCase to snake_case."""
-        (tmp_path / "histogram.csv").write_text(
-            "LowerBound,UpperBound,Length,Frequency,Probability,Density\n1.0,2.0,1.0,5,0.5,0.5\n"
-        )
-
-        result = _process_histogram_files(str(tmp_path), "histogram", only_best=True)
-
-        expected_columns = {
-            "lower_bound",
-            "upper_bound",
-            "center",
-            "length",
-            "frequency",
-            "probability",
-            "density",
-            "granularity",
-            "is_best",
-        }
-        assert set(result.column_names) == expected_columns
+        # Should process 4 valid values
+        assert np.sum(result.frequency) == 4

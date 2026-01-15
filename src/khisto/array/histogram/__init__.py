@@ -1,7 +1,5 @@
-from .api import histogram, histogram_bin_edges, histogram_table
+from .api import histogram
 
 __all__ = [
     "histogram",
-    "histogram_bin_edges",
-    "histogram_table",
 ]

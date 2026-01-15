@@ -1,283 +1,311 @@
 # Khisto API Reference
 
-This document provides a reference for the Khisto library API, organized by module.
+Complete API reference for the Khisto library.
 
-## Array API (`khisto.array`)
+## Table of Contents
 
-The `khisto.array` module provides core functions for computing optimal histograms and cumulative distributions using the Khiops algorithm. These functions return raw data (arrays or DataFrames) rather than plots.
-
-### Histogram Functions
-
-#### `histogram`
-
-```python
-def histogram(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = "best",
-    density: bool = True,
-) -> Union[tuple[ArrayT, ArrayT], list[tuple[ArrayT, ArrayT]]]
-```
-
-Compute histogram using optimal binning.
-
-**Parameters:**
-- `x`: Input data (Array API compliant array, list/tuple, or Narwhals Series).
-- `granularity`: Granularity level to use (`"best"`, `int`, or `None`).
-- `density`: If `True`, return probability density values. If `False`, return frequency counts.
-
-**Returns:**
-- If `granularity` is `"best"` or `int`: A tuple `(values, bin_edges)`.
-- If `granularity` is `None`: A list of `(values, bin_edges)` tuples for all granularities.
-
-#### `histogram_bin_edges`
-
-```python
-def histogram_bin_edges(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = "best",
-) -> Union[ArrayT, list[ArrayT]]
-```
-
-Compute histogram bin edges using optimal binning.
-
-**Parameters:**
-- `x`: Input data.
-- `granularity`: Granularity level (`"best"`, `int`, or `None`).
-
-**Returns:**
-- Array of bin edges (or list of arrays if `granularity` is `None`).
-
-#### `histogram_table`
-
-```python
-def histogram_table(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = None,
-) -> nw.DataFrame
-```
-
-Return detailed histogram information as a DataFrame.
-
-**Parameters:**
-- `x`: Input data.
-- `granularity`: Granularity level (`"best"`, `int`, or `None`).
-
-**Returns:**
-- A DataFrame with columns: `lower_bound`, `upper_bound`, `length`, `frequency`, `probability`, `density`, `center`, `granularity`, `is_best`.
-
-### Cumulative Distribution Functions
-
-#### `ecdf`
-
-```python
-def ecdf(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = "best",
-) -> Union[ECDFResult, ECDFResultCollection]
-```
-
-Compute an empirical CDF that can be evaluated at any point.
-
-**Parameters:**
-- `x`: Input data.
-- `granularity`: Granularity level (`"best"`, `int`, or `None`).
-
-**Returns:**
-- An `ECDFResult` object (callable) or `ECDFResultCollection`.
-
-#### `ecdf_values`
-
-```python
-def ecdf_values(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = "best",
-    density: bool = True,
-) -> Union[tuple[ArrayT, ArrayT], list[tuple[ArrayT, ArrayT]]]
-```
-
-Compute discrete ECDF values at bin edges.
-
-**Parameters:**
-- `x`: Input data.
-- `granularity`: Granularity level (`"best"`, `int`, or `None`).
-- `density`: If `True`, return cumulative probability (0.0-1.0). If `False`, return cumulative counts.
-
-**Returns:**
-- Tuple of `(cdf_values, positions)` (or list of tuples).
-
-#### `ecdf_values_table`
-
-```python
-def ecdf_values_table(
-    x: Union[ArrayT, IntoSeries],
-    granularity: Optional[GranularityT] = None,
-) -> nw.DataFrame
-```
-
-Return ECDF values as a DataFrame.
-
-**Parameters:**
-- `x`: Input data.
-- `granularity`: Granularity level (`"best"`, `int`, or `None`).
-
-**Returns:**
-- A DataFrame with columns: `position`, `cumulative_probability`, `cumulative_frequency`, `granularity`, `is_best`.
+- [Array API](#array-api)
+  - [histogram](#histogram)
+- [Core API](#core-api)
+  - [compute_histogram](#compute_histogram)
+  - [HistogramResult](#histogramresult)
+- [Matplotlib API](#matplotlib-api)
+  - [hist](#hist)
 
 ---
 
-## Matplotlib API (`khisto.matplotlib`)
+## Array API
 
-The `khisto.matplotlib` module provides matplotlib-compatible plotting functions that use Khisto's optimal binning.
-
-#### `histogram`
+### `histogram`
 
 ```python
-def histogram(
-    data: Optional[IntoDataFrame] = None,
-    *,
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    hue: Optional[str] = None,
-    ax: Optional[Axes] = None,
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    granularity: Optional[GranularityT] = "best",
-    density: bool = True,
-    # ... standard matplotlib args (alpha, color, etc.)
-) -> BarContainer | list[BarContainer]
+khisto.histogram(
+    a: ArrayLike,
+    range: Optional[tuple[float, float]] = None,
+    max_bins: Optional[int] = None,
+    density: bool = False,
+) -> tuple[NDArray[np.floating], NDArray[np.floating]]
 ```
 
-Create a histogram using Khisto's optimal binning algorithm.
+Compute an optimal histogram using the Khiops binning algorithm.
 
-**Parameters:**
-- `data`: DataFrame-like object.
-- `x`: Column name or array-like data.
-- `hue`: Column name for grouping.
-- `ax`: Matplotlib axes.
-- `orientation`: 'vertical' or 'horizontal'.
-- `granularity`: Granularity level.
-- `density`: Plot density (default True) or counts.
+This function is designed as a drop-in replacement for `numpy.histogram`, providing automatic optimal binning instead of fixed-width bins.
 
-**Returns:**
-- `BarContainer` or list of `BarContainer` objects.
+#### Parameters
 
-#### `ecdf`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `a` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
+| `range` | `tuple[float, float]` | `None` | The lower and upper range of the bins. If not provided, range is `(a.min(), a.max())`. Values outside the range are ignored. |
+| `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the algorithm determines the optimal number. |
+| `density` | `bool` | `False` | If `False`, the result contains the number of samples in each bin. If `True`, the result is the value of the probability density function at the bin, normalized such that the integral over the range is 1. |
+
+#### Returns
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `hist` | `NDArray[np.floating]` | The values of the histogram. |
+| `bin_edges` | `NDArray[np.floating]` | Array of length `len(hist) + 1` containing the bin edges. |
+
+#### Examples
+
+Basic usage:
 
 ```python
-def ecdf(
-    data: Optional[IntoDataFrame] = None,
-    *,
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    hue: Optional[str] = None,
-    ax: Optional[Axes] = None,
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    granularity: Optional[GranularityT] = "best",
-    density: bool = True,
-    # ... standard matplotlib args
-) -> Line2D | list[Line2D] | None
+import numpy as np
+from khisto import histogram
+
+data = np.random.normal(0, 1, 1000)
+
+# Compute histogram
+hist, bin_edges = histogram(data)
+print(f"Number of bins: {len(hist)}")
+print(f"Bin edges: {bin_edges}")
 ```
 
-Create a cumulative distribution plot using Khisto's optimal binning algorithm.
-
-**Parameters:**
-- `data`: DataFrame-like object.
-- `x`: Column name or array-like data.
-- `hue`: Column name for grouping.
-- `ax`: Matplotlib axes.
-- `orientation`: 'vertical' or 'horizontal'.
-- `granularity`: Granularity level.
-- `density`: Plot probability (0-1) or frequency counts.
-
-**Returns:**
-- `Line2D` or list of `Line2D` objects.
-
-#### `hist`
+With density normalization:
 
 ```python
-def hist(
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    bins: Optional[GranularityT] = None,
-    # ... standard matplotlib.pyplot.hist args
-    *,
-    data: Optional[IntoDataFrame] = None,
-    hue: Optional[str] = None,
-    granularity: Optional[GranularityT] = "best",
-    # ...
-) -> Union[tuple[Any, Any, Any], Any]
+density, bin_edges = histogram(data, density=True)
+# Verify normalization: integral should be ~1
+widths = np.diff(bin_edges)
+print(f"Integral: {np.sum(density * widths)}")  # ~1.0
 ```
 
-Compute and plot a histogram or cumulative distribution. Combines functionality of `histogram` and `ecdf` with an interface similar to `matplotlib.pyplot.hist`.
+Limiting maximum bins:
+
+```python
+hist, bin_edges = histogram(data, max_bins=5)
+print(f"Number of bins: {len(hist)}")  # <= 5
+```
 
 ---
 
-## Plotly API (`khisto.plotly`)
+## Core API
 
-The `khisto.plotly` module provides Plotly Express-compatible plotting functions.
+The core API provides direct access to the Khiops histogram computation with detailed output.
 
-#### `histogram`
+### `compute_histogram`
 
 ```python
-def histogram(
-    data_frame: Optional[IntoDataFrame] = None,
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
+khisto.core.compute_histogram(
+    x: ArrayLike,
+    max_bins: Optional[int] = None,
+    range: Optional[tuple[float, float]] = None,
+    return_all: bool = False,
+) -> Union[HistogramResult, list[HistogramResult]]
+```
+
+Compute an optimal histogram using the Khiops binning algorithm.
+
+#### Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `x` | `ArrayLike` | required | Input data array. |
+| `max_bins` | `int` | `None` | Maximum number of bins for the histogram. |
+| `range` | `tuple[float, float]` | `None` | The range `(min, max)` over which to compute the histogram. Values outside this range are ignored. |
+| `return_all` | `bool` | `False` | If `True`, return all granularity levels computed by the algorithm. If `False`, return only the optimal histogram. |
+
+#### Returns
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `result` | `HistogramResult` or `list[HistogramResult]` | If `return_all=False`, returns a single `HistogramResult` for the optimal histogram. If `return_all=True`, returns a list of `HistogramResult` objects for all granularity levels. |
+
+#### Examples
+
+Basic usage:
+
+```python
+import numpy as np
+from khisto.core import compute_histogram
+
+data = np.random.normal(0, 1, 1000)
+result = compute_histogram(data)
+
+print(f"Number of bins: {len(result.frequency)}")
+print(f"Bin edges: {result.bin_edges}")
+print(f"Is optimal: {result.is_best}")
+```
+
+Get all granularity levels:
+
+```python
+results = compute_histogram(data, return_all=True)
+for r in results:
+    marker = " (best)" if r.is_best else ""
+    print(f"Granularity {r.granularity}: {len(r.frequency)} bins{marker}")
+```
+
+---
+
+### `HistogramResult`
+
+```python
+@dataclass
+class HistogramResult:
+    lower_bound: NDArray[np.floating]
+    upper_bound: NDArray[np.floating]
+    frequency: NDArray[np.int64]
+    probability: NDArray[np.floating]
+    density: NDArray[np.floating]
+    is_best: bool
+    granularity: int
+```
+
+A structured result containing all histogram information.
+
+#### Attributes
+
+| Attribute | Type | Description |
+|-----------|------|-------------|
+| `lower_bound` | `NDArray[np.floating]` | Lower bounds of each bin. |
+| `upper_bound` | `NDArray[np.floating]` | Upper bounds of each bin. |
+| `frequency` | `NDArray[np.int64]` | Count of samples in each bin. |
+| `probability` | `NDArray[np.floating]` | Probability mass in each bin (frequency / total). |
+| `density` | `NDArray[np.floating]` | Probability density (probability / bin_width). |
+| `is_best` | `bool` | Whether this is the optimal histogram. |
+| `granularity` | `int` | Granularity level (number of bins at this level). |
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `bin_edges` | `NDArray[np.floating]` | Array of bin edges (length = n_bins + 1). |
+| `bin_widths` | `NDArray[np.floating]` | Width of each bin. |
+| `bin_centers` | `NDArray[np.floating]` | Center of each bin. |
+
+#### Examples
+
+```python
+import numpy as np
+from khisto.core import compute_histogram
+
+data = np.random.normal(0, 1, 1000)
+result = compute_histogram(data)
+
+# Access bin information
+print(f"Bin edges: {result.bin_edges}")
+print(f"Bin widths: {result.bin_widths}")
+print(f"Bin centers: {result.bin_centers}")
+
+# Access histogram values
+print(f"Frequencies: {result.frequency}")
+print(f"Probabilities: {result.probability}")
+print(f"Densities: {result.density}")
+
+# Check optimality
+print(f"Is best: {result.is_best}")
+print(f"Granularity: {result.granularity}")
+```
+
+---
+
+## Matplotlib API
+
+### `hist`
+
+```python
+khisto.matplotlib.hist(
+    x: ArrayLike,
+    range: Optional[tuple[float, float]] = None,
+    max_bins: Optional[int] = None,
+    density: bool = False,
+    histtype: str = "bar",
+    orientation: Literal["vertical", "horizontal"] = "vertical",
+    log: bool = False,
     color: Optional[str] = None,
-    # ... standard plotly express args
-    granularity: Optional[GranularityT] = "best",
-    # ...
-) -> go.Figure
+    label: Optional[str] = None,
+    ax: Optional[Axes] = None,
+    **kwargs,
+) -> tuple[NDArray[np.floating], NDArray[np.floating], Any]
 ```
 
-Create a histogram using Khisto's optimal binning algorithm.
+Plot an optimal histogram using matplotlib.
 
-**Parameters:**
-- `data_frame`: DataFrame-like object.
-- `x`: Column name or array-like data.
-- `color`: Column name for grouping.
-- `granularity`: Granularity level.
+This function is designed to work similarly to `matplotlib.pyplot.hist`, but uses Khiops optimal binning.
 
-**Returns:**
-- `plotly.graph_objects.Figure`
+#### Parameters
 
-#### `ecdf`
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `x` | `ArrayLike` | required | Input data. |
+| `range` | `tuple[float, float]` | `None` | The lower and upper range of the bins. |
+| `max_bins` | `int` | `None` | Maximum number of bins. |
+| `density` | `bool` | `False` | If `True`, plot probability density instead of counts. |
+| `histtype` | `str` | `"bar"` | Type of histogram: `"bar"`, `"step"`, or `"stepfilled"`. |
+| `orientation` | `str` | `"vertical"` | `"vertical"` or `"horizontal"`. |
+| `log` | `bool` | `False` | If `True`, set log scale on the value axis. |
+| `color` | `str` | `None` | Color of the histogram. |
+| `label` | `str` | `None` | Label for legend. |
+| `ax` | `Axes` | `None` | Matplotlib axes to plot on. If `None`, uses current axes. |
+| `**kwargs` | | | Additional arguments passed to matplotlib's `bar` or `stairs`. |
+
+#### Returns
+
+| Return | Type | Description |
+|--------|------|-------------|
+| `n` | `NDArray[np.floating]` | The values of the histogram bins. |
+| `bins` | `NDArray[np.floating]` | The bin edges. |
+| `patches` | `Any` | Container of individual artists (bars or StepPatch). |
+
+#### Examples
+
+Basic plot:
 
 ```python
-def ecdf(
-    data_frame: Optional[IntoDataFrame] = None,
-    x: Optional[Union[str, ArrayT, IntoSeries]] = None,
-    # ... standard plotly express args
-    granularity: Optional[GranularityT] = "best",
-    # ...
-) -> go.Figure
+import numpy as np
+import matplotlib.pyplot as plt
+from khisto.matplotlib import hist
+
+data = np.random.normal(0, 1, 1000)
+
+n, bins, patches = hist(data)
+plt.xlabel('Value')
+plt.ylabel('Count')
+plt.title('Optimal Histogram')
+plt.show()
 ```
 
-Create a cumulative distribution plot using Khisto's optimal binning algorithm.
-
-**Parameters:**
-- `data_frame`: DataFrame-like object.
-- `x`: Column name or array-like data.
-- `granularity`: Granularity level.
-
-**Returns:**
-- `plotly.graph_objects.Figure`
-
-#### `ridgeplot`
+Density plot:
 
 ```python
-def ridgeplot(
-    data_frame: Any,
-    x: str,
-    y: str,
-    granularity: Optional[GranularityT] = "best",
-    # ... styling args (opacity, overlap, etc.)
-) -> go.Figure
+n, bins, patches = hist(data, density=True)
+plt.xlabel('Value')
+plt.ylabel('Density')
+plt.show()
 ```
 
-Create a ridge plot (joy plot) using Khisto's optimal binning algorithm.
+Step histogram:
 
-**Parameters:**
-- `data_frame`: DataFrame-like object.
-- `x`: Column name for the value axis (horizontal).
-- `y`: Column name for the category axis (vertical).
-- `granularity`: Granularity level.
-- `overlap`: Amount of overlap between ridges (0.0 to 1.0).
+```python
+n, bins, patches = hist(data, histtype='step', color='blue', label='Data')
+plt.legend()
+plt.show()
+```
 
-**Returns:**
-- `plotly.graph_objects.Figure`
+Using specific axes:
+
+```python
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+
+hist(data, ax=ax1)
+ax1.set_title('Counts')
+
+hist(data, density=True, ax=ax2)
+ax2.set_title('Density')
+
+plt.tight_layout()
+plt.show()
+```
+
+---
+
+## Type Aliases
+
+```python
+ArrayLike = Union[list, np.ndarray, ...]
+```
+
+Any array-like object that can be converted to a NumPy array.
