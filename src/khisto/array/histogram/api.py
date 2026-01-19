@@ -14,6 +14,43 @@ from numpy.typing import ArrayLike, NDArray
 from khisto.core import compute_histogram, HistogramResult
 
 
+def _select_histogram(
+    results: list[HistogramResult],
+    max_bins: Optional[int] = None,
+) -> HistogramResult:
+    """Select the appropriate histogram from the list of results.
+
+    Parameters
+    ----------
+    results : list[HistogramResult]
+        List of histogram results at different granularity levels.
+    max_bins : int, optional
+        Maximum number of bins. If None, return the best (optimal) histogram.
+
+    Returns
+    -------
+    HistogramResult
+        The selected histogram result.
+    """
+    if max_bins is not None:
+        # Find the finest granularity that respects max_bins
+        selected = None
+        for r in results:
+            if len(r) <= max_bins:
+                selected = r
+            else:
+                break
+        # If no histogram respects the constraint, use the coarsest one
+        return selected if selected is not None else results[0]
+    else:
+        # Return the best (optimal) histogram
+        for r in results:
+            if r.is_best:
+                return r
+        # Fallback to finest granularity if no best is marked
+        return results[-1]
+
+
 def histogram(
     a: ArrayLike,
     range: Optional[tuple[float, float]] = None,
@@ -30,15 +67,15 @@ def histogram(
     a : array_like
         Input data. The histogram is computed over the flattened array.
     range : tuple of (float, float), optional
-        The lower and upper range of the bins. If not provided, range is
-        simply (a.min(), a.max()). Values outside the range are ignored.
+        The lower and upper range of the bins. Values outside the range are
+        ignored. The first element of the range must be less than or equal
+        to the second. If not provided, the range is simply
+        ``(a.min(), a.max())``.
     max_bins : int, optional
         Maximum number of bins. If not provided, the algorithm selects
         the optimal number of bins automatically.
     density : bool, default False
-        If False, the result will contain the number of samples in each bin.
-        If True, the result is the value of the probability density function
-        at each bin, normalized such that the integral over the range is 1.
+        If True, return probability density values; otherwise return counts.
 
     Returns
     -------
@@ -68,14 +105,19 @@ def histogram(
     >>> density_hist, edges = histogram(data, density=True)
     >>> # Constrained number of bins
     >>> hist, edges = histogram(data, max_bins=10)
-    >>> # Limited range
+    >>> # Filter to a specific range (values outside are ignored)
     >>> hist, edges = histogram(data, range=(-2, 2))
     """
     # Convert to numpy array and flatten
     arr = np.asarray(a, dtype=np.float64).ravel()
 
-    result = compute_histogram(arr, max_bins=max_bins, range=range)
-    assert isinstance(result, HistogramResult)  # return_all defaults to False
+    # Filter values by range if specified
+    if range is not None:
+        min_val, max_val = range
+        arr = arr[(arr >= min_val) & (arr <= max_val)]
+
+    results = compute_histogram(arr)
+    result = _select_histogram(results, max_bins=max_bins)
 
     if density:
         return result.density.copy(), result.bin_edges.copy()

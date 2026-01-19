@@ -33,77 +33,44 @@ def hist(
     alpha: Optional[float] = None,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray, Any]:
-    """
-    Compute and plot an optimal histogram.
+    """Compute and plot an optimal histogram.
 
-    This function provides a matplotlib.pyplot.hist-like interface using
-    Khisto's optimal binning algorithm for automatic bin selection.
+    Drop-in replacement for `matplotlib.pyplot.hist` using Khisto's optimal
+    binning algorithm. Most parameters match matplotlib's hist function.
 
     Parameters
     ----------
     x : array_like
-        Input data. The histogram is computed over the flattened array.
+        Input data.
     range : tuple of (float, float), optional
-        The lower and upper range of the bins. If not provided, range is
-        simply (x.min(), x.max()). Values outside the range are ignored.
+        The lower and upper range of the bins. Values outside the range are
+        ignored. If not provided, the range is ``(x.min(), x.max())``.
     max_bins : int, optional
-        Maximum number of bins. If not provided, the algorithm selects
-        the optimal number of bins automatically.
-    density : bool, default False
-        If True, draw a probability density histogram (normalized to
-        integrate to 1). If False, draw counts.
-    cumulative : bool, default False
-        Not supported. If True, raises NotImplementedError.
-    histtype : {'bar', 'step', 'stepfilled'}, default 'bar'
-        The type of histogram to draw.
-        - 'bar' is a traditional bar-type histogram.
-        - 'step' generates a line plot.
-        - 'stepfilled' generates a filled line plot.
-    orientation : {'vertical', 'horizontal'}, default 'vertical'
-        If 'horizontal', barh will be used for bar-type histograms.
-    log : bool, default False
-        If True, the histogram axis will be set to a log scale.
-    color : str, optional
-        Color for the histogram.
-    label : str, optional
-        Label for the histogram (for legend).
-    ax : matplotlib.axes.Axes, optional
+        Maximum number of bins. If None, uses optimal binning.
+    ax : Axes, optional
         Axes to plot on. If None, uses current axes.
-    edgecolor : str, optional
-        Color of bar edges.
-    linewidth : float, optional
-        Width of bar edges.
-    alpha : float, optional
-        Transparency (0.0 to 1.0).
-    **kwargs :
-        Additional keyword arguments passed to matplotlib bar/step functions.
+    **kwargs
+        Other parameters are passed to matplotlib. See `matplotlib.pyplot.hist`.
 
     Returns
     -------
     n : ndarray
-        The values of the histogram bins (counts or density).
+        Histogram values.
     bins : ndarray
-        The edges of the bins.
-    patches : BarContainer
+        Bin edges.
+    patches
         Container with the bar patches.
 
-    Raises
-    ------
-    NotImplementedError
-        If cumulative=True (not yet supported).
+    See Also
+    --------
+    matplotlib.pyplot.hist : Full documentation of supported parameters.
+    khisto.histogram : Underlying histogram computation.
 
     Examples
     --------
-    >>> import numpy as np
-    >>> import matplotlib.pyplot as plt
     >>> from khisto.matplotlib import hist
-    >>> data = np.random.normal(0, 1, 1000)
-    >>> n, bins, patches = hist(data)
-    >>> plt.show()
-    >>> # Density histogram
-    >>> n, bins, patches = hist(data, density=True)
-    >>> # Constrained bins
-    >>> n, bins, patches = hist(data, max_bins=10)
+    >>> hist(data)
+    >>> hist(data, density=True, max_bins=10)
     """
     if cumulative:
         raise NotImplementedError("Cumulative histograms are not yet supported")

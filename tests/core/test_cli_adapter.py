@@ -103,29 +103,20 @@ class TestComputeHistogram:
 
     def test_compute_histogram_basic(self, sample_data):
         """Test basic histogram computation."""
-        result = compute_histogram(sample_data)
+        results = compute_histogram(sample_data)
 
-        assert isinstance(result, HistogramResult)
-        assert len(result) > 0
-        assert len(result.bin_edges) == len(result) + 1
+        assert isinstance(results, list)
+        assert len(results) > 0
+        assert all(isinstance(r, HistogramResult) for r in results)
 
-    def test_compute_histogram_with_range(self, sample_data):
-        """Test histogram with range parameter."""
-        result = compute_histogram(sample_data, range=(-1, 1))
+        # Check each result has valid structure
+        for result in results:
+            assert len(result) > 0
+            assert len(result.bin_edges) == len(result) + 1
 
-        # All bin edges should be within range
-        assert result.bin_edges[0] >= -1
-        assert result.bin_edges[-1] <= 1
-
-    def test_compute_histogram_with_max_bins(self, sample_data):
-        """Test histogram with max_bins parameter."""
-        result = compute_histogram(sample_data, max_bins=5)
-
-        assert len(result) <= 5
-
-    def test_compute_histogram_return_all(self, sample_data):
+    def test_compute_histogram_returns_all_granularities(self, sample_data):
         """Test histogram returning all granularities."""
-        results = compute_histogram(sample_data, return_all=True)
+        results = compute_histogram(sample_data)
 
         assert isinstance(results, list)
         assert len(results) > 0
@@ -147,7 +138,8 @@ class TestComputeHistogram:
     def test_compute_histogram_nan_handling(self):
         """Test that NaN values are filtered out."""
         data = np.array([1.0, 2.0, np.nan, 3.0, np.nan, 4.0])
-        result = compute_histogram(data)
+        results = compute_histogram(data)
 
-        # Should process 4 valid values
-        assert np.sum(result.frequency) == 4
+        # Should process 4 valid values - check the finest granularity result
+        finest_result = results[-1]
+        assert np.sum(finest_result.frequency) == 4

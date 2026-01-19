@@ -131,11 +131,24 @@ class TestHistogram:
         # Counts should be integers (as floats)
         assert np.all(hist_counts == hist_counts.astype(int))
 
-    def test_histogram_empty_after_range(self):
-        """Test that empty array after range filtering raises ValueError."""
-        data = [1.0, 2.0, 3.0]
-        with pytest.raises(ValueError, match="empty"):
-            histogram(data, range=(10, 20))
+    def test_histogram_range_filters_data(self, normal_data):
+        """Test that range filters input values (not just zooms)."""
+        # Get full histogram first
+        hist_full, edges_full = histogram(normal_data, density=False)
+        total_count_full = np.sum(hist_full)
+
+        # Filter to a narrower range
+        hist_filtered, edges_filtered = histogram(
+            normal_data, range=(-1, 1), density=False
+        )
+        total_count_filtered = np.sum(hist_filtered)
+
+        # Filtered should have fewer points (data is normal, so some is outside [-1,1])
+        assert total_count_filtered < total_count_full
+
+        # Verify the count matches the actual number of points in range
+        expected_count = np.sum((normal_data >= -1) & (normal_data <= 1))
+        assert total_count_filtered == expected_count
 
 
 class TestHistogramNumpyCompatibility:

@@ -29,16 +29,16 @@ khisto.histogram(
 
 Compute an optimal histogram using the Khiops binning algorithm.
 
-This function is designed as a drop-in replacement for `numpy.histogram`, providing automatic optimal binning instead of fixed-width bins.
+Drop-in replacement for [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html), using optimal binning instead of fixed-width bins.
 
 #### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `a` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
-| `range` | `tuple[float, float]` | `None` | The lower and upper range of the bins. If not provided, range is `(a.min(), a.max())`. Values outside the range are ignored. |
-| `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the algorithm determines the optimal number. |
-| `density` | `bool` | `False` | If `False`, the result contains the number of samples in each bin. If `True`, the result is the value of the probability density function at the bin, normalized such that the integral over the range is 1. |
+| `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
+| `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the optimal number is determined automatically. |
+| `density` | `bool` | `False` | If `True`, return probability density values; otherwise return counts. |
 
 #### Returns
 
@@ -46,6 +46,10 @@ This function is designed as a drop-in replacement for `numpy.histogram`, provid
 |--------|------|-------------|
 | `hist` | `NDArray[np.floating]` | The values of the histogram. |
 | `bin_edges` | `NDArray[np.floating]` | Array of length `len(hist) + 1` containing the bin edges. |
+
+#### See Also
+
+- [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html) — NumPy's standard histogram function.
 
 #### Examples
 
@@ -90,28 +94,26 @@ The core API provides direct access to the Khiops histogram computation with det
 ```python
 khisto.core.compute_histogram(
     x: ArrayLike,
-    max_bins: Optional[int] = None,
-    range: Optional[tuple[float, float]] = None,
-    return_all: bool = False,
-) -> Union[HistogramResult, list[HistogramResult]]
+) -> list[HistogramResult]
 ```
 
-Compute an optimal histogram using the Khiops binning algorithm.
+Compute optimal histograms at all granularity levels using the Khiops binning algorithm.
 
 #### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `x` | `ArrayLike` | required | Input data array. |
-| `max_bins` | `int` | `None` | Maximum number of bins for the histogram. |
-| `range` | `tuple[float, float]` | `None` | The range `(min, max)` over which to compute the histogram. Values outside this range are ignored. |
-| `return_all` | `bool` | `False` | If `True`, return all granularity levels computed by the algorithm. If `False`, return only the optimal histogram. |
 
 #### Returns
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `result` | `HistogramResult` or `list[HistogramResult]` | If `return_all=False`, returns a single `HistogramResult` for the optimal histogram. If `return_all=True`, returns a list of `HistogramResult` objects for all granularity levels. |
+| `results` | `list[HistogramResult]` | List of `HistogramResult` objects for all granularity levels, from coarsest to finest. |
+
+#### See Also
+
+- [`khisto.histogram`](#histogram) — Simplified interface returning `(hist, bin_edges)`.
 
 #### Examples
 
@@ -122,20 +124,13 @@ import numpy as np
 from khisto.core import compute_histogram
 
 data = np.random.normal(0, 1, 1000)
-result = compute_histogram(data)
+results = compute_histogram(data)
 
-print(f"Number of bins: {len(result.frequency)}")
-print(f"Bin edges: {result.bin_edges}")
-print(f"Is optimal: {result.is_best}")
-```
-
-Get all granularity levels:
-
-```python
-results = compute_histogram(data, return_all=True)
+# Find the optimal histogram
 for r in results:
-    marker = " (best)" if r.is_best else ""
-    print(f"Granularity {r.granularity}: {len(r.frequency)} bins{marker}")
+    if r.is_best:
+        print(f"Optimal: {len(r.frequency)} bins")
+        print(f"Bin edges: {r.bin_edges}")
 ```
 
 ---
@@ -212,35 +207,24 @@ khisto.matplotlib.hist(
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
     density: bool = False,
-    histtype: str = "bar",
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    log: bool = False,
-    color: Optional[str] = None,
-    label: Optional[str] = None,
     ax: Optional[Axes] = None,
     **kwargs,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], Any]
 ```
 
-Plot an optimal histogram using matplotlib.
+Compute and plot an optimal histogram.
 
-This function is designed to work similarly to `matplotlib.pyplot.hist`, but uses Khiops optimal binning.
+Drop-in replacement for [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) using Khisto's optimal binning algorithm.
 
 #### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `x` | `ArrayLike` | required | Input data. |
-| `range` | `tuple[float, float]` | `None` | The lower and upper range of the bins. |
-| `max_bins` | `int` | `None` | Maximum number of bins. |
-| `density` | `bool` | `False` | If `True`, plot probability density instead of counts. |
-| `histtype` | `str` | `"bar"` | Type of histogram: `"bar"`, `"step"`, or `"stepfilled"`. |
-| `orientation` | `str` | `"vertical"` | `"vertical"` or `"horizontal"`. |
-| `log` | `bool` | `False` | If `True`, set log scale on the value axis. |
-| `color` | `str` | `None` | Color of the histogram. |
-| `label` | `str` | `None` | Label for legend. |
-| `ax` | `Axes` | `None` | Matplotlib axes to plot on. If `None`, uses current axes. |
-| `**kwargs` | | | Additional arguments passed to matplotlib's `bar` or `stairs`. |
+| `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
+| `max_bins` | `int` | `None` | Maximum number of bins. If `None`, uses optimal binning. |
+| `ax` | `Axes` | `None` | Axes to plot on. If `None`, uses current axes. |
+| `**kwargs` | | | Other parameters passed to matplotlib. See [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html). |
 
 #### Returns
 
@@ -249,6 +233,11 @@ This function is designed to work similarly to `matplotlib.pyplot.hist`, but use
 | `n` | `NDArray[np.floating]` | The values of the histogram bins. |
 | `bins` | `NDArray[np.floating]` | The bin edges. |
 | `patches` | `Any` | Container of individual artists (bars or StepPatch). |
+
+#### See Also
+
+- [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Full documentation of supported parameters.
+- [`khisto.histogram`](#histogram) — Underlying histogram computation.
 
 #### Examples
 
