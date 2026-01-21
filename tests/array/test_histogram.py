@@ -119,7 +119,7 @@ class TestHistogram:
 
     def test_histogram_density_parameter(self, normal_data):
         """Test density parameter behavior."""
-        # Without density (counts)
+        # Without density (counts) - explicit False same as None default
         hist_counts, edges1 = histogram(normal_data, density=False)
 
         # With density

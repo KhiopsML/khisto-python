@@ -23,13 +23,11 @@ khisto.histogram(
     a: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: bool = False,
+    density: Optional[bool] = None,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating]]
 ```
 
 Compute an optimal histogram using the Khiops binning algorithm.
-
-Drop-in replacement for [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html), using optimal binning instead of fixed-width bins.
 
 #### Parameters
 
@@ -38,7 +36,7 @@ Drop-in replacement for [`numpy.histogram`](https://numpy.org/doc/stable/referen
 | `a` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
 | `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
 | `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the optimal number is determined automatically. |
-| `density` | `bool` | `False` | If `True`, return probability density values; otherwise return counts. |
+| `density` | `bool` | `None` | If `False` or `None`, return counts; if `True`, return probability density values. |
 
 #### Returns
 
@@ -49,7 +47,7 @@ Drop-in replacement for [`numpy.histogram`](https://numpy.org/doc/stable/referen
 
 #### See Also
 
-- [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html) — NumPy's standard histogram function.
+- [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html) — NumPy's histogram function (`bins` and `weights` parameters are not supported).
 
 #### Examples
 
@@ -206,7 +204,7 @@ khisto.matplotlib.hist(
     x: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: bool = False,
+    density: bool = True,
     ax: Optional[Axes] = None,
     **kwargs,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], Any]
@@ -214,29 +212,26 @@ khisto.matplotlib.hist(
 
 Compute and plot an optimal histogram.
 
-Drop-in replacement for [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) using Khisto's optimal binning algorithm.
-
 #### Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `x` | `ArrayLike` | required | Input data. |
-| `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
+| `x` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
 | `max_bins` | `int` | `None` | Maximum number of bins. If `None`, uses optimal binning. |
-| `ax` | `Axes` | `None` | Axes to plot on. If `None`, uses current axes. |
-| `**kwargs` | | | Other parameters passed to matplotlib. See [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html). |
+
+Other parameters are passed to matplotlib. See [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) for styling options.
 
 #### Returns
 
 | Return | Type | Description |
 |--------|------|-------------|
-| `n` | `NDArray[np.floating]` | The values of the histogram bins. |
+| `n` | `NDArray[np.floating]` | The values of the histogram bins (probability density by default). |
 | `bins` | `NDArray[np.floating]` | The bin edges. |
 | `patches` | `Any` | Container of individual artists (bars or StepPatch). |
 
 #### See Also
 
-- [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Full documentation of supported parameters.
+- [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Matplotlib's histogram function (`bins`, `weights`, `cumulative`, and stacked/multiple dataset features are not supported).
 - [`khisto.histogram`](#histogram) — Underlying histogram computation.
 
 #### Examples
@@ -250,19 +245,20 @@ from khisto.matplotlib import hist
 
 data = np.random.normal(0, 1, 1000)
 
+# Default is density=True
 n, bins, patches = hist(data)
 plt.xlabel('Value')
-plt.ylabel('Count')
+plt.ylabel('Density')
 plt.title('Optimal Histogram')
 plt.show()
 ```
 
-Density plot:
+Frequency plot:
 
 ```python
-n, bins, patches = hist(data, density=True)
+n, bins, patches = hist(data, density=False)
 plt.xlabel('Value')
-plt.ylabel('Density')
+plt.ylabel('Count')
 plt.show()
 ```
 

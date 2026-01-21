@@ -42,9 +42,9 @@ class TestHistBasic:
         plt.close()
 
     def test_density_histogram(self, normal_data):
-        """Test density histogram."""
+        """Test density histogram (default behavior)."""
         fig, ax = plt.subplots()
-        n, bins, patches = hist(normal_data, density=True, ax=ax)
+        n, bins, patches = hist(normal_data, ax=ax)
 
         # Density should integrate to 1
         bin_widths = np.diff(bins)
@@ -53,7 +53,7 @@ class TestHistBasic:
         plt.close(fig)
 
     def test_frequency_histogram(self, normal_data):
-        """Test frequency histogram."""
+        """Test frequency histogram (explicit density=False)."""
         fig, ax = plt.subplots()
         n, bins, patches = hist(normal_data, density=False, ax=ax)
 
@@ -118,11 +118,6 @@ class TestHistBasic:
 
         assert isinstance(n, np.ndarray)
         plt.close(fig)
-
-    def test_cumulative_not_supported(self, normal_data):
-        """Test that cumulative raises NotImplementedError."""
-        with pytest.raises(NotImplementedError):
-            hist(normal_data, cumulative=True)
 
 
 class TestHistReturnValues:

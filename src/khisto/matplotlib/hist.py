@@ -19,8 +19,7 @@ def hist(
     x: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: bool = False,
-    cumulative: bool = False,
+    density: bool = True,
     histtype: str = "bar",
     orientation: Literal["vertical", "horizontal"] = "vertical",
     log: bool = False,
@@ -35,27 +34,18 @@ def hist(
 ) -> tuple[np.ndarray, np.ndarray, Any]:
     """Compute and plot an optimal histogram.
 
-    Drop-in replacement for `matplotlib.pyplot.hist` using Khisto's optimal
-    binning algorithm. Most parameters match matplotlib's hist function.
-
     Parameters
     ----------
     x : array_like
-        Input data.
-    range : tuple of (float, float), optional
-        The lower and upper range of the bins. Values outside the range are
-        ignored. If not provided, the range is ``(x.min(), x.max())``.
+        Input data. The histogram is computed over the flattened array.
     max_bins : int, optional
-        Maximum number of bins. If None, uses optimal binning.
-    ax : Axes, optional
-        Axes to plot on. If None, uses current axes.
-    **kwargs
-        Other parameters are passed to matplotlib. See `matplotlib.pyplot.hist`.
+        Maximum number of bins. If not provided, the algorithm selects
+        the optimal number of bins automatically.
 
     Returns
     -------
     n : ndarray
-        Histogram values.
+        Histogram values (probability density by default).
     bins : ndarray
         Bin edges.
     patches
@@ -63,17 +53,11 @@ def hist(
 
     See Also
     --------
-    matplotlib.pyplot.hist : Full documentation of supported parameters.
-    khisto.histogram : Underlying histogram computation.
-
-    Examples
-    --------
-    >>> from khisto.matplotlib import hist
-    >>> hist(data)
-    >>> hist(data, density=True, max_bins=10)
+    matplotlib.pyplot.hist : Matplotlib's histogram function. The ``bins``,
+        ``weights``, ``cumulative``, and stacked/multiple dataset features
+        are not supported.
+    khisto.array.histogram : Underlying histogram computation.
     """
-    if cumulative:
-        raise NotImplementedError("Cumulative histograms are not yet supported")
 
     # Get axes
     if ax is None:
