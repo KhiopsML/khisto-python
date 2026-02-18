@@ -3,8 +3,13 @@ name = "khisto"
 version = "0.1.0"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
+license = "BSD-3-Clause-Clear"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = ["numpy>=2.0"]
+
+[tool.khiops]
+khiops-version = "11.0.1-a.2"
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8"]
@@ -25,8 +30,8 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.25"]
-build-backend = "hatchling.build"
+requires = ["scikit-build-core>=0.11.6"]
+build-backend = "scikit_build_core.build"
 
 [tool.pytest.ini_options]
 addopts = "-n 4 --cov --cov-report term-missing --durations=10"
@@ -70,5 +75,34 @@ ignore = [
     "E402", # module level import not at top of file
 ]
 
-[tool.pyrefly]
-project-excludes = ["src/khiops"]
+[tool.scikit-build]
+# Source distribution file selection (initial selection from .gitignore)
+sdist.exclude = [".*"]
+# We specify full compatibility with all Python 3 releases
+wheel.py-api = "py3"
+# Read CMake minimal version from file
+cmake.version = "CMakeLists.txt"
+# Generator specification and build configuration
+cmake.args = ["-G", "Ninja"]
+# CMake variables
+# Build khisto binary in Release mode for better performance, as it is not intended for debugging
+cmake.define.CMAKE_BUILD_TYPE = "Release"
+# Options
+cmake.define.MPI = false
+cmake.define.TESTING = false
+cmake.define.BUILD_LEX_YACC = false
+cmake.define.BUILD_JARS = false
+cmake.define.GENERATE_VIEWS = false
+cmake.define.C11 = true
+# Force the use of Ninja for fast builds
+ninja.make-fallback = false
+# Build only khisto
+build.targets = ["khisto"]
+# Only install KHISTO component in wheel
+install.components = ["KHISTO"]
+
+[tool.cibuildwheel]
+# Khiops does not compile when using musl as the C standard library
+skip = "*musllinux*"
+# Install shared libraries in wheel using only CMake, so remove the default command
+repair-wheel-command = ""
