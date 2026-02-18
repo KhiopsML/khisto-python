@@ -1,0 +1,64 @@
+name: pip packaging
+on: 
+  workflow_dispatch:
+  push:
+    tags: ['*']
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: pipx run build --sdist
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pkg-sdist
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+  build-wheel:
+    name: Build wheel
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-14]
+    steps:
+      - uses: actions/checkout@v6
+      
+      - name: Configuring Developer Command Prompt for Microsoft Visual C++
+        uses: ilammy/msvc-dev-cmd@v1
+      
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.3.1
+      
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pkg-wheel-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+#   publish-testpypi:
+#     name: Publish to Test.PyPI.org
+#     needs: [build-sdist, build-wheel]
+#     runs-on: ubuntu-latest
+#     environment:
+#       name: testpypi
+#       url: https://test.pypi.org/p/khisto
+#     permissions:
+#       id-token: write
+#     steps:
+#       - uses: actions/download-artifact@v5
+#         with:
+#           pattern: pkg-*
+#           path: dist
+#           merge-multiple: true
+
+#       - uses: pypa/gh-action-pypi-publish@release/v1
+#         with:
+#           repository-url: https://test.pypi.org/legacy/
+#           verbose: true
