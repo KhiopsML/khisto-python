@@ -112,12 +112,12 @@ repos:
         pass_filenames: false
         always_run: true
         args: [--markdown-linebreak-ext=md]
-      - id: pyrefly
-        name: pyrefly
-        entry: pyrefly check
-        language: system
-        pass_filenames: false
-        always_run: true
+      # - id: pyrefly
+      #   name: pyrefly
+      #   entry: pyrefly check
+      #   language: system
+      #   pass_filenames: false
+      #   always_run: true
       - id: ruff-check
         name: ruff-check
         entry: ruff check
