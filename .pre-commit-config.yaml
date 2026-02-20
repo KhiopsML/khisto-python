@@ -130,3 +130,12 @@ repos:
         entry: ruff format
         language: system
         pass_filenames: false
+      - id: update-copyright
+        name: update-copyright
+        entry: python scripts/update-copyright.py
+        language: system
+        types_or: [c, c++, java, python]
+      - id: check-obsolete-copyright
+        name: check-obsolete-copyright
+        entry: python scripts/check-obsolete-copyright.py
+        language: system
