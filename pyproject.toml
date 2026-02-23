@@ -30,7 +30,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["scikit-build-core>=0.11.6"]
+requires = ["scikit-build-core>=0.11.6", "ninja"]
 build-backend = "scikit_build_core.build"
 
 [tool.pytest.ini_options]
@@ -106,3 +106,11 @@ install.components = ["KHISTO"]
 skip = "*musllinux*"
 # Install shared libraries in wheel using only CMake, so remove the default command
 repair-wheel-command = ""
+
+# Install build-time dependencies in containers created by cibuildwheel
+# This is compatible with Debian-like and Fedora-like distributions
+[tool.cibuildwheel.linux]
+before-all = [
+    "DEPS='zip perl ninja-build'",
+    "apt-get install -y $DEPS || dnf install -y $DEPS",
+]
