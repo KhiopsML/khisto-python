@@ -40,12 +40,23 @@ jobs:
        
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.1
+
+      - name: install Python
+        uses: actions/setup-python@v5
       
+      - name: Test built wheel
+        run: |
+          pip install --find-links=wheelhouse khisto
+          pip install pytest>=8.3 pytest-cov>=6 pytest-xdist>=3.6 pytest-sugar>=1.0
+          pytest tests/
+          
       - uses: actions/upload-artifact@v6
         with:
           name: pkg-wheel-${{ matrix.os }}
           path: wheelhouse/*.whl
           if-no-files-found: error
+
+  
 
   publish-testpypi:
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' 
