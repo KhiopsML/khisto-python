@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2026 Orange. All rights reserved.
+# Copyright (c) 2026-2026 Orange. All rights reserved.
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
@@ -10,17 +10,11 @@ import sys
 from datetime import datetime
 
 # Constants to check the presence of obsolete copyright
-copyright_prefix = bytes("(c) 2023-", encoding="ascii")
-valid_copyright = bytes(f"(c) 2023-{datetime.today().year} Orange", encoding="ascii")
+copyright_prefix = bytes("(c) 2026-", encoding="ascii")
+valid_copyright = bytes(f"(c) 2026-{datetime.today().year} Orange", encoding="ascii")
 
 # List of special files
-special_files = [
-    "README.txt",
-    "LICENSE",
-    "khiops.nsi",
-    "Version.h",
-    "KWKhiopsVersion.h",
-]
+special_files = ["LICENSE"]
 
 
 def main(args):

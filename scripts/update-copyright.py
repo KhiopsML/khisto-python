@@ -1,4 +1,4 @@
-# Copyright (c) 2023-2026 Orange. All rights reserved.
+# Copyright (c) 2026-2026 Orange. All rights reserved.
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
@@ -16,7 +16,7 @@ from datetime import datetime
 byte_linesep = bytes(os.linesep, encoding="ascii")
 copyright_banner_lines = [
     bytes(
-        f"Copyright (c) 2023-{datetime.today().year} Orange. All rights reserved.",
+        f"Copyright (c) 2026-{datetime.today().year} Orange. All rights reserved.",
         encoding="ascii",
     ),
     b"This software is distributed under the BSD 3-Clause-clear License, the text of which is available",
@@ -48,9 +48,7 @@ def update_copyright(file_path):
 
     # Obtain the comment prefix string from the file extension
     _, ext = os.path.splitext(file_path)
-    if ext in (".h", ".c", ".hpp", ".cpp", ".java"):
-        comment_prefix = b"// "
-    elif ext == ".py":
+    if ext == ".py":
         comment_prefix = b"# "
     else:
         raise ValueError(f"Unsupported file extension '{ext}'.")
