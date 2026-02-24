@@ -57,7 +57,7 @@ indent-width = 4
 fix = true
 
 # Exclude a variety of commonly ignored directories.
-extend-exclude = ["src/khiops"]
+extend-exclude = ["scripts", "docs", "sandbox", ".github"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
