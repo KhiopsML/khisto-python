@@ -16,18 +16,6 @@ defaults:
     shell: bash
 
 jobs:
-  build-sdist:
-    name: Build sdist
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - run: pipx run build --sdist
-      - uses: actions/upload-artifact@v6
-        with:
-          name: pkg-sdist
-          path: dist/*.tar.gz
-          if-no-files-found: error
-
   build-wheel:
     name: Build wheel
     runs-on: ${{ matrix.os }}
