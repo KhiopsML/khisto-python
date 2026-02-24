@@ -1,6 +1,12 @@
 name: pip packaging
 on: 
   workflow_dispatch:
+    inputs:
+      python_repository:
+        description: python repository
+        type: choice
+        default: None  # no publishing to any Package Index by default
+        options: [None, test.pypi, pypi]
   push:
     tags: ['*']
   pull_request:
@@ -27,7 +33,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-14]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, windows-11-arm, macos-15-intel, macos-15]
     steps:
       - uses: actions/checkout@v6
       
@@ -56,16 +62,14 @@ jobs:
           path: wheelhouse/*.whl
           if-no-files-found: error
 
-  
-
-  publish-testpypi:
-    if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' 
-    name: Publish to Test.PyPI.org
-    needs: [build-sdist, build-wheel]
+  publish:
+    if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository != 'None'
+    name: Publish to Test.PyPI.org or PyPI.org
+    needs: [build-wheel]
     runs-on: ubuntu-latest
     environment:
-      name: testpypi
-      url: https://test.pypi.org/p/khisto
+      name: ${{ inputs.python_repository}}
+      url: https://${{ inputs.python_repository}}.org/p/khisto
     permissions:
       id-token: write
     steps:
@@ -76,16 +80,4 @@ jobs:
           merge-multiple: true
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          repository-url: https://test.pypi.org/legacy/
           verbose: true
-          
-  test-testpypi:
-    name: Test installation from Test.PyPI.org
-    needs: publish-testpypi
-    runs-on: ubuntu-latest
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/khisto
-    steps:
-      - run: pip install --index-url https://test.pypi.org/simple/ khisto
-      - run: exho "TOTO"
