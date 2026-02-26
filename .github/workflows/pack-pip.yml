@@ -6,10 +6,14 @@ on:
         description: python repository
         type: choice
         default: None  # no publishing to any Package Index by default
-        options: [None, test.pypi, pypi]
+        options: [None, testpypi, pypi]
   push:
     tags: ['*']
   pull_request:
+    paths:
+      - .github/workflows/pack-pip.yml
+      - pyproject.toml
+      - CMakeLists.txt
   
 defaults:
   run:
@@ -50,16 +54,37 @@ jobs:
           path: wheelhouse/*.whl
           if-no-files-found: error
 
-  publish:
-    if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository != 'None'
-    name: Publish to Test.PyPI.org or PyPI.org
+  release-testpypi:
+    # Publish only on tag pushes in the KhiopsML repository
+    if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'testpypi'
+    name: Publish to Test.PyPI.org
     needs: [build-wheel]
     runs-on: ubuntu-latest
-    environment:
-      name: ${{ inputs.python_repository}}
-      url: https://${{ inputs.python_repository}}.org/p/khisto
     permissions:
       id-token: write
+    environment:
+      name: testpypi
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: pkg-*
+          path: dist
+          merge-multiple: true
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          repository-url: https://test.pypi.org/legacy/
+  
+  release-pypi:
+     # Publish only on tag pushes in the KhiopsML repository
+    name: Publish to PyPI.org
+    if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'pypi'
+    needs: [build-wheel]
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    environment:
+      name: pypi
     steps:
       - uses: actions/download-artifact@v5
         with:

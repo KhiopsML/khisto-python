@@ -101,6 +101,5 @@ archs = "auto64"           # Do not build 32-bit wheels
 # This is compatible with Debian-like and Fedora-like distributions
 [tool.cibuildwheel.linux]
 before-all = [
-    "DEPS='zip perl ninja-build'",
-    "apt-get install -y $DEPS || dnf install -y $DEPS",
+    "apt-get install -y ninja-build || dnf install -y ninja-build"
 ]
