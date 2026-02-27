@@ -177,3 +177,6 @@ uv.lock
 
 # Excel
 **/*.xlsx
+
+# macOS
+.DS_Store

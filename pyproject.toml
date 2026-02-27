@@ -3,13 +3,17 @@ name = "khisto"
 version = "0.1.0"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
-requires-python = ">=3.11"
+license = "BSD-3-Clause-Clear"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
 dependencies = ["numpy>=2.0"]
+
+[tool.khiops]
+khiops-version = "11.0.1-a.2"
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8"]
 all = ["matplotlib>=3.8"]
-
 
 [dependency-groups]
 dev = [
@@ -25,8 +29,8 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.25"]
-build-backend = "hatchling.build"
+requires = ["scikit-build-core>=0.11.6", "ninja"]
+build-backend = "scikit_build_core.build"
 
 [tool.pytest.ini_options]
 addopts = "-n 4 --cov --cov-report term-missing --durations=10"
@@ -42,7 +46,6 @@ ignore-regex = 'https://([\w/\.])+'
 quiet-level = 3
 
 [tool.ruff]
-
 # Group violations by containing file.
 output-format = "grouped"
 line-length = 88
@@ -52,7 +55,7 @@ indent-width = 4
 fix = true
 
 # Exclude a variety of commonly ignored directories.
-extend-exclude = ["src/khiops"]
+extend-exclude = ["scripts", "docs", "sandbox", ".github"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -70,5 +73,33 @@ ignore = [
     "E402", # module level import not at top of file
 ]
 
-[tool.pyrefly]
-project-excludes = ["src/khiops"]
+[tool.scikit-build]
+wheel.py-api = "py3"             # We specify full compatibility with all Python 3 releases
+cmake.version = "CMakeLists.txt" # Read CMake minimal version from file
+cmake.args = ["-G", "Ninja"]     # Generator specification and build configuration
+
+# CMake variables
+# Build khisto binary in Release mode for better performance, as it is not intended for debugging
+cmake.define.CMAKE_BUILD_TYPE = "Release"
+# Options
+cmake.define.MPI = false
+cmake.define.TESTING = false
+cmake.define.BUILD_LEX_YACC = false
+cmake.define.BUILD_JARS = false
+cmake.define.GENERATE_VIEWS = false
+cmake.define.C11 = true
+ninja.make-fallback = false
+build.targets = ["khisto"]      # Build only khisto
+install.components = ["KHISTO"] # Only install KHISTO component in wheel
+
+[tool.cibuildwheel]
+build = "cp310-*"
+skip = "*musllinux*"       # Khiops does not compile when using musl as the C standard library
+archs = "auto64"           # Do not build 32-bit wheels
+
+# Install build-time dependencies in containers created by cibuildwheel
+# This is compatible with Debian-like and Fedora-like distributions
+[tool.cibuildwheel.linux]
+before-all = [
+    "apt-get install -y ninja-build || dnf install -y ninja-build"
+]
