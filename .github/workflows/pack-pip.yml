@@ -1,5 +1,6 @@
 name: pip packaging
-on: 
+
+on:
   workflow_dispatch:
     inputs:
       python_repository:
@@ -14,7 +15,11 @@ on:
       - .github/workflows/pack-pip.yml
       - pyproject.toml
       - CMakeLists.txt
-  
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 defaults:
   run:
     shell: bash
@@ -39,15 +44,21 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.1
 
-      - name: install Python
+      - name: Set up Python
         uses: actions/setup-python@v5
-      
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: Test built wheel
         run: |
-          pip install --find-links=wheelhouse khisto
-          pip install pytest>=8.3 pytest-cov>=6 pytest-xdist>=3.6 pytest-sugar>=1.0
-          pytest tests/
-          
+          uv venv .test-env
+          uv pip install --python .test-env --find-links=wheelhouse "khisto[all]"
+          VIRTUAL_ENV=.test-env uv sync --group dev --no-install-project
+          VIRTUAL_ENV=.test-env uv run pytest tests/ --no-cov
+
       - uses: actions/upload-artifact@v6
         with:
           name: pkg-wheel-${{ matrix.os }}
@@ -65,7 +76,7 @@ jobs:
     environment:
       name: testpypi
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: pkg-*
           path: dist
@@ -74,9 +85,9 @@ jobs:
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
-  
+
   release-pypi:
-     # Publish only on tag pushes in the KhiopsML repository
+    # Publish only on tag pushes in the KhiopsML repository
     name: Publish to PyPI.org
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'pypi'
     needs: [build-wheel]
@@ -86,7 +97,7 @@ jobs:
     environment:
       name: pypi
     steps:
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v6
         with:
           pattern: pkg-*
           path: dist
