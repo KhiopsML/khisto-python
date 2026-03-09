@@ -15,7 +15,6 @@ on:
       - .github/workflows/pack-pip.yml
       - pyproject.toml
       - CMakeLists.txt
-      - src/**
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
