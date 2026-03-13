@@ -19,8 +19,10 @@ release = "0.1.0" # TODO: use pyproject metadata here
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
-# Be strict about any broken references
-nitpicky = True
+# Do not be strict about any broken references, because of Sphinx limitations in
+# getting the Numpy scalar type references:
+# see https://github.com/sphinx-doc/sphinx/issues/10974
+nitpicky = False
 
 # To avoid using qualifiers like :class: to reference objects within the same context
 default_role = "obj"
