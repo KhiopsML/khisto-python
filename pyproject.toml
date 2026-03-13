@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -91,6 +91,10 @@ cmake.define.C11 = true
 ninja.make-fallback = false
 build.targets = ["khisto"]      # Build only khisto
 install.components = ["KHISTO"] # Only install KHISTO component in wheel
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "src/khisto/__init__.py"
 
 [tool.cibuildwheel]
 build = "cp310-*"

@@ -13,7 +13,7 @@ ROOT_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.absolute()
 
 KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from .array import histogram  # noqa: E402
 from .core import HistogramResult  # noqa: E402
