@@ -1,0 +1,84 @@
+---
+name: Docs
+on:
+  workflow_dispatch:
+    inputs:
+      deploy-gh-pages:
+        description: Deploy to GH Pages
+        required: true
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - docs/**.rst
+      - docs/conf.py
+      - docs/make.bat
+      - docs/Makefile
+      - docs/requirements.txt
+      - docs/_static/**.css
+      - src/khisto/**.py
+      - .github/workflows/docs.yml
+  push:
+    tags: ['*']
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  id-token: write
+  packages: read
+  pages: write
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest
+# queued. However, do NOT cancel in-progress runs as we want to allow these production deployments
+# to complete.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout khisto-python
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Install doc build requirements
+        run: |
+          uv venv .build-env
+          uv pip install --python .build-env -r docs/requirements.txt
+      - name: Build Sphinx Documentation
+        run: |
+          . .build-env/bin/activate
+          uv run --active --directory docs make html
+          deactivate
+      - name: Upload the docs as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: khisto-python-docs
+          path: ./docs/_build/html/
+  # Publish to GH pages on Git tag and manually
+  publish:
+    if: github.ref_type == 'tag' && github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download the docs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: khisto-python-docs
+          path: ./docs/_build/html
+      - name: Deploy web site  
+        run: |
+          uv venv .publish-env
+
+          # Install tool for pushing to GH pages
+          uv pip install --python .publish-env ghp-import
+
+          # Push built site directory contents to GH pages
+          . .publish-env/bin/activate
+          uv run ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
+          deactivate
