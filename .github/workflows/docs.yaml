@@ -38,17 +38,21 @@ jobs:
     steps:
       - name: Checkout khisto-python
         uses: actions/checkout@v4
-      - name: Add pip scripts directory to path
-        run: echo PATH="$PATH:/github/home/.local/bin" >> "$GITHUB_ENV"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
       - name: Install doc build requirements
         run: |
-          python -m pip install --upgrade pip
-          cd docs
-          python -m pip install -U -r requirements.txt
+          uv venv .build-env
+          uv pip install --python .build-env -r docs/requirements.txt
       - name: Build Sphinx Documentation
         run: |
-          cd docs
-          make html
+          . .build-env/bin/activate
+          uv run --active --directory docs make html
+          deactivate
       - name: Upload the docs as an artifact
         uses: actions/upload-artifact@v4
         with:
@@ -69,8 +73,12 @@ jobs:
           path: ./docs/_build/html
       - name: Deploy web site  
         run: |
+          uv venv .publish-env
+
           # Install tool for pushing to GH pages
-          pip install ghp-import
+          uv pip install --python .publish-env ghp-import
 
           # Push built site directory contents to GH pages
-          ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
+          . .publish-env/bin/activate
+          uv run ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
+          deactivate
