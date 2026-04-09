@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from khisto.array import histogram
+from khisto.array import cumfreq, histogram
 
 
 # Test data fixtures
@@ -134,6 +134,7 @@ class TestHistogram:
 
         # Counts should be integers (as floats)
         assert np.all(hist_counts == hist_counts.astype(int))
+        assert not np.allclose(hist_counts, hist_density)
 
     def test_histogram_range_filters_data(self, normal_data):
         """Test that range filters input values (not just zooms)."""
@@ -142,9 +143,7 @@ class TestHistogram:
         total_count_full = np.sum(hist_full)
 
         # Filter to a narrower range
-        hist_filtered, edges_filtered = histogram(
-            normal_data, range=(-1, 1), density=False
-        )
+        hist_filtered, edges_filtered = histogram(normal_data, range=(-1, 1), density=False)
         total_count_filtered = np.sum(hist_filtered)
 
         # Filtered should have fewer points (data is normal, so some is outside [-1,1])
@@ -178,3 +177,33 @@ class TestHistogramNumpyCompatibility:
 
         # Should process all 6 values
         assert np.sum(hist) == 6
+
+
+class TestCumfreq:
+    """Test cases for cumulative histogram function."""
+
+    def test_cumfreq_counts_match_histogram_cumsum(self, normal_data):
+        """Test cumulative counts against the base histogram."""
+        hist, bin_edges = histogram(normal_data, density=False)
+        cumcount, cumulative_edges = cumfreq(normal_data, density=False)
+
+        np.testing.assert_array_equal(cumulative_edges, bin_edges)
+        np.testing.assert_allclose(cumcount, np.cumsum(hist))
+        assert cumcount[-1] == len(normal_data)
+
+    def test_cumfreq_density_returns_cdf(self, uniform_data):
+        """Test cumulative density against the integrated density histogram."""
+        density, bin_edges = histogram(uniform_data, density=True)
+        cumulative, cumulative_edges = cumfreq(uniform_data, density=True)
+
+        np.testing.assert_array_equal(cumulative_edges, bin_edges)
+        expected = np.cumsum(density * np.diff(bin_edges))
+        np.testing.assert_allclose(cumulative, expected)
+        assert np.isclose(cumulative[-1], 1.0, rtol=1e-5)
+
+    def test_cumfreq_respects_max_bins(self, normal_data):
+        """Test cumulative histogram with a maximum bin count."""
+        cumcount, bin_edges = cumfreq(normal_data, max_bins=5)
+
+        assert len(cumcount) <= 5
+        assert len(bin_edges) == len(cumcount) + 1

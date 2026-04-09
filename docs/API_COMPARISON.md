@@ -79,6 +79,65 @@ khisto_hist, _ = histogram(data, range=(-2, 2))
 
 ---
 
+## SciPy Comparison
+
+### `scipy.stats.cumfreq` vs `khisto.cumfreq`
+
+Khisto's `cumfreq` function fills the same role as SciPy's cumulative histogram API, but with optimal variable-width bins.
+
+#### Signature Comparison
+
+```python
+# SciPy
+scipy.stats.cumfreq(
+    a,
+    numbins=10,
+    defaultreallimits=None,
+    weights=None,
+)
+
+# Khisto
+khisto.cumfreq(
+    a,
+    range=None,
+    max_bins=None,
+    density=False,
+)
+```
+
+#### Key Differences
+
+| Feature | SciPy | Khisto |
+|---------|-------|--------|
+| **Binning** | Fixed-width | Optimal variable-width |
+| **Bin count parameter** | `numbins` | `max_bins` |
+| **Range parameter** | `defaultreallimits` | `range` |
+| **Density / CDF mode** | No | Yes, with `density=True` |
+| **Weights** | Yes | No |
+| **Returns** | `cumcount`, `lowerlimit`, `binsize`, `extrapoints` | `(cumcount, bin_edges)` |
+
+#### Usage Comparison
+
+```python
+import numpy as np
+from scipy import stats
+from khisto import cumfreq
+
+data = np.random.normal(0, 1, 1000)
+
+# SciPy cumulative counts
+res = stats.cumfreq(data, numbins=20)
+scipy_cumcount = res.cumcount
+
+# Khisto cumulative counts with adaptive bins
+khisto_cumcount, khisto_edges = cumfreq(data, max_bins=20)
+
+# Khisto can also return the cumulative distribution function directly
+khisto_cdf, khisto_edges = cumfreq(data, density=True)
+```
+
+---
+
 ## Matplotlib Comparison
 
 ### `matplotlib.pyplot.hist` vs `khisto.matplotlib.hist`
@@ -114,6 +173,7 @@ khisto.matplotlib.hist(
     range=None,
     max_bins=None,
     density=False,
+    cumulative=False,
     histtype='bar',
     orientation='vertical',
     log=False,
@@ -130,11 +190,11 @@ khisto.matplotlib.hist(
 |---------|------------|--------|
 | **Binning** | Fixed-width | Optimal variable-width |
 | **Bins param** | `bins` | `max_bins` |
-| **Axes param** | Implicit (current) | Explicit `ax` parameter |
-| **Cumulative** | Supported | Not supported |
+| **Axes param** | Implicit (current) | Optional `ax` parameter |
+| **Cumulative** | Supported | Supported |
 | **Stacked** | Supported | Not supported |
 | **Weights** | Supported | Not supported |
-| **Multiple datasets** | Supported | Single dataset only |
+| **Multiple datasets** | Supported | Sequences are concatenated into one dataset |
 
 #### Usage Comparison
 
@@ -166,6 +226,10 @@ plt.show()
 # density normalization
 plt.hist(data, density=True)
 hist(data, density=True)
+
+# cumulative view
+plt.hist(data, density=True, cumulative=True)
+hist(data, density=True, cumulative=True)
 
 # histogram type
 plt.hist(data, histtype='step')
@@ -224,7 +288,7 @@ n, bins, patches = hist(data, max_bins=30)  # max_bins is optional
 | Density | ✓ | ✓ | ✓ |
 | Range | ✓ | ✓ | ✓ |
 | Weights | ✓ | ✓ | ✗ |
-| Cumulative | ✗ | ✓ | ✗ |
+| Cumulative | ✗ | ✓ | ✓ |
 | Plotting | ✗ | ✓ | ✓ |
 | Step histogram | ✗ | ✓ | ✓ |
 | Horizontal | ✗ | ✓ | ✓ |

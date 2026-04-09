@@ -16,7 +16,7 @@ import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
-from typing import Optional, Tuple, Literal
+from typing import Literal, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
@@ -136,9 +136,26 @@ def _read_csv_to_arrays(file_path: pathlib.Path) -> dict[str, np.ndarray]:
     result = {}
     columns = rows[0].keys()
 
-    # Predefined column types for histogram CSV files
-    float_columns = {"LowerBound", "UpperBound", "Probability", "Density", "Length"}
-    int_columns = {"Frequency"}
+    float_columns = {
+        "Density",
+        "InformationRate",
+        "Length",
+        "Level",
+        "LowerBound",
+        "Probability",
+        "Raw",
+        "TruncationEpsilon",
+        "UpperBound",
+    }
+    int_columns = {
+        "EmptyIntervalNumber",
+        "Frequency",
+        "Granularity",
+        "IntervalNumber",
+        "PeakIntervalNumber",
+        "RemovedSingularityNumber",
+        "SpikeIntervalNumber",
+    }
 
     for col in columns:
         if col in float_columns:
@@ -150,6 +167,41 @@ def _read_csv_to_arrays(file_path: pathlib.Path) -> dict[str, np.ndarray]:
             result[col] = np.array([row[col] for row in rows], dtype=object)
 
     return result
+
+
+def _build_histogram_result(
+    data: dict[str, np.ndarray],
+    *,
+    is_best: bool,
+    granularity: int,
+) -> HistogramResult:
+    """Build a histogram result object from parsed CSV data."""
+    return HistogramResult(
+        lower_bound=data["LowerBound"].astype(np.float64),
+        upper_bound=data["UpperBound"].astype(np.float64),
+        frequency=data["Frequency"].astype(np.int64),
+        probability=data["Probability"].astype(np.float64),
+        density=data["Density"].astype(np.float64),
+        is_best=is_best,
+        granularity=granularity,
+    )
+
+
+def _same_histogram(
+    left: dict[str, np.ndarray],
+    right: dict[str, np.ndarray],
+) -> bool:
+    """Return True when two parsed histogram CSV payloads describe the same bins."""
+    comparable_columns = (
+        "LowerBound",
+        "UpperBound",
+        "Frequency",
+        "Probability",
+        "Density",
+    )
+    return all(
+        np.array_equal(left[column], right[column]) for column in comparable_columns
+    )
 
 
 def _process_histogram_files(
@@ -171,6 +223,7 @@ def _process_histogram_files(
         List of histogram results at all granularity levels,
         sorted from coarsest to finest.
     """
+    best_histogram_data: Optional[dict[str, np.ndarray]] = None
     histogram_data: list[tuple[int, dict[str, np.ndarray]]] = []
     series_data: Optional[dict[str, np.ndarray]] = None
 
@@ -178,7 +231,10 @@ def _process_histogram_files(
     for file in pathlib.Path(temp_dir).glob(f"{base_name}*"):
         ftype, hist_id = _parse_file_type(file)
 
-        if ftype == "histogram":
+        if ftype == "best_histogram":
+            best_histogram_data = _read_csv_to_arrays(file)
+
+        elif ftype == "histogram":
             data = _read_csv_to_arrays(file)
             assert hist_id is not None  # histogram type always has an id
             histogram_data.append((hist_id, data))
@@ -192,7 +248,8 @@ def _process_histogram_files(
     if not histogram_data:
         raise ValueError("No histogram data found")
 
-    # Determine best granularity
+    # Fallback: determine best granularity from the summary series when the
+    # dedicated best histogram file does not match any numbered histogram file.
     best_granularity: Optional[int] = None
     if series_data is not None:
         max_level_idx = int(np.argmax(series_data["Level"]))
@@ -201,19 +258,14 @@ def _process_histogram_files(
     # Build all histogram results
     results = []
     for granularity, data in histogram_data:
-        is_best = (
-            granularity == best_granularity if best_granularity is not None else False
-        )
+        is_best = False
+        if best_histogram_data is not None:
+            is_best = _same_histogram(data, best_histogram_data)
+        elif best_granularity is not None:
+            is_best = granularity == best_granularity
+
         results.append(
-            HistogramResult(
-                lower_bound=data["LowerBound"].astype(np.float64),
-                upper_bound=data["UpperBound"].astype(np.float64),
-                frequency=data["Frequency"].astype(np.int64),
-                probability=data["Probability"].astype(np.float64),
-                density=data["Density"].astype(np.float64),
-                is_best=is_best,
-                granularity=granularity,
-            )
+            _build_histogram_result(data, is_best=is_best, granularity=granularity)
         )
     return results
 
@@ -243,7 +295,7 @@ def compute_histogram(
 
     Raises
     ------
-    subprocess.CalledProcessError
+    RuntimeError
         If khisto CLI execution fails.
     TypeError
         If input array is not numeric.
@@ -287,8 +339,16 @@ def compute_histogram(
         return result
 
     except subprocess.CalledProcessError as e:
-        logger.error(f"Error executing khisto: {e.stderr} \n Command: {' '.join(cmd)}")
-        raise
+        stdout = e.stdout.strip()
+        stderr = e.stderr.strip()
+        details = "\n".join(part for part in (stdout, stderr) if part)
+        message = (
+            f"khisto failed with exit code {e.returncode} while running: {' '.join(cmd)}"
+        )
+        if details:
+            message = f"{message}\n{details}"
+        logger.error(message)
+        raise RuntimeError(message) from e
     finally:
         # Clean up temporary input file and directory
         pathlib.Path(temp_input_path).unlink(missing_ok=True)

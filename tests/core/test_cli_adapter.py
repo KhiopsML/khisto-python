@@ -4,12 +4,15 @@
 
 """Tests for khisto.core.cli_adapter module."""
 
+import csv
 import pathlib
+import subprocess
 import numpy as np
 import pytest
 
 from khisto.core.cli_adapter import (
     _parse_file_type,
+    _process_histogram_files,
     HistogramResult,
 )
 from khisto.core import compute_histogram
@@ -147,3 +150,93 @@ class TestComputeHistogram:
         # Should process 4 valid values - check the finest granularity result
         finest_result = results[-1]
         assert np.sum(finest_result.frequency) == 4
+
+    def test_compute_histogram_reports_cli_failure(self, monkeypatch):
+        """Test that CLI failures raise a descriptive runtime error."""
+
+        def fail_run(*args, **kwargs):
+            raise subprocess.CalledProcessError(
+                returncode=1,
+                cmd=["khisto", "-e", "input.txt", "histogram.csv"],
+                output="khisto stdout message",
+                stderr="khisto stderr message",
+            )
+
+        monkeypatch.setattr("khisto.core.cli_adapter.subprocess.run", fail_run)
+
+        with pytest.raises(RuntimeError, match="exit code 1") as excinfo:
+            compute_histogram(np.array([0.0, 1.0]))
+
+        message = str(excinfo.value)
+        assert "khisto stdout message" in message
+        assert "khisto stderr message" in message
+
+
+class TestProcessHistogramFiles:
+    """Tests for histogram file post-processing."""
+
+    @staticmethod
+    def _write_csv(path: pathlib.Path, header: list[str], rows: list[list[object]]):
+        with path.open("w", newline="") as stream:
+            writer = csv.writer(stream)
+            writer.writerow(header)
+            writer.writerows(rows)
+
+    def test_best_histogram_file_is_authoritative(self, tmp_path):
+        """Test that histogram.csv marks the best histogram even if series disagrees."""
+        histogram_header = [
+            "LowerBound",
+            "UpperBound",
+            "Length",
+            "Frequency",
+            "Probability",
+            "Density",
+        ]
+        series_header = [
+            "FileName",
+            "Granularity",
+            "IntervalNumber",
+            "PeakIntervalNumber",
+            "SpikeIntervalNumber",
+            "EmptyIntervalNumber",
+            "Level",
+            "InformationRate",
+            "TruncationEpsilon",
+            "RemovedSingularityNumber",
+            "Raw",
+        ]
+
+        self._write_csv(
+            tmp_path / "histogram.1.csv",
+            histogram_header,
+            [[0.0, 3.0, 3.0, 3, 1.0, 1.0 / 3.0]],
+        )
+        self._write_csv(
+            tmp_path / "histogram.2.csv",
+            histogram_header,
+            [
+                [0.0, 1.0, 1.0, 1, 1.0 / 3.0, 1.0 / 3.0],
+                [1.0, 3.0, 2.0, 2, 2.0 / 3.0, 1.0 / 3.0],
+            ],
+        )
+        self._write_csv(
+            tmp_path / "histogram.csv",
+            histogram_header,
+            [
+                [0.0, 1.0, 1.0, 1, 1.0 / 3.0, 1.0 / 3.0],
+                [1.0, 3.0, 2.0, 2, 2.0 / 3.0, 1.0 / 3.0],
+            ],
+        )
+        self._write_csv(
+            tmp_path / "histogram.series.csv",
+            series_header,
+            [
+                [str(tmp_path / "histogram.1.csv"), 0, 1, 0, 0, 0, 10.0, 100.0, 0.0, 0, 0.0],
+                [str(tmp_path / "histogram.2.csv"), 2, 2, 0, 0, 0, 1.0, 10.0, 0.0, 0, 0.0],
+            ],
+        )
+
+        results = _process_histogram_files(str(tmp_path), "histogram")
+
+        assert len(results) == 2
+        assert [result.is_best for result in results] == [False, True]

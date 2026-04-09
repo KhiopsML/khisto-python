@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal, Optional, Any
+from typing import TYPE_CHECKING, Any, Literal, Optional
 
 import numpy as np
 
@@ -14,16 +14,30 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from khisto.array import histogram as khisto_histogram
+from khisto.array.histogram.api import _apply_cumulative
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
 
 
+def _normalize_cumulative(cumulative: bool | float) -> int:
+    """Normalize cumulative mode to 0 (disabled), 1, or -1 (reverse)."""
+    if isinstance(cumulative, (bool, np.bool_)):
+        return 1 if cumulative else 0
+    if isinstance(cumulative, (int, float, np.number)):
+        if cumulative < 0:
+            return -1
+        if cumulative > 0:
+            return 1
+        return 0
+    raise TypeError("cumulative must be a boolean or a number")
+
 def hist(
     x: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: bool = True,
+    density: bool = False,
+    cumulative: bool | float = False,
     histtype: str = "bar",
     orientation: Literal["vertical", "horizontal"] = "vertical",
     log: bool = False,
@@ -40,16 +54,28 @@ def hist(
 
     Parameters
     ----------
-    x : array_like
-        Input data. The histogram is computed over the flattened array.
+    x : array_like or sequence of array_like
+        Input data. Nested arrays are concatenated and histogrammed as a
+        single dataset.
+    range : tuple of (float, float), optional
+        Lower and upper range of the bins. Values outside the range are
+        ignored.
     max_bins : int, optional
         Maximum number of bins. If not provided, the algorithm selects
         the optimal number of bins automatically.
+    density : bool, optional
+        If True, return and plot probability density values. If False,
+        return and plot counts. Default is False.
+    cumulative : bool or float, optional
+        If True, return and plot cumulative values. If negative, accumulate
+        in reverse order. When used with ``density=True``, the returned values
+        are cumulative probabilities so that the last (or first, in reverse)
+        bin equals 1.
 
     Returns
     -------
     n : ndarray
-        Histogram values (probability density by default).
+        Histogram values (counts by default, or cumulative values when requested).
     bins : ndarray
         Bin edges.
     patches
@@ -58,10 +84,20 @@ def hist(
     See Also
     --------
     matplotlib.pyplot.hist : Matplotlib's histogram function. The ``bins``,
-        ``weights``, ``cumulative``, and stacked/multiple dataset features
-        are not supported.
+        ``weights``, and stacked/multiple dataset features are not supported.
+    khisto.array.cumfreq : Array-level cumulative histogram computation.
     khisto.array.histogram : Underlying histogram computation.
     """
+    unsupported_kwargs = {
+        "bins": "Use max_bins to limit the number of bins.",
+        "stacked": "Stacked histograms are not supported.",
+        "weights": "Weighted histograms are not supported.",
+    }
+    for name, hint in unsupported_kwargs.items():
+        if name in kwargs:
+            raise TypeError(f"{name} is not supported. {hint}")
+
+    cumulative_mode = _normalize_cumulative(cumulative)
 
     # Get axes
     if ax is None:
@@ -71,6 +107,13 @@ def hist(
     hist_values, bin_edges = khisto_histogram(
         x, range=range, max_bins=max_bins, density=density
     )
+    if cumulative_mode != 0:
+        hist_values = _apply_cumulative(
+            hist_values,
+            bin_edges,
+            density=density,
+            reverse=cumulative_mode < 0,
+        )
 
     # Handle log scale
     if log:

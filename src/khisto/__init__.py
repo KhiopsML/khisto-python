@@ -16,10 +16,11 @@ KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
 __version__ = version("khisto")
 
-from .array import histogram  # noqa: E402
+from .array import cumfreq, histogram  # noqa: E402
 from .core import HistogramResult  # noqa: E402
 
 __all__ = [
+    "cumfreq",
     "histogram",
     "HistogramResult",
 ]
