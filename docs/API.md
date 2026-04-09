@@ -35,7 +35,7 @@ Compute an optimal histogram using the Khiops binning algorithm.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `a` | `ArrayLike` | required | Input data. Nested sequences are flattened and concatenated into a single dataset. |
+| `a` | `ArrayLike` | required | Input data. The input is converted to a floating-point array and flattened to one dimension. |
 | `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
 | `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the optimal number is determined automatically. |
 | `density` | `bool` | `False` | If `False`, return counts; if `True`, return probability density values. |
