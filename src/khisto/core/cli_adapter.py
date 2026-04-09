@@ -342,9 +342,7 @@ def compute_histogram(
         stdout = e.stdout.strip()
         stderr = e.stderr.strip()
         details = "\n".join(part for part in (stdout, stderr) if part)
-        message = (
-            f"khisto failed with exit code {e.returncode} while running: {' '.join(cmd)}"
-        )
+        message = f"khisto failed with exit code {e.returncode} while running: {' '.join(cmd)}"
         if details:
             message = f"{message}\n{details}"
         logger.error(message)

@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
 from typing import Optional
 
 import numpy as np
@@ -127,7 +126,9 @@ def histogram(
     arr = np.asarray(a, dtype=np.float64).flatten()
 
     if arr.ndim > 1:
-        raise ValueError("Input array must be one-dimensional. Use arr.flatten() to flatten it.")
+        raise ValueError(
+            "Input array must be one-dimensional. Use arr.flatten() to flatten it."
+        )
 
     # Filter values by range if specified
     if range is not None:
@@ -196,7 +197,9 @@ def cumfreq(
        histograms for large-scale data sets. Computational Statistics & Data
        Analysis, 180:0-0, 2023.
     """
-    hist_values, bin_edges = histogram(a, range=range, max_bins=max_bins, density=density)
+    hist_values, bin_edges = histogram(
+        a, range=range, max_bins=max_bins, density=density
+    )
     cumulative_values = _apply_cumulative(
         hist_values,
         bin_edges,

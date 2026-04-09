@@ -32,6 +32,7 @@ def _normalize_cumulative(cumulative: bool | float) -> int:
         return 0
     raise TypeError("cumulative must be a boolean or a number")
 
+
 def hist(
     x: ArrayLike,
     range: Optional[tuple[float, float]] = None,

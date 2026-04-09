@@ -143,7 +143,9 @@ class TestHistogram:
         total_count_full = np.sum(hist_full)
 
         # Filter to a narrower range
-        hist_filtered, edges_filtered = histogram(normal_data, range=(-1, 1), density=False)
+        hist_filtered, edges_filtered = histogram(
+            normal_data, range=(-1, 1), density=False
+        )
         total_count_filtered = np.sum(hist_filtered)
 
         # Filtered should have fewer points (data is normal, so some is outside [-1,1])
