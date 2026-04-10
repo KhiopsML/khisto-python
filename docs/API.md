@@ -6,7 +6,6 @@ Complete API reference for the Khisto library.
 
 - [Array API](#array-api)
   - [histogram](#histogram)
-  - [cumfreq](#cumfreq)
 - [Core API](#core-api)
   - [compute_histogram](#compute_histogram)
   - [HistogramResult](#histogramresult)
@@ -245,7 +244,6 @@ Other parameters are passed to matplotlib for styling. `ax` can be provided to d
 #### See Also
 
 - [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Matplotlib's histogram function.
-- [`khisto.cumfreq`](#cumfreq) — Array-level cumulative histogram API.
 - [`khisto.histogram`](#histogram) — Underlying non-cumulative histogram computation.
 
 #### Examples
