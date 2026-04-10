@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 dependencies = ["numpy>=2.0"]
 
 [tool.khiops]
-khiops-version = "11.0.1-a.2"
+khiops-version = "11.0.1-a.3"
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8"]

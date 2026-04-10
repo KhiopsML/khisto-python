@@ -86,7 +86,6 @@ def hist(
     --------
     matplotlib.pyplot.hist : Matplotlib's histogram function. The ``bins``,
         ``weights``, and stacked/multiple dataset features are not supported.
-    khisto.array.cumfreq : Array-level cumulative histogram computation.
     khisto.array.histogram : Underlying histogram computation.
     """
     unsupported_kwargs = {

@@ -13,7 +13,7 @@ pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
 
 from khisto.matplotlib import hist
-from khisto.array import cumfreq
+from khisto.array import histogram
 
 
 class TestHistBasic:
@@ -133,10 +133,11 @@ class TestHistBasic:
         plt.close(fig)
 
     def test_cumulative_hist_matches_array_api(self, normal_data):
-        """Test that the plotting wrapper matches the array cumulative API."""
+        """Test that the plotting wrapper matches cumulative histogram values."""
         fig, ax = plt.subplots()
         n, bins, patches = hist(normal_data, density=True, cumulative=True, ax=ax)
-        expected, expected_bins = cumfreq(normal_data, density=True)
+        density, expected_bins = histogram(normal_data, density=True)
+        expected = np.cumsum(density * np.diff(expected_bins))
 
         np.testing.assert_array_equal(bins, expected_bins)
         np.testing.assert_allclose(n, expected)

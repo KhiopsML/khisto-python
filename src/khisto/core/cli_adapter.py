@@ -204,6 +204,49 @@ def _same_histogram(
     )
 
 
+def _histogram_id_from_series_filename(file_name: object) -> Optional[int]:
+    """Extract the numbered histogram id from a series FileName entry."""
+    if not isinstance(file_name, str):
+        return None
+
+    normalized_name = pathlib.PurePosixPath(file_name.replace("\\", "/")).name
+    try:
+        file_type, histogram_id = _parse_file_type(pathlib.Path(normalized_name))
+    except ValueError:
+        return None
+
+    if file_type != "histogram":
+        return None
+    return histogram_id
+
+
+def _best_granularity_from_series(
+    series_data: dict[str, np.ndarray],
+    histogram_data: list[tuple[int, dict[str, np.ndarray]]],
+) -> Optional[int]:
+    """Return the finest interpretable histogram granularity from the series."""
+    raw_values = series_data.get("Raw")
+    if raw_values is None or raw_values.size == 0:
+        return None
+
+    interpretable_indices = np.flatnonzero(raw_values == 0)
+    if interpretable_indices.size == 0:
+        return None
+
+    best_series_index = int(interpretable_indices[-1])
+
+    file_names = series_data.get("FileName")
+    if file_names is not None and len(file_names) > best_series_index:
+        histogram_id = _histogram_id_from_series_filename(file_names[best_series_index])
+        if histogram_id is not None:
+            return histogram_id
+
+    if best_series_index < len(histogram_data):
+        return histogram_data[best_series_index][0]
+
+    return None
+
+
 def _process_histogram_files(
     temp_dir: str,
     base_name: str,
@@ -248,21 +291,18 @@ def _process_histogram_files(
     if not histogram_data:
         raise ValueError("No histogram data found")
 
-    # Fallback: determine best granularity from the summary series when the
-    # dedicated best histogram file does not match any numbered histogram file.
     best_granularity: Optional[int] = None
     if series_data is not None:
-        max_level_idx = int(np.argmax(series_data["Level"]))
-        best_granularity = int(series_data["Granularity"][max_level_idx]) - 1
+        best_granularity = _best_granularity_from_series(series_data, histogram_data)
 
     # Build all histogram results
     results = []
     for granularity, data in histogram_data:
         is_best = False
-        if best_histogram_data is not None:
-            is_best = _same_histogram(data, best_histogram_data)
-        elif best_granularity is not None:
+        if best_granularity is not None:
             is_best = granularity == best_granularity
+        elif best_histogram_data is not None:
+            is_best = _same_histogram(data, best_histogram_data)
 
         results.append(
             _build_histogram_result(data, is_best=is_best, granularity=granularity)
@@ -273,7 +313,7 @@ def _process_histogram_files(
 def compute_histogram(
     x: np.ndarray,
 ) -> list[HistogramResult]:
-    """Compute optimal histogram of an array using khisto CLI.
+    """Compute optimal histogram of an array using khisto CLI binary input.
 
     Parameters
     ----------
@@ -311,12 +351,10 @@ def compute_histogram(
     if len(x) == 0:
         raise ValueError("Input array is empty after filtering")
 
-    # Create temporary input file with array values
     with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".txt", delete=False
+        mode="wb", suffix=".bin", delete=False
     ) as temp_input:
-        for val in x:
-            temp_input.write(f"{val}\n")
+        x.tofile(temp_input)
         temp_input_path = temp_input.name
 
     # Create temporary directory for output files
@@ -326,7 +364,7 @@ def compute_histogram(
 
     try:
         # Build command arguments - always use exploratory mode
-        cmd = [str(KHISTO_BIN_DIR), "-e", temp_input_path, str(output_file)]
+        cmd = [str(KHISTO_BIN_DIR), "-b", "-e", temp_input_path, str(output_file)]
 
         # Execute khisto CLI
         subprocess.run(cmd, capture_output=True, text=True, check=True)

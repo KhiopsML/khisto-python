@@ -157,7 +157,7 @@ class TestComputeHistogram:
         def fail_run(*args, **kwargs):
             raise subprocess.CalledProcessError(
                 returncode=1,
-                cmd=["khisto", "-e", "input.txt", "histogram.csv"],
+                cmd=["khisto", "-b", "-e", "input.bin", "histogram.csv"],
                 output="khisto stdout message",
                 stderr="khisto stderr message",
             )
@@ -171,6 +171,40 @@ class TestComputeHistogram:
         assert "khisto stdout message" in message
         assert "khisto stderr message" in message
 
+    def test_compute_histogram_writes_binary_input(self, monkeypatch):
+        """Test that compute_histogram always writes a binary input file."""
+
+        expected_result = [
+            HistogramResult(
+                lower_bound=np.array([0.0]),
+                upper_bound=np.array([1.0]),
+                frequency=np.array([2]),
+                probability=np.array([1.0]),
+                density=np.array([1.0]),
+                is_best=True,
+                granularity=0,
+            )
+        ]
+        captured_values = None
+
+        monkeypatch.setattr(
+            "khisto.core.cli_adapter._process_histogram_files",
+            lambda temp_dir, base_name: expected_result,
+        )
+
+        def fake_run(cmd, **kwargs):
+            nonlocal captured_values
+            assert "-b" in cmd
+            input_path = pathlib.Path(cmd[-2])
+            captured_values = np.fromfile(input_path, dtype=np.float64)
+
+        monkeypatch.setattr("khisto.core.cli_adapter.subprocess.run", fake_run)
+
+        results = compute_histogram(np.array([0.25, 0.75]))
+
+        assert results == expected_result
+        np.testing.assert_array_equal(captured_values, np.array([0.25, 0.75]))
+
 
 class TestProcessHistogramFiles:
     """Tests for histogram file post-processing."""
@@ -182,8 +216,8 @@ class TestProcessHistogramFiles:
             writer.writerow(header)
             writer.writerows(rows)
 
-    def test_best_histogram_file_is_authoritative(self, tmp_path):
-        """Test that histogram.csv marks the best histogram even if series disagrees."""
+    def test_series_raw_marks_finest_interpretable_histogram(self, tmp_path):
+        """Test that Raw=1 on the finest histogram selects the previous histogram."""
         histogram_header = [
             "LowerBound",
             "UpperBound",
@@ -232,6 +266,81 @@ class TestProcessHistogramFiles:
             series_header,
             [
                 [
+                    "exploratory_analysis\\adult_age\\histogram.1.csv",
+                    0,
+                    1,
+                    0,
+                    0,
+                    0,
+                    10.0,
+                    100.0,
+                    0.0,
+                    0,
+                    0.0,
+                ],
+                [
+                    "exploratory_analysis\\adult_age\\histogram.2.csv",
+                    2,
+                    2,
+                    0,
+                    0,
+                    0,
+                    1.0,
+                    10.0,
+                    0.0,
+                    0,
+                    1.0,
+                ],
+            ],
+        )
+
+        results = _process_histogram_files(str(tmp_path), "histogram")
+
+        assert len(results) == 2
+        assert [result.is_best for result in results] == [True, False]
+
+    def test_series_raw_keeps_finest_histogram_when_interpretable(self, tmp_path):
+        """Test that the finest histogram is selected when Raw=0."""
+        histogram_header = [
+            "LowerBound",
+            "UpperBound",
+            "Length",
+            "Frequency",
+            "Probability",
+            "Density",
+        ]
+        series_header = [
+            "FileName",
+            "Granularity",
+            "IntervalNumber",
+            "PeakIntervalNumber",
+            "SpikeIntervalNumber",
+            "EmptyIntervalNumber",
+            "Level",
+            "InformationRate",
+            "TruncationEpsilon",
+            "RemovedSingularityNumber",
+            "Raw",
+        ]
+
+        self._write_csv(
+            tmp_path / "histogram.1.csv",
+            histogram_header,
+            [[0.0, 3.0, 3.0, 3, 1.0, 1.0 / 3.0]],
+        )
+        self._write_csv(
+            tmp_path / "histogram.2.csv",
+            histogram_header,
+            [
+                [0.0, 1.0, 1.0, 1, 1.0 / 3.0, 1.0 / 3.0],
+                [1.0, 3.0, 2.0, 2, 2.0 / 3.0, 1.0 / 3.0],
+            ],
+        )
+        self._write_csv(
+            tmp_path / "histogram.series.csv",
+            series_header,
+            [
+                [
                     str(tmp_path / "histogram.1.csv"),
                     0,
                     1,
@@ -257,6 +366,44 @@ class TestProcessHistogramFiles:
                     0,
                     0.0,
                 ],
+            ],
+        )
+
+        results = _process_histogram_files(str(tmp_path), "histogram")
+
+        assert len(results) == 2
+        assert [result.is_best for result in results] == [False, True]
+
+    def test_best_histogram_file_is_fallback_without_series(self, tmp_path):
+        """Test that histogram.csv remains the fallback when series is absent."""
+        histogram_header = [
+            "LowerBound",
+            "UpperBound",
+            "Length",
+            "Frequency",
+            "Probability",
+            "Density",
+        ]
+
+        self._write_csv(
+            tmp_path / "histogram.1.csv",
+            histogram_header,
+            [[0.0, 3.0, 3.0, 3, 1.0, 1.0 / 3.0]],
+        )
+        self._write_csv(
+            tmp_path / "histogram.2.csv",
+            histogram_header,
+            [
+                [0.0, 1.0, 1.0, 1, 1.0 / 3.0, 1.0 / 3.0],
+                [1.0, 3.0, 2.0, 2, 2.0 / 3.0, 1.0 / 3.0],
+            ],
+        )
+        self._write_csv(
+            tmp_path / "histogram.csv",
+            histogram_header,
+            [
+                [0.0, 1.0, 1.0, 1, 1.0 / 3.0, 1.0 / 3.0],
+                [1.0, 3.0, 2.0, 2, 2.0 / 3.0, 1.0 / 3.0],
             ],
         )
 

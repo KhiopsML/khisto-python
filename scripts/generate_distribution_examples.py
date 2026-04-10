@@ -2,8 +2,6 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-#!/usr/bin/env python3
-
 from __future__ import annotations
 
 from pathlib import Path
