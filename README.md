@@ -35,7 +35,7 @@ pip install khisto
 With matplotlib support:
 
 ```bash
-pip install khisto[matplotlib]
+pip install "khisto[matplotlib]"
 ```
 
 ## Quick Start

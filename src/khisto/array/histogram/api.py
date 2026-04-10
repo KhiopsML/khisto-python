@@ -125,11 +125,6 @@ def histogram(
     """
     arr = np.asarray(a, dtype=np.float64).flatten()
 
-    if arr.ndim > 1:
-        raise ValueError(
-            "Input array must be one-dimensional. Use arr.flatten() to flatten it."
-        )
-
     # Filter values by range if specified
     if range is not None:
         min_val, max_val = range
