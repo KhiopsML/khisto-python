@@ -134,6 +134,7 @@ class TestHistogram:
 
         # Counts should be integers (as floats)
         assert np.all(hist_counts == hist_counts.astype(int))
+        assert not np.allclose(hist_counts, hist_density)
 
     def test_histogram_range_filters_data(self, normal_data):
         """Test that range filters input values (not just zooms)."""

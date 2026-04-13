@@ -2,11 +2,7 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Optimal histogram functions with numpy-compatible interface.
-
-This module provides a numpy.histogram-like interface for computing
-optimal histograms using the Khiops binning algorithm.
-"""
+"""Optimal histogram functions with numpy-compatible interface."""
 
 from __future__ import annotations
 
@@ -15,7 +11,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from khisto.core import compute_histogram, HistogramResult
+from khisto.core import HistogramResult, compute_histogram
 
 
 def _select_histogram(
@@ -55,11 +51,29 @@ def _select_histogram(
         return results[-1]
 
 
+def _apply_cumulative(
+    hist_values: NDArray[np.float64],
+    bin_edges: NDArray[np.float64],
+    *,
+    density: bool,
+    reverse: bool = False,
+) -> NDArray[np.float64]:
+    """Accumulate histogram values using matplotlib-compatible semantics."""
+    if density:
+        source_values = hist_values * np.diff(bin_edges)
+    else:
+        source_values = hist_values
+
+    if reverse:
+        return np.cumsum(source_values[::-1])[::-1]
+    return np.cumsum(source_values)
+
+
 def histogram(
     a: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: Optional[bool] = None,
+    density: bool = False,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute an optimal histogram using the Khiops binning algorithm.
 
@@ -77,7 +91,7 @@ def histogram(
         If False, the result will contain the number of samples in each bin.
         If True, the result is the value of the probability density function
         at the bin, normalized such that the integral over the range is 1.
-        Default is None, which behaves as False for backwards compatibility.
+        Default is False.
 
     Returns
     -------
@@ -96,9 +110,20 @@ def histogram(
     Unlike numpy.histogram, this function uses optimal binning which may
     produce bins of unequal width. The bins are determined by the Khiops
     algorithm to best represent the underlying data distribution.
+
+    The method implemented in Khiops is comprehensively detailed in [2]_ and
+    further extended in [1]_.
+
+    References
+    ----------
+    .. [1] M. Boulle. Floating-point histograms for exploratory analysis of
+       large scale real-world data sets. Intelligent Data Analysis,
+       28(5):1347-1394, 2024.
+    .. [2] V. Zelaya Mendizabal, M. Boulle, F. Rossi. Fast and fully-automated
+       histograms for large-scale data sets. Computational Statistics & Data
+       Analysis, 180:0-0, 2023.
     """
-    # Convert to numpy array and flatten
-    arr = np.asarray(a, dtype=np.float64).ravel()
+    arr = np.asarray(a, dtype=np.float64).flatten()
 
     # Filter values by range if specified
     if range is not None:
@@ -108,7 +133,6 @@ def histogram(
     results = compute_histogram(arr)
     result = _select_histogram(results, max_bins=max_bins)
 
-    # Treat None as False for backwards compatibility (like NumPy)
     if density:
         return result.density.copy(), result.bin_edges.copy()
     else:

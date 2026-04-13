@@ -11,6 +11,7 @@ Complete API reference for the Khisto library.
   - [HistogramResult](#histogramresult)
 - [Matplotlib API](#matplotlib-api)
   - [hist](#hist)
+- [How It Works](#how-it-works)
 
 ---
 
@@ -23,7 +24,7 @@ khisto.histogram(
     a: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: Optional[bool] = None,
+    density: bool = False,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating]]
 ```
 
@@ -33,10 +34,10 @@ Compute an optimal histogram using the Khiops binning algorithm.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `a` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
+| `a` | `ArrayLike` | required | Input data. The input is converted to a floating-point array and flattened to one dimension. |
 | `range` | `tuple[float, float]` | `None` | Lower and upper range of the bins. Values outside are ignored. |
 | `max_bins` | `int` | `None` | Maximum number of bins. If not provided, the optimal number is determined automatically. |
-| `density` | `bool` | `None` | If `False` or `None`, return counts; if `True`, return probability density values. |
+| `density` | `bool` | `False` | If `False`, return counts; if `True`, return probability density values. |
 
 #### Returns
 
@@ -47,7 +48,7 @@ Compute an optimal histogram using the Khiops binning algorithm.
 
 #### See Also
 
-- [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html) — NumPy's histogram function (`bins` and `weights` parameters are not supported).
+- [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html) — NumPy's histogram function (`bins` and `weights` are not supported in Khisto).
 
 #### Examples
 
@@ -79,6 +80,14 @@ Limiting maximum bins:
 ```python
 hist, bin_edges = histogram(data, max_bins=5)
 print(f"Number of bins: {len(hist)}")  # <= 5
+```
+
+Concatenating nested inputs into a single dataset:
+
+```python
+data = [np.array([0.0, 1.0]), np.array([2.0, 3.0, 4.0])]
+hist, bin_edges = histogram(data)
+print(hist.sum())  # 5
 ```
 
 ---
@@ -176,7 +185,8 @@ import numpy as np
 from khisto.core import compute_histogram
 
 data = np.random.normal(0, 1, 1000)
-result = compute_histogram(data)
+results = compute_histogram(data)
+result = next(r for r in results if r.is_best)
 
 # Access bin information
 print(f"Bin edges: {result.bin_edges}")
@@ -204,8 +214,8 @@ khisto.matplotlib.hist(
     x: ArrayLike,
     range: Optional[tuple[float, float]] = None,
     max_bins: Optional[int] = None,
-    density: bool = True,
-    ax: Optional[Axes] = None,
+    density: bool = False,
+    cumulative: bool | float = False,
     **kwargs,
 ) -> tuple[NDArray[np.floating], NDArray[np.floating], Any]
 ```
@@ -216,10 +226,12 @@ Compute and plot an optimal histogram.
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `x` | `ArrayLike` | required | Input data. The histogram is computed over the flattened array. |
+| `x` | `ArrayLike` | required | Input data, or a sequence of array-like objects. Nested inputs are concatenated and histogrammed as one dataset. |
 | `max_bins` | `int` | `None` | Maximum number of bins. If `None`, uses optimal binning. |
+| `density` | `bool` | `False` | If `True`, return and plot probability densities. If `False`, return counts. |
+| `cumulative` | `bool or float` | `False` | Cumulative mode, following `matplotlib.pyplot.hist`. Negative values accumulate in reverse order. |
 
-Other parameters are passed to matplotlib. See [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) for styling options.
+Other parameters are passed to matplotlib for styling. `ax` can be provided to draw on a specific axes. The `bins`, `weights`, and `stacked` arguments are not supported.
 
 #### Returns
 
@@ -231,8 +243,8 @@ Other parameters are passed to matplotlib. See [`matplotlib.pyplot.hist`](https:
 
 #### See Also
 
-- [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Matplotlib's histogram function (`bins`, `weights`, `cumulative`, and stacked/multiple dataset features are not supported).
-- [`khisto.histogram`](#histogram) — Underlying histogram computation.
+- [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html) — Matplotlib's histogram function.
+- [`khisto.histogram`](#histogram) — Underlying non-cumulative histogram computation.
 
 #### Examples
 
@@ -243,47 +255,52 @@ import numpy as np
 import matplotlib.pyplot as plt
 from khisto.matplotlib import hist
 
-data = np.random.normal(0, 1, 1000)
+data = np.random.normal(0, 1, 10000)
 
-# Default is density=True
-n, bins, patches = hist(data)
+# Density is usually the clearest view with variable-width bins.
+n, bins, patches = hist(data, density=True)
 plt.xlabel('Value')
 plt.ylabel('Density')
 plt.title('Optimal Histogram')
 plt.show()
 ```
 
-Frequency plot:
+Cumulative density:
 
 ```python
-n, bins, patches = hist(data, density=False)
-plt.xlabel('Value')
-plt.ylabel('Count')
+n, bins, patches = hist(data, density=True, cumulative=True)
+plt.ylabel('Cumulative probability')
 plt.show()
 ```
 
-Step histogram:
+Heavy-tailed Pareto example:
 
 ```python
-n, bins, patches = hist(data, histtype='step', color='blue', label='Data')
-plt.legend()
+shape = 3
+long_tail_data = np.random.pareto(shape, size=10000) + 1
+
+n, bins, patches = hist(long_tail_data, density=True)
+plt.xscale('log')
+plt.yscale('log')
 plt.show()
 ```
 
-Using specific axes:
+---
 
-```python
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 4))
+## How It Works
 
-hist(data, ax=ax1)
-ax1.set_title('Counts')
+Khisto uses the Khiops optimal binning algorithm based on the MODL (Minimum Optimal Description Length) principle. Instead of using fixed-width bins like traditional histograms, it:
 
-hist(data, density=True, ax=ax2)
-ax2.set_title('Density')
+1. Analyzes the data distribution
+2. Finds bin boundaries that minimize information loss
+3. Creates variable-width bins that adapt to data density
 
-plt.tight_layout()
-plt.show()
-```
+This results in histograms that better represent the underlying distribution, with finer bins in dense regions and wider bins in sparse regions.
+
+The method implemented in Khiops is comprehensively detailed in [2] and further extended in [1].
+
+- [1] M. Boullé. Floating-point histograms for exploratory analysis of large scale real-world data sets. Intelligent Data Analysis, 28(5):1347-1394, 2024
+- [2] V. Zelaya Mendizábal, M. Boullé, F. Rossi. Fast and fully-automated histograms for large-scale data sets. Computational Statistics & Data Analysis, 180:0-0, 2023
 
 ---
 

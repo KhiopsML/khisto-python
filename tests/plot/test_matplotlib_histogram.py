@@ -13,6 +13,7 @@ pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
 
 from khisto.matplotlib import hist
+from khisto.array import histogram
 
 
 class TestHistBasic:
@@ -46,9 +47,9 @@ class TestHistBasic:
         plt.close()
 
     def test_density_histogram(self, normal_data):
-        """Test density histogram (default behavior)."""
+        """Test density histogram."""
         fig, ax = plt.subplots()
-        n, bins, patches = hist(normal_data, ax=ax)
+        n, bins, patches = hist(normal_data, density=True, ax=ax)
 
         # Density should integrate to 1
         bin_widths = np.diff(bins)
@@ -57,9 +58,9 @@ class TestHistBasic:
         plt.close(fig)
 
     def test_frequency_histogram(self, normal_data):
-        """Test frequency histogram (explicit density=False)."""
+        """Test frequency histogram is the default behavior."""
         fig, ax = plt.subplots()
-        n, bins, patches = hist(normal_data, density=False, ax=ax)
+        n, bins, patches = hist(normal_data, ax=ax)
 
         # Frequencies should sum to total count
         assert np.sum(n) == len(normal_data)
@@ -121,6 +122,51 @@ class TestHistBasic:
         n, bins, patches = hist(normal_data, histtype="stepfilled", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        plt.close(fig)
+
+    def test_cumulative_density_histogram(self, normal_data):
+        """Test cumulative density histogram."""
+        fig, ax = plt.subplots()
+        n, bins, patches = hist(normal_data, density=True, cumulative=True, ax=ax)
+
+        assert np.isclose(n[-1], 1.0, rtol=1e-5)
+        plt.close(fig)
+
+    def test_cumulative_hist_matches_array_api(self, normal_data):
+        """Test that the plotting wrapper matches cumulative histogram values."""
+        fig, ax = plt.subplots()
+        n, bins, patches = hist(normal_data, density=True, cumulative=True, ax=ax)
+        density, expected_bins = histogram(normal_data, density=True)
+        expected = np.cumsum(density * np.diff(expected_bins))
+
+        np.testing.assert_array_equal(bins, expected_bins)
+        np.testing.assert_allclose(n, expected)
+        plt.close(fig)
+
+    def test_reverse_cumulative_frequency_histogram(self, normal_data):
+        """Test reverse cumulative frequency histogram."""
+        fig, ax = plt.subplots()
+        n, bins, patches = hist(normal_data, cumulative=-1, ax=ax)
+
+        assert np.isclose(n[0], len(normal_data))
+        plt.close(fig)
+
+    def test_sequence_of_arrays_is_combined(self, normal_data):
+        """Test that sequences of arrays are combined into one histogram."""
+        fig, ax = plt.subplots()
+        datasets = [normal_data[:500], normal_data[500:]]
+        n, bins, patches = hist(datasets, ax=ax)
+
+        assert np.sum(n) == len(normal_data)
+        plt.close(fig)
+
+    def test_unsupported_bins_parameter(self, normal_data):
+        """Test that bins raises a clear error message."""
+        fig, ax = plt.subplots()
+
+        with pytest.raises(TypeError, match="bins is not supported"):
+            hist(normal_data, bins=10, ax=ax)
+
         plt.close(fig)
 
 

@@ -114,6 +114,7 @@ khisto.matplotlib.hist(
     range=None,
     max_bins=None,
     density=False,
+    cumulative=False,
     histtype='bar',
     orientation='vertical',
     log=False,
@@ -130,11 +131,11 @@ khisto.matplotlib.hist(
 |---------|------------|--------|
 | **Binning** | Fixed-width | Optimal variable-width |
 | **Bins param** | `bins` | `max_bins` |
-| **Axes param** | Implicit (current) | Explicit `ax` parameter |
-| **Cumulative** | Supported | Not supported |
+| **Axes param** | Implicit (current) | Optional `ax` parameter |
+| **Cumulative** | Supported | Supported |
 | **Stacked** | Supported | Not supported |
 | **Weights** | Supported | Not supported |
-| **Multiple datasets** | Supported | Single dataset only |
+| **Multiple datasets** | Supported | Sequences are concatenated into one dataset |
 
 #### Usage Comparison
 
@@ -166,6 +167,10 @@ plt.show()
 # density normalization
 plt.hist(data, density=True)
 hist(data, density=True)
+
+# cumulative view
+plt.hist(data, density=True, cumulative=True)
+hist(data, density=True, cumulative=True)
 
 # histogram type
 plt.hist(data, histtype='step')
@@ -224,7 +229,7 @@ n, bins, patches = hist(data, max_bins=30)  # max_bins is optional
 | Density | ✓ | ✓ | ✓ |
 | Range | ✓ | ✓ | ✓ |
 | Weights | ✓ | ✓ | ✗ |
-| Cumulative | ✗ | ✓ | ✗ |
+| Cumulative | ✗ | ✓ | ✓ |
 | Plotting | ✗ | ✓ | ✓ |
 | Step histogram | ✗ | ✓ | ✓ |
 | Horizontal | ✗ | ✓ | ✓ |

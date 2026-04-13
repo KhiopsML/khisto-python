@@ -12,6 +12,20 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 - **Matplotlib Integration**: `khisto.matplotlib.hist` works like `plt.hist`.
 - **Minimal Dependencies**: Only requires NumPy (matplotlib optional for plotting).
 
+| Standard Gaussian | Heavy-tailed Pareto |
+| --- | --- |
+| ![Adaptive Gaussian histogram](docs/images/gaussian-quick-start.png) | ![Adaptive Pareto histogram](docs/images/pareto-quick-start.png) |
+
+## Reproducing The Example Distributions
+
+The complete runnable script is available in `scripts/generate_distribution_examples.py`.
+
+Run it from the repository root to regenerate both example distributions and the figure files used in this README:
+
+```bash
+python scripts/generate_distribution_examples.py
+```
+
 ## Installation
 
 ```bash
@@ -32,8 +46,8 @@ pip install "khisto[matplotlib]"
 import numpy as np
 from khisto import histogram
 
-# Generate data
-data = np.random.normal(0, 1, 1000)
+# Generate 10,000 samples from a standard Gaussian distribution.
+data = np.random.normal(0, 1, 10000)
 
 # Compute optimal histogram (drop-in replacement for np.histogram)
 hist, bin_edges = histogram(data)
@@ -48,6 +62,26 @@ hist, bin_edges = histogram(data, max_bins=10)
 hist, bin_edges = histogram(data, range=(-2, 2))
 ```
 
+Using 10,000 samples keeps the adaptive refinement visible while remaining fast to compute.
+
+Heavy-tailed example:
+
+```python
+import numpy as np
+import matplotlib.pyplot as plt
+from khisto.matplotlib import hist
+
+# Generate 10,000 samples from a Pareto distribution, shifted to start at 1 for better log-log visualization
+shape = 3
+long_tail_data = np.random.pareto(shape, size=10000) + 1
+
+# Plot an adaptive histogram on logarithmic axes.
+n, bins, patches = hist(long_tail_data, density=True)
+plt.xscale("log")
+plt.yscale("log")
+plt.show()
+```
+
 ### Matplotlib Integration
 
 ```python
@@ -55,78 +89,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from khisto.matplotlib import hist
 
-data = np.random.normal(0, 1, 1000)
+# Generate 10,000 samples from a standard Gaussian distribution.
+data = np.random.normal(0, 1, 10000)
 
-# Create optimal histogram plot
-n, bins, patches = hist(data)
-plt.show()
-
-# With density
+# Density is usually the most interpretable view with variable-width bins.
 n, bins, patches = hist(data, density=True)
 plt.xlabel('Value')
 plt.ylabel('Density')
 plt.show()
+
+# Cumulative density follows matplotlib semantics.
+n, bins, patches = hist(data, density=True, cumulative=True)
+plt.ylabel('Cumulative probability')
+plt.show()
 ```
-
-## API Reference
-
-### `khisto.histogram`
-
-```python
-def histogram(
-    a: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
-    density: bool = False,
-) -> tuple[ndarray, ndarray]
-```
-
-Compute an optimal histogram using the Khiops binning algorithm.
-
-**Parameters:**
-- `a`: Input data. The histogram is computed over the flattened array.
-- `range`: The lower and upper range of the bins. Values outside are ignored.
-- `max_bins`: Maximum number of bins. If None, the algorithm selects optimal.
-- `density`: If True, return probability density. If False, return counts.
-
-**Returns:**
-- `hist`: The values of the histogram (counts or density).
-- `bin_edges`: The bin edges (length = len(hist) + 1).
-
-### `khisto.matplotlib.hist`
-
-```python
-def hist(
-    x: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
-    density: bool = False,
-    histtype: str = "bar",
-    orientation: Literal["vertical", "horizontal"] = "vertical",
-    log: bool = False,
-    color: Optional[str] = None,
-    label: Optional[str] = None,
-    ax: Optional[Axes] = None,
-    **kwargs,
-) -> tuple[ndarray, ndarray, Any]
-```
-
-Plot an optimal histogram using matplotlib.
-
-**Parameters:**
-- `x`: Input data.
-- `range`: The lower and upper range of the bins.
-- `max_bins`: Maximum number of bins.
-- `density`: If True, plot probability density.
-- `histtype`: Type of histogram (`"bar"`, `"step"`, `"stepfilled"`).
-- `orientation`: `"vertical"` or `"horizontal"`.
-- `log`: If True, set log scale on the value axis.
-- `ax`: Matplotlib axes to plot on.
-
-**Returns:**
-- `n`: The histogram values.
-- `bins`: The bin edges.
-- `patches`: The matplotlib patches.
 
 ## How It Works
 
@@ -138,6 +114,11 @@ Khisto uses the Khiops optimal binning algorithm based on the MODL (Minimum Opti
 
 This results in histograms that better represent the underlying distribution, with finer bins in dense regions and wider bins in sparse regions.
 
+The method implemented in Khiops is comprehensively detailed in [2] and further extended in [1].
+
+- [1] M. Boullé. Floating-point histograms for exploratory analysis of large scale real-world data sets. Intelligent Data Analysis, 28(5):1347-1394, 2024
+- [2] V. Zelaya Mendizábal, M. Boullé, F. Rossi. Fast and fully-automated histograms for large-scale data sets. Computational Statistics & Data Analysis, 180:0-0, 2023
+
 ## Development
 
 ```bash
@@ -146,11 +127,15 @@ git clone https://github.com/khiops/khisto-python.git
 cd khisto-python
 
 # Install with dev dependencies
-pip install -e ".[matplotlib]"
+uv sync --group dev --extra all
 
 # Run tests
-pytest
+uv run pytest
 ```
+
+## Documentation
+
+See the [API](docs/API.md) and [API Comparison](docs/API_COMPARISON.md) for detailed information on available functions, parameters, and how Khisto compares to standard histogram implementations.
 
 ## License
 
