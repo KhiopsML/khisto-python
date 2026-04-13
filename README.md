@@ -44,7 +44,7 @@ pip install "khisto[matplotlib]"
 
 ```python
 import numpy as np
-from khisto import cumfreq, histogram
+from khisto import histogram
 
 # Generate 10,000 samples from a standard Gaussian distribution.
 data = np.random.normal(0, 1, 10000)
@@ -60,12 +60,6 @@ hist, bin_edges = histogram(data, max_bins=10)
 
 # Specify range
 hist, bin_edges = histogram(data, range=(-2, 2))
-
-# Compute cumulative counts (SciPy-like cumfreq interface)
-cumcount, bin_edges = cumfreq(data)
-
-# Compute the cumulative distribution function
-cdf, bin_edges = cumfreq(data, density=True)
 ```
 
 Using 10,000 samples keeps the adaptive refinement visible while remaining fast to compute.
@@ -77,7 +71,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from khisto.matplotlib import hist
 
-# Generate 10,000 samples from a heavy-tailed Pareto distribution.
+# Generate 10,000 samples from a Pareto distribution, shifted to start at 1 for better log-log visualization
 shape = 3
 long_tail_data = np.random.pareto(shape, size=10000) + 1
 
@@ -110,71 +104,6 @@ plt.ylabel('Cumulative probability')
 plt.show()
 ```
 
-## API Reference
-
-### `khisto.histogram`
-
-```python
-def histogram(
-    a: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
-    density: bool = False,
-) -> tuple[ndarray, ndarray]
-```
-
-Compute an optimal histogram using the Khiops binning algorithm.
-
-- `a`: Array-like input data. Nested sequences are flattened and concatenated into a single dataset.
-- `range`: Optional lower and upper bounds. Values outside the interval are ignored.
-- `max_bins`: Optional upper bound on the number of returned bins.
-- `density`: Returns counts by default, or probability densities when set to `True`.
-
-`khisto.histogram` is compatible in spirit with [`numpy.histogram`](https://numpy.org/doc/stable/reference/generated/numpy.histogram.html), but it does not support the `bins` or `weights` parameters.
-
-### `khisto.cumfreq`
-
-```python
-def cumfreq(
-    a: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
-    density: bool = False,
-) -> tuple[ndarray, ndarray]
-```
-
-Compute a cumulative histogram using the Khiops binning algorithm.
-
-- `a`: Array-like input data. Nested sequences are flattened and concatenated into a single dataset.
-- `range`: Optional lower and upper bounds. Values outside the interval are ignored.
-- `max_bins`: Optional upper bound on the number of returned bins.
-- `density`: Returns cumulative counts by default, or cumulative probabilities when set to `True`.
-
-`khisto.cumfreq` plays the same role as [`scipy.stats.cumfreq`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.cumfreq.html), but with adaptive variable-width bins and explicit `bin_edges` in the return value.
-
-### `khisto.matplotlib.hist`
-
-```python
-def hist(
-    x: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
-    density: bool = False,
-    cumulative: bool | float = False,
-    **kwargs,
-) -> tuple[ndarray, ndarray, Any]
-```
-
-Plot an optimal histogram using matplotlib.
-
-- `x`: Array-like input data, or a sequence of array-like objects. Sequences are concatenated and histogrammed as a single dataset.
-- `max_bins`: Optional upper bound on the number of bins computed by Khisto.
-- `density`: Returns counts by default. For variable-width bins, `density=True` is often easier to interpret visually.
-- `cumulative`: Matches `matplotlib.pyplot.hist`. With `density=True`, the returned values are cumulative probabilities and the last bin equals 1.
-- `**kwargs`: Other plotting options such as `histtype`, `orientation`, `log`, `color`, `label`, or `ax`.
-
-Like [`matplotlib.pyplot.hist`](https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.hist.html), this function returns `(n, bins, patches)`. The `bins`, `weights`, and `stacked` arguments are not supported.
-
 ## How It Works
 
 Khisto uses the Khiops optimal binning algorithm based on the MODL (Minimum Optimal Description Length) principle. Instead of using fixed-width bins like traditional histograms, it:
@@ -203,6 +132,10 @@ uv sync --group dev --extra all
 # Run tests
 uv run pytest
 ```
+
+## Documentation
+
+See the [API](docs/API.md) and [API Comparison](docs/API_COMPARISON.md) for detailed information on available functions, parameters, and how Khisto compares to standard histogram implementations.
 
 ## License
 
