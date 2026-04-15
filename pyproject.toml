@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "0.1.0"
+version = "0.2.0"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
