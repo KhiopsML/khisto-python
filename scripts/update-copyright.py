@@ -30,6 +30,8 @@ def main(args):
     # Process files and keep track if there were modifications
     were_files_modified = False
     for file_path in args.file_paths:
+        if file_path.endswith(os.path.join("docs", "conf.py")):
+            continue
         is_file_modified = update_copyright(file_path)
         if is_file_modified:
             were_files_modified = True
