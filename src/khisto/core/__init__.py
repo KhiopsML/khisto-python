@@ -2,6 +2,6 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-from .cli_adapter import compute_histogram, HistogramResult
+from .backend import compute_histograms, HistogramResult
 
-__all__ = ["compute_histogram", "HistogramResult"]
+__all__ = ["compute_histograms", "HistogramResult"]

@@ -11,7 +11,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from khisto.core import HistogramResult, compute_histogram
+from khisto.core import HistogramResult, compute_histograms
 
 
 def _select_histogram(
@@ -130,7 +130,7 @@ def histogram(
         min_val, max_val = range
         arr = arr[(arr >= min_val) & (arr <= max_val)]
 
-    results = compute_histogram(arr)
+    results = compute_histograms(arr)
     result = _select_histogram(results, max_bins=max_bins)
 
     if density:
