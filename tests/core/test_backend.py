@@ -45,11 +45,11 @@ class TestHistogramResult:
     def test_histogram_result_properties(self):
         """Test HistogramResult properties."""
         result = HistogramResult(
-            lower_bound=np.array([0.0, 1.0, 2.0]),
-            upper_bound=np.array([1.0, 2.0, 3.0]),
-            frequency=np.array([10, 20, 15]),
-            probability=np.array([0.222, 0.444, 0.333]),
-            density=np.array([0.222, 0.444, 0.333]),
+            lower_bounds=np.array([0.0, 1.0, 2.0]),
+            upper_bounds=np.array([1.0, 2.0, 3.0]),
+            frequencies=np.array([10, 20, 15]),
+            probabilities=np.array([0.222, 0.444, 0.333]),
+            densities=np.array([0.222, 0.444, 0.333]),
             is_best=True,
             granularity=2,
         )
@@ -114,7 +114,7 @@ class TestComputeHistograms:
         results = compute_histograms(data)
 
         finest_result = results[-1]
-        assert np.sum(finest_result.frequency) == 4
+        assert np.sum(finest_result.frequencies) == 4
 
     def test_compute_histograms_reports_cli_failure(self, monkeypatch):
         """Test that CLI failures raise a descriptive runtime error."""
@@ -173,11 +173,11 @@ class TestComputeHistograms:
 
         expected_result = [
             HistogramResult(
-                lower_bound=np.array([0.0]),
-                upper_bound=np.array([1.0]),
-                frequency=np.array([2]),
-                probability=np.array([1.0]),
-                density=np.array([1.0]),
+                lower_bounds=np.array([0.0]),
+                upper_bounds=np.array([1.0]),
+                frequencies=np.array([2]),
+                probabilities=np.array([1.0]),
+                densities=np.array([1.0]),
                 is_best=True,
                 granularity=0,
             )

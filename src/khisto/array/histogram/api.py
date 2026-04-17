@@ -119,8 +119,8 @@ def histogram(
     histogram_result = _select_histogram(histogram_results, max_bins=max_bins)
 
     if density:
-        return histogram_result.density.copy(), histogram_result.bin_edges.copy()
+        return histogram_result.densities.copy(), histogram_result.bin_edges.copy()
     else:
-        return histogram_result.frequency.astype(
+        return histogram_result.frequencies.astype(
             np.float64
         ), histogram_result.bin_edges.copy()
