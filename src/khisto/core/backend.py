@@ -176,32 +176,18 @@ def _process_histogram_files(temp_dir: str, base_name: str) -> list[HistogramRes
         khisto_output: _KhistoOutput = _KhistoOutput.from_dict(json.load(f))
 
     histogram_series = khisto_output.histogramSeries
-    n = len(histogram_series.histograms)
     best_idx = histogram_series.interpretableHistogramNumber - 1
-    granularities = (
-        histogram_series.granularities
-        if len(histogram_series.granularities) == n
-        else list(range(n))
-    )
-
-    def _get(lst: list, i: int):
-        if i < len(lst):
-            return lst[i]
-        else:
-            raise ValueError(
-                f"Expected at least {i + 1} values in list, got {len(lst)}"
-            )
 
     return [
         _to_result(
             h,
             is_best=(i == best_idx),
-            granularity=granularities[i],
-            level=_get(histogram_series.levels, i),
-            information_rate=_get(histogram_series.informationRates, i),
-            peak_interval_number=_get(histogram_series.peakIntervalNumbers, i),
-            spike_interval_number=_get(histogram_series.spikeIntervalNumbers, i),
-            empty_interval_number=_get(histogram_series.emptyIntervalNumbers, i),
+            granularity=histogram_series.granularities[i],
+            level=histogram_series.levels[i],
+            information_rate=histogram_series.informationRates[i],
+            peak_interval_number=histogram_series.peakIntervalNumbers[i],
+            spike_interval_number=histogram_series.spikeIntervalNumbers[i],
+            empty_interval_number=histogram_series.emptyIntervalNumbers[i],
         )
         for i, h in enumerate(histogram_series.histograms)
     ]
