@@ -27,6 +27,16 @@ dev = [
     "ipykernel>=7",
     "matplotlib>=3.8",
 ]
+docs = [
+    "sphinx>=6.1",
+    "furo>=2022.12.7",
+    "numpydoc>=1.5",
+    "sphinx-copybutton>=0.5",
+    "nbsphinx>=0.9",
+    "pypandoc-binary>=1.17",
+    "ipykernel>=7",
+    "matplotlib>=3.8",
+]
 
 [build-system]
 requires = ["scikit-build-core>=0.11.6", "ninja"]

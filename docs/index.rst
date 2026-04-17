@@ -17,3 +17,11 @@ This is the complete API reference for the Khisto Python library.
    Core <core/index>
    Matplotlib <matplotlib/index>
 
+.. toctree::
+   :maxdepth: 2
+   :caption: Guides
+   :hidden:
+
+   API Comparison <api_comparison>
+   Demo <demo>
+

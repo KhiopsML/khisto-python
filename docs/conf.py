@@ -33,6 +33,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "numpydoc",
     "sphinx_copybutton",
+    "nbsphinx",
 ]
 
 ## Numpydoc extension config
@@ -55,7 +56,7 @@ intersphinx_mapping = {
 }
 
 templates_path = ['_templates']
-exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store', '**.ipynb_checkpoints']
 
 
 
