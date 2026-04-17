@@ -11,4 +11,4 @@ Main Modules
   :recursive:
   :nosignatures:
 
-  cli_adapter
+  backend

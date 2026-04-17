@@ -14,10 +14,9 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from khisto.array import histogram as khisto_histogram
-from khisto.array.histogram.api import _apply_cumulative
 
 if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
+    from numpy.typing import ArrayLike, NDArray
 
 
 def _normalize_cumulative(cumulative: bool | float) -> int:
@@ -31,6 +30,24 @@ def _normalize_cumulative(cumulative: bool | float) -> int:
             return 1
         return 0
     raise TypeError("cumulative must be a boolean or a number")
+
+
+def _apply_cumulative(
+    hist_values: NDArray[np.float64],
+    bin_edges: NDArray[np.float64],
+    *,
+    density: bool,
+    reverse: bool = False,
+) -> NDArray[np.float64]:
+    """Accumulate histogram values using matplotlib-compatible semantics."""
+    if density:
+        source_values = hist_values * np.diff(bin_edges)
+    else:
+        source_values = hist_values
+
+    if reverse:
+        return np.cumsum(source_values[::-1])[::-1]
+    return np.cumsum(source_values)
 
 
 def hist(
