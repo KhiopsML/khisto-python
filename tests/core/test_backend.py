@@ -238,6 +238,11 @@ class TestProcessHistogramFiles:
         assert len(results) == 3
         assert [result.granularity for result in results] == [0, 2, 3]
         assert [result.is_best for result in results] == [False, True, False]
+        assert [result.level for result in results] == [10.0, 15.0, 16.0]
+        assert [result.information_rate for result in results] == [66.0, 100.0, 101.0]
+        assert [result.peak_interval_number for result in results] == [0, 0, 0]
+        assert [result.spike_interval_number for result in results] == [0, 0, 0]
+        assert [result.empty_interval_number for result in results] == [0, 0, 0]
 
     def test_series_keeps_finest_histogram_when_all_interpretable(self, tmp_path):
         """Test that the finest histogram is selected when all are interpretable."""

@@ -2,11 +2,7 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Backend module for computing optimal histograms using the khisto CLI.
-
-This module provides the interface to the khisto binary for computing
-optimal histograms using the Khiops algorithm.
-"""
+"""Backend module for computing optimal histograms using the khisto CLI."""
 
 from __future__ import annotations
 
@@ -15,13 +11,77 @@ import pathlib
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import numpy as np
 from numpy.typing import NDArray
 
 from khisto import KHISTO_BIN_DIR, logger
+
+
+@dataclass
+class _HistogramPayload:
+    """Histogram bin data from khisto JSON."""
+
+    lowerBounds: list[float] = field(default_factory=list)
+    upperBounds: list[float] = field(default_factory=list)
+    lengths: list[float] = field(default_factory=list)
+    frequencies: list[int] = field(default_factory=list)
+    probabilities: list[float] = field(default_factory=list)
+    densities: list[float] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> _HistogramPayload:
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
+
+
+@dataclass
+class _SeriesPayload:
+    """Histogram series from khisto JSON."""
+
+    histogramNumber: int = 0
+    interpretableHistogramNumber: int = 0
+    truncationEpsilon: float = 0.0
+    removedSingularIntervalNumber: int = 0
+    granularities: list[int] = field(default_factory=list)
+    intervalNumbers: list[int] = field(default_factory=list)
+    peakIntervalNumbers: list[int] = field(default_factory=list)
+    spikeIntervalNumbers: list[int] = field(default_factory=list)
+    emptyIntervalNumbers: list[int] = field(default_factory=list)
+    levels: list[float] = field(default_factory=list)
+    informationRates: list[float] = field(default_factory=list)
+    histograms: list[_HistogramPayload] = field(default_factory=list)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> _SeriesPayload:
+        kwargs = {k: v for k, v in data.items() if k in cls.__dataclass_fields__}
+        if "histograms" in kwargs:
+            kwargs["histograms"] = [
+                _HistogramPayload.from_dict(h) for h in kwargs["histograms"]
+            ]
+        return cls(**kwargs)
+
+
+@dataclass
+class _KhistoOutput:
+    """Root khisto JSON output."""
+
+    tool: str = ""
+    version: str = ""
+    bestHistogram: Optional[_HistogramPayload] = None
+    histogramSeries: Optional[_SeriesPayload] = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> _KhistoOutput:
+        best = data.get("bestHistogram")
+        series = data.get("histogramSeries")
+        return cls(
+            tool=data.get("tool", ""),
+            version=data.get("version", ""),
+            bestHistogram=_HistogramPayload.from_dict(best) if best else None,
+            histogramSeries=_SeriesPayload.from_dict(series) if series else None,
+        )
 
 
 @dataclass
@@ -44,6 +104,16 @@ class HistogramResult:
         Whether this histogram is the optimal one.
     granularity : int
         The granularity level of this histogram.
+    level : float
+        The information level of this histogram.
+    information_rate : float
+        The information rate of this histogram (percentage of the finest level).
+    peak_interval_number : int
+        Number of peak intervals in this histogram.
+    spike_interval_number : int
+        Number of spike intervals in this histogram.
+    empty_interval_number : int
+        Number of empty intervals in this histogram.
     """
 
     lower_bound: NDArray[np.float64]
@@ -53,6 +123,11 @@ class HistogramResult:
     density: NDArray[np.float64]
     is_best: bool = False
     granularity: int = 0
+    level: float = 0.0
+    information_rate: float = 0.0
+    peak_interval_number: int = 0
+    spike_interval_number: int = 0
+    empty_interval_number: int = 0
 
     @property
     def bin_edges(self) -> NDArray[np.float64]:
@@ -74,192 +149,76 @@ class HistogramResult:
         return len(self.lower_bound)
 
 
-def _parse_file_type(
-    file_path: pathlib.Path,
-) -> None:
-    """Validate the exploratory JSON output file name.
+def _to_result(h: _HistogramPayload, **kwargs: Any) -> HistogramResult:
+    """Convert a JSON histogram payload to a HistogramResult."""
+    return HistogramResult(
+        lower_bound=np.asarray(h.lowerBounds, dtype=np.float64),
+        upper_bound=np.asarray(h.upperBounds, dtype=np.float64),
+        frequency=np.asarray(h.frequencies, dtype=np.int64),
+        probability=np.asarray(h.probabilities, dtype=np.float64),
+        density=np.asarray(h.densities, dtype=np.float64),
+        **kwargs,
+    )
 
-    Parameters
-    ----------
-    file_path : pathlib.Path
-        Path to the JSON output file.
 
-    Raises
-    ------
-    ValueError
-        If the filename pattern is not recognized.
-    """
+def _parse_file_type(file_path: pathlib.Path) -> None:
+    """Validate the exploratory JSON output file name."""
     if file_path.suffix != ".json" or ".series" not in file_path.stem:
         raise ValueError(f"Unrecognized histogram file name: {file_path.name}")
 
 
-def _json_float_array(payload: dict[str, Any], key: str) -> NDArray[np.float64]:
-    """Read a JSON numeric list as a float64 array."""
-    values = payload.get(key)
-    if not isinstance(values, list):
-        raise ValueError(f"Missing or invalid histogram field: {key}")
-    return np.asarray(values, dtype=np.float64)
+def _best_index(
+    series: _SeriesPayload, best: Optional[_HistogramPayload]
+) -> Optional[int]:
+    """Determine the best histogram index from the series."""
+    if series.interpretableHistogramNumber > 0:
+        return series.interpretableHistogramNumber - 1
+    if best is not None:
+        for i, h in enumerate(series.histograms):
+            if h.lowerBounds == best.lowerBounds:
+                return i
+    return None
 
 
-def _json_int_array(payload: dict[str, Any], key: str) -> NDArray[np.int64]:
-    """Read a JSON numeric list as an int64 array."""
-    values = payload.get(key)
-    if not isinstance(values, list):
-        raise ValueError(f"Missing or invalid histogram field: {key}")
-    return np.asarray(values, dtype=np.int64)
-
-
-def _build_histogram_result(
-    data: dict[str, Any],
-    *,
-    is_best: bool,
-    granularity: int,
-) -> HistogramResult:
-    """Build a histogram result object from parsed JSON data."""
-    lower_bound = _json_float_array(data, "lowerBounds")
-    upper_bound = _json_float_array(data, "upperBounds")
-    frequency = _json_int_array(data, "frequencies")
-    probability = _json_float_array(data, "probabilities")
-    density = _json_float_array(data, "densities")
-
-    expected_size = len(lower_bound)
-    if not all(
-        len(array) == expected_size
-        for array in (upper_bound, frequency, probability, density)
-    ):
-        raise ValueError("Inconsistent histogram payload lengths")
-
-    return HistogramResult(
-        lower_bound=lower_bound,
-        upper_bound=upper_bound,
-        frequency=frequency,
-        probability=probability,
-        density=density,
-        is_best=is_best,
-        granularity=granularity,
-    )
-
-
-def _same_histogram(
-    left: HistogramResult,
-    right: HistogramResult,
-) -> bool:
-    """Return True when two histogram results describe the same bins."""
-    return all(
-        np.array_equal(left_array, right_array)
-        for left_array, right_array in (
-            (left.lower_bound, right.lower_bound),
-            (left.upper_bound, right.upper_bound),
-            (left.frequency, right.frequency),
-            (left.probability, right.probability),
-            (left.density, right.density),
-        )
-    )
-
-
-def _best_histogram_index_from_series(series_data: dict[str, Any]) -> Optional[int]:
-    """Return the finest interpretable histogram index from the series metadata."""
-    interpretable_histogram_number = series_data.get("interpretableHistogramNumber")
-    if not isinstance(interpretable_histogram_number, int):
-        return None
-    if interpretable_histogram_number <= 0:
-        return None
-    return interpretable_histogram_number - 1
-
-
-def _read_histogram_json(file_path: pathlib.Path) -> dict[str, Any]:
-    """Read the khisto exploratory JSON output file."""
-    with file_path.open("r", encoding="utf-8") as stream:
-        payload = json.load(stream)
-
-    if not isinstance(payload, dict):
-        raise ValueError("Invalid histogram JSON payload")
-    return payload
-
-
-def _process_histogram_files(
-    temp_dir: str,
-    base_name: str,
-) -> list[HistogramResult]:
-    """Process exploratory JSON generated by khisto CLI.
-
-    Parameters
-    ----------
-    temp_dir : str
-        Directory containing histogram files.
-    base_name : str
-        Base name of the histogram JSON file (without extension).
-
-    Returns
-    -------
-    list[HistogramResult]
-        List of histogram results at all granularity levels,
-        sorted from coarsest to finest.
-    """
+def _process_histogram_files(temp_dir: str, base_name: str) -> list[HistogramResult]:
+    """Process exploratory JSON generated by khisto CLI."""
     output_file = pathlib.Path(temp_dir) / f"{base_name}.json"
     _parse_file_type(output_file)
 
-    payload = _read_histogram_json(output_file)
-    best_histogram_payload = payload.get("bestHistogram")
-    best_histogram = None
-    if isinstance(best_histogram_payload, dict):
-        best_histogram = _build_histogram_result(
-            best_histogram_payload,
-            is_best=False,
-            granularity=0,
-        )
+    with output_file.open("r", encoding="utf-8") as f:
+        output: _KhistoOutput = _KhistoOutput.from_dict(json.load(f))
 
-    series_data = payload.get("histogramSeries")
-    if not isinstance(series_data, dict):
-        if best_histogram is None:
+    if not output.histogramSeries or not output.histogramSeries.histograms:
+        if output.bestHistogram is None:
             raise ValueError("No histogram data found")
-        best_histogram.is_best = True
-        return [best_histogram]
+        return [_to_result(output.bestHistogram, is_best=True)]
 
-    histogram_payloads = series_data.get("histograms")
-    if not isinstance(histogram_payloads, list) or not histogram_payloads:
-        if best_histogram is None:
-            raise ValueError("No histogram data found")
-        best_histogram.is_best = True
-        return [best_histogram]
+    series = output.histogramSeries
+    n = len(series.histograms)
+    best_idx = _best_index(series, output.bestHistogram)
+    granularities = (
+        series.granularities if len(series.granularities) == n else list(range(n))
+    )
 
-    granularities_payload = series_data.get("granularities")
-    if isinstance(granularities_payload, list) and len(granularities_payload) == len(
-        histogram_payloads
-    ):
-        granularities = [int(granularity) for granularity in granularities_payload]
-    else:
-        granularities = list(range(len(histogram_payloads)))
+    def _get(lst: list, i: int, default=0):
+        return lst[i] if i < len(lst) else default
 
-    best_index = _best_histogram_index_from_series(series_data)
-
-    results = []
-    for index, (granularity, histogram_payload) in enumerate(
-        zip(granularities, histogram_payloads)
-    ):
-        if not isinstance(histogram_payload, dict):
-            raise ValueError("Invalid histogram payload in histogramSeries")
-
-        result = _build_histogram_result(
-            histogram_payload,
-            is_best=best_index == index,
-            granularity=granularity,
+    return [
+        _to_result(
+            h,
+            is_best=(i == best_idx),
+            granularity=granularities[i],
+            level=_get(series.levels, i, 0.0),
+            information_rate=_get(series.informationRates, i, 0.0),
+            peak_interval_number=_get(series.peakIntervalNumbers, i),
+            spike_interval_number=_get(series.spikeIntervalNumbers, i),
+            empty_interval_number=_get(series.emptyIntervalNumbers, i),
         )
-
-        if not result.is_best and best_index is None and best_histogram is not None:
-            result.is_best = _same_histogram(result, best_histogram)
-
-        results.append(result)
-
-    if results:
-        return results
-
-    raise ValueError("No histogram data found")
+        for i, h in enumerate(series.histograms)
+    ]
 
 
-def compute_histograms(
-    x: np.ndarray,
-) -> list[HistogramResult]:
+def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
     """Compute optimal histogram of an array using khisto CLI binary input.
 
     Parameters
@@ -271,28 +230,16 @@ def compute_histograms(
     -------
     list[HistogramResult]
         A list of HistogramResult, one per granularity level,
-        sorted from coarsest to finest. Each result contains:
-        - lower_bound : array of lower bin bounds
-        - upper_bound : array of upper bin bounds
-        - frequency : count in each bin
-        - probability : probability of each bin
-        - density : density of each bin
-        - is_best : whether this is the optimal histogram
-        - granularity : the granularity level
+        sorted from coarsest to finest.
 
     Raises
     ------
     RuntimeError
         If khisto CLI execution fails.
-    TypeError
-        If input array is not numeric.
     ValueError
         If input array is empty after filtering.
     """
-    # Convert to numpy array if needed
     x = np.asarray(x, dtype=np.float64)
-
-    # Remove NaN values
     x = x[~np.isnan(x)]
 
     if len(x) == 0:
@@ -304,13 +251,11 @@ def compute_histograms(
         x.tofile(temp_input)
         temp_input_path = temp_input.name
 
-    # Create temporary directory for output files
     temp_dir = tempfile.mkdtemp(prefix="khisto_output_")
     output_file = pathlib.Path(temp_dir) / "histogram.series.json"
-    cmd = []
+    cmd: list[str] = []
 
     try:
-        # Build command arguments - always use exploratory mode
         cmd = [
             str(KHISTO_BIN_DIR),
             "-b",
@@ -319,16 +264,8 @@ def compute_histograms(
             temp_input_path,
             str(output_file),
         ]
-
-        # Execute khisto CLI
         subprocess.run(cmd, capture_output=True, text=True, check=True)
-
-        result = _process_histogram_files(
-            temp_dir,
-            output_file.stem,
-        )
-
-        return result
+        return _process_histogram_files(temp_dir, output_file.stem)
 
     except subprocess.CalledProcessError as e:
         stdout = e.stdout.strip()
@@ -340,6 +277,5 @@ def compute_histograms(
         logger.error(message)
         raise RuntimeError(message) from e
     finally:
-        # Clean up temporary input file and directory
         pathlib.Path(temp_input_path).unlink(missing_ok=True)
         shutil.rmtree(temp_dir, ignore_errors=True)
