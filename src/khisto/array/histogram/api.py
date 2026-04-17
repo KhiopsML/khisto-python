@@ -15,7 +15,7 @@ from khisto.core import HistogramResult, compute_histograms
 
 
 def _select_histogram(
-    results: list[HistogramResult],
+    histogram_results: list[HistogramResult],
     max_bins: Optional[int] = None,
 ) -> HistogramResult:
     """Select the appropriate histogram from the list of results.
@@ -35,38 +35,20 @@ def _select_histogram(
     if max_bins is not None:
         # Find the finest granularity that respects max_bins
         selected = None
-        for r in results:
+        for r in histogram_results:
             if len(r) <= max_bins:
                 selected = r
             else:
                 break
         # If no histogram respects the constraint, use the coarsest one
-        return selected if selected is not None else results[0]
+        return selected if selected is not None else histogram_results[0]
     else:
         # Return the best (optimal) histogram
-        for r in results:
+        for r in reversed(histogram_results):
             if r.is_best:
                 return r
         # Fallback to finest granularity if no best is marked
-        return results[-1]
-
-
-def _apply_cumulative(
-    hist_values: NDArray[np.float64],
-    bin_edges: NDArray[np.float64],
-    *,
-    density: bool,
-    reverse: bool = False,
-) -> NDArray[np.float64]:
-    """Accumulate histogram values using matplotlib-compatible semantics."""
-    if density:
-        source_values = hist_values * np.diff(bin_edges)
-    else:
-        source_values = hist_values
-
-    if reverse:
-        return np.cumsum(source_values[::-1])[::-1]
-    return np.cumsum(source_values)
+        return histogram_results[-1]
 
 
 def histogram(
@@ -125,15 +107,20 @@ def histogram(
     """
     arr = np.asarray(a, dtype=np.float64).flatten()
 
+    if max_bins is not None and max_bins <= 0:
+        raise ValueError("max_bins must be a positive integer or None.")
+
     # Filter values by range if specified
     if range is not None:
         min_val, max_val = range
         arr = arr[(arr >= min_val) & (arr <= max_val)]
 
-    results = compute_histograms(arr)
-    result = _select_histogram(results, max_bins=max_bins)
+    histogram_results = compute_histograms(arr)
+    histogram_result = _select_histogram(histogram_results, max_bins=max_bins)
 
     if density:
-        return result.density.copy(), result.bin_edges.copy()
+        return histogram_result.density.copy(), histogram_result.bin_edges.copy()
     else:
-        return result.frequency.astype(np.float64), result.bin_edges.copy()
+        return histogram_result.frequency.astype(
+            np.float64
+        ), histogram_result.bin_edges.copy()
