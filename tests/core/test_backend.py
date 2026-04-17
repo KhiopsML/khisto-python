@@ -240,8 +240,7 @@ class TestProcessHistogramFiles:
         }
         self._write_json(tmp_path / "histogram.series.json", payload)
 
-        with (tmp_path / "histogram.series.json").open("r", encoding="utf-8") as stream:
-            results = _process_histogram_file(stream)
+        results = _process_histogram_file(str(tmp_path / "histogram.series.json"))
 
         assert len(results) == 3
         assert [result.granularity for result in results] == [0, 2, 3]
@@ -278,8 +277,7 @@ class TestProcessHistogramFiles:
         }
         self._write_json(tmp_path / "histogram.series.json", payload)
 
-        with (tmp_path / "histogram.series.json").open("r", encoding="utf-8") as stream:
-            results = _process_histogram_file(stream)
+        results = _process_histogram_file(str(tmp_path / "histogram.series.json"))
 
         assert len(results) == 2
         assert [result.is_best for result in results] == [False, True]
