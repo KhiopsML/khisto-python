@@ -10,6 +10,7 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 - **Variable-Width Bins**: Captures dense regions with fine bins and sparse regions with wider bins.
 - **NumPy Compatible**: Drop-in replacement for `numpy.histogram`.
 - **Matplotlib Integration**: `khisto.matplotlib.hist` works like `plt.hist`.
+- **Core Histogram API**: Inspect every available granularity with `khisto.core.compute_histograms` and `HistogramResult`.
 - **Minimal Dependencies**: Only requires NumPy (matplotlib optional for plotting).
 
 | Standard Gaussian | Heavy-tailed Pareto |
@@ -135,7 +136,7 @@ uv run pytest
 
 ## Documentation
 
-See the [API](docs/API.md) and [API Comparison](docs/API_COMPARISON.md) for detailed information on available functions, parameters, and how Khisto compares to standard histogram implementations.
+See the [documentation index](docs/index.rst), [API comparison guide](docs/api_comparison.rst), and [demo notebook](docs/demo.ipynb) for the current API reference and usage examples.
 
 ## License
 
