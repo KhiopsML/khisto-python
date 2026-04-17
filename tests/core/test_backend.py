@@ -13,8 +13,7 @@ import pytest
 
 from khisto.core import compute_histograms
 from khisto.core.backend import (
-    _parse_file_type,
-    _process_histogram_files,
+    _process_histogram_file,
     HistogramResult,
 )
 
@@ -38,29 +37,6 @@ def _histogram_payload(
         "probabilities": probabilities,
         "densities": densities,
     }
-
-
-class TestParseFileType:
-    """Tests for _parse_file_type function."""
-
-    def test_series_json_file(self):
-        """Test validation of histogram.series.json file."""
-        _parse_file_type(pathlib.Path("histogram.series.json"))
-
-    def test_binary_series_json_file(self):
-        """Test validation of histogram.series.bin.json file."""
-        _parse_file_type(pathlib.Path("gaussian_histogram.series.bin.json"))
-
-    def test_invalid_file_name(self):
-        """Test that invalid file names raise ValueError."""
-        with pytest.raises(ValueError, match="Unrecognized histogram file name"):
-            _parse_file_type(pathlib.Path("histogram.json"))
-
-        with pytest.raises(ValueError, match="Unrecognized histogram file name"):
-            _parse_file_type(pathlib.Path("histogram.csv"))
-
-        with pytest.raises(ValueError, match="Unrecognized histogram file name"):
-            _parse_file_type(pathlib.Path("histogram.series.csv"))
 
 
 class TestHistogramResult:
@@ -161,6 +137,37 @@ class TestComputeHistograms:
         assert "khisto stderr message" in message
         assert "-j" in message
 
+    def test_compute_histograms_reports_cli_launch_failure(self, monkeypatch):
+        """Test that khisto launch failures raise a descriptive runtime error."""
+
+        def fail_run(*args, **kwargs):
+            raise FileNotFoundError("[Errno 2] No such file or directory: 'khisto'")
+
+        monkeypatch.setattr("khisto.core.backend.subprocess.run", fail_run)
+
+        with pytest.raises(RuntimeError, match="could not be started") as excinfo:
+            compute_histograms(np.array([0.0, 1.0]))
+
+        message = str(excinfo.value)
+        assert "No such file or directory" in message
+        assert "-j" in message
+
+    def test_compute_histograms_reports_invalid_json_output(self, monkeypatch):
+        """Test that malformed JSON output raises a descriptive runtime error."""
+
+        def fake_run(cmd, **kwargs):
+            output_path = pathlib.Path(cmd[-1])
+            output_path.write_text("{not json", encoding="utf-8")
+
+        monkeypatch.setattr("khisto.core.backend.subprocess.run", fake_run)
+
+        with pytest.raises(RuntimeError, match="invalid JSON output") as excinfo:
+            compute_histograms(np.array([0.0, 1.0]))
+
+        message = str(excinfo.value)
+        assert "Expecting property name enclosed in double quotes" in message
+        assert "-j" in message
+
     def test_compute_histograms_writes_binary_input(self, monkeypatch):
         """Test that compute_histograms writes binary input and requests JSON output."""
 
@@ -178,15 +185,15 @@ class TestComputeHistograms:
         captured_values = None
 
         monkeypatch.setattr(
-            "khisto.core.backend._process_histogram_files",
-            lambda temp_dir, base_name: expected_result,
+            "khisto.core.backend._process_histogram_file",
+            lambda temp_output_file: expected_result,
         )
 
         def fake_run(cmd, **kwargs):
             nonlocal captured_values
             assert "-b" in cmd
             assert "-j" in cmd
-            assert cmd[-1].endswith("histogram.series.json")
+            assert cmd[-1].endswith(".json")
             input_path = pathlib.Path(cmd[-2])
             captured_values = np.fromfile(input_path, dtype=np.float64)
 
@@ -233,7 +240,8 @@ class TestProcessHistogramFiles:
         }
         self._write_json(tmp_path / "histogram.series.json", payload)
 
-        results = _process_histogram_files(str(tmp_path), "histogram.series")
+        with (tmp_path / "histogram.series.json").open("r", encoding="utf-8") as stream:
+            results = _process_histogram_file(stream)
 
         assert len(results) == 3
         assert [result.granularity for result in results] == [0, 2, 3]
@@ -270,7 +278,8 @@ class TestProcessHistogramFiles:
         }
         self._write_json(tmp_path / "histogram.series.json", payload)
 
-        results = _process_histogram_files(str(tmp_path), "histogram.series")
+        with (tmp_path / "histogram.series.json").open("r", encoding="utf-8") as stream:
+            results = _process_histogram_file(stream)
 
         assert len(results) == 2
         assert [result.is_best for result in results] == [False, True]
