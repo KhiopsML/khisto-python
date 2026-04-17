@@ -1,7 +1,7 @@
 API Comparison
 ==============
 
-This document compares the Khisto API with NumPy and Matplotlib, highlighting similarities and differences.
+This document compares the current Khisto APIs with NumPy and Matplotlib.
 
 NumPy Comparison
 ----------------
@@ -155,6 +155,9 @@ Signature Comparison
        color=None,
        label=None,
        ax=None,
+       edgecolor=None,
+       linewidth=None,
+       alpha=None,
        **kwargs,
    )
 
@@ -180,12 +183,18 @@ Key Differences
    * - **Cumulative**
      - Supported
      - Supported
+   * - **Reverse cumulative**
+     - Supported with negative ``cumulative``
+     - Supported with negative ``cumulative``
    * - **Stacked**
      - Supported
      - Not supported
    * - **Weights**
      - Supported
      - Not supported
+   * - **Unsupported histogram args**
+     - None
+     - ``bins``, ``stacked``, and ``weights`` raise a ``TypeError``
    * - **Multiple datasets**
      - Supported
      - Sequences are concatenated into one dataset
@@ -227,6 +236,10 @@ Common Parameters (Same Behavior)
    # cumulative view
    plt.hist(data, density=True, cumulative=True)
    hist(data, density=True, cumulative=True)
+
+  # reverse cumulative view
+  plt.hist(data, cumulative=-1)
+  hist(data, cumulative=-1)
 
    # histogram type
    plt.hist(data, histtype='step')
@@ -313,6 +326,10 @@ Feature Matrix
      - Yes
      - No
    * - Cumulative
+     - No
+     - Yes
+     - Yes
+   * - Reverse cumulative
      - No
      - Yes
      - Yes

@@ -6,16 +6,32 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import os
+import re
 import sys
 from pathlib import Path
 
-sys.path.append("..")
-sys.path.append(os.path.join("..", "src"))
+DOCS_DIR = Path(__file__).resolve().parent
+ROOT_DIR = DOCS_DIR.parent
+
+sys.path.append(str(ROOT_DIR))
+sys.path.append(str(ROOT_DIR / "src"))
+
+
+def _read_release() -> str:
+    init_file = ROOT_DIR / "src" / "khisto" / "__init__.py"
+    match = re.search(
+        r'^__version__\s*=\s*"(?P<version>[^"]+)"',
+        init_file.read_text(encoding="utf-8"),
+        re.MULTILINE,
+    )
+    if match is None:
+        raise RuntimeError(f"Could not determine khisto version from {init_file}")
+    return match.group("version")
 
 project = 'khisto-python'
 copyright = '2026, The Khiops Team'
 author = 'The Khiops Team'
-release = "0.1.0" # TODO: use pyproject metadata here
+release = _read_release()
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

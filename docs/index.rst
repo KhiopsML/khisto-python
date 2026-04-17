@@ -6,7 +6,18 @@
 khisto-python documentation
 ===========================
 
-This is the complete API reference for the Khisto Python library.
+Khisto helps you build histograms that look right on the first try.
+
+It replaces fixed-width bin guesses with adaptive bins computed by the Khiops
+algorithm, so dense regions stay detailed and sparse regions stay readable.
+
+Pick the entry point that matches your workflow:
+
+- :doc:`demo` for a runnable tour.
+- :doc:`array/histogram/index` for a NumPy-like API with better bins.
+- :doc:`matplotlib/index` for plots that stay familiar but look sharper.
+- :doc:`core/index` for full access to the histogram series.
+- :doc:`api_comparison` for a quick comparison with NumPy and matplotlib.
 
 .. toctree::
    :maxdepth: 2
