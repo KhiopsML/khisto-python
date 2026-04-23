@@ -44,6 +44,8 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
+      - name: Install pandoc
+        run: sudo apt-get install -y pandoc
       - name: Install doc build requirements
         run: |
           uv venv .build-env
