@@ -16,16 +16,16 @@ matplotlib = ["matplotlib>=3.8"]
 all = ["matplotlib>=3.8"]
 
 [dependency-groups]
-dev = [
+test = [
     "pytest>=8.3",
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
     "pytest-sugar>=1.0",
+]
+lint = [
     "pre-commit>=4.1",
     "pre-commit-hooks>=5.0",
     "ruff>=0.9",
-    "ipykernel>=7",
-    "matplotlib>=3.8",
 ]
 docs = [
     "sphinx>=6.1",
@@ -36,6 +36,11 @@ docs = [
     "pypandoc-binary>=1.17",
     "ipykernel>=7",
     "matplotlib>=3.8",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "docs"},
 ]
 
 [build-system]
