@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
@@ -223,54 +224,67 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
     if len(x) == 0:
         raise ValueError("Input array is empty after filtering")
 
-    with tempfile.NamedTemporaryFile(mode="wb", suffix=".bin") as temp_input_file:
+    # Use delete=False so the files are closed before the subprocess reads them.
+    # On Windows, NamedTemporaryFile keeps an exclusive lock while open.
+    temp_input_file = tempfile.NamedTemporaryFile(
+        mode="wb", suffix=".bin", delete=False
+    )
+    temp_output_file = tempfile.NamedTemporaryFile(
+        mode="r", suffix=".json", delete=False
+    )
+    try:
         x.tofile(temp_input_file)
-        with tempfile.NamedTemporaryFile(mode="r", suffix=".json") as temp_output_file:
-            cmd = [
-                str(KHISTO_BIN_DIR),
-                "-b",
-                "-e",
-                "-j",
-                temp_input_file.name,
-                temp_output_file.name,
-            ]
-            try:
-                subprocess.run(cmd, capture_output=True, text=True, check=True)
-            except subprocess.CalledProcessError as e:
-                stdout = e.stdout.strip()
-                stderr = e.stderr.strip()
-                details = "\n".join(part for part in (stdout, stderr) if part)
-                message = _format_runtime_error(
-                    f"khisto failed with exit code {e.returncode}",
-                    cmd,
-                    details or None,
-                )
-                logger.error(message)
-                raise RuntimeError(message) from e
-            except OSError as e:
-                message = _format_runtime_error(
-                    "khisto could not be started",
-                    cmd,
-                    str(e),
-                )
-                logger.error(message)
-                raise RuntimeError(message) from e
+        temp_input_file.close()
+        temp_output_file.close()
 
-            try:
-                return _process_histogram_file(temp_output_file.name)
-            except json.JSONDecodeError as e:
-                message = _format_runtime_error(
-                    "khisto produced invalid JSON output",
-                    cmd,
-                    str(e),
-                )
-                logger.error(message)
-                raise RuntimeError(message) from e
-            except (AttributeError, IndexError, TypeError, ValueError) as e:
-                message = _format_runtime_error(
-                    "khisto produced an invalid histogram payload",
-                    cmd,
-                    str(e),
-                )
-                logger.error(message)
-                raise RuntimeError(message) from e
+        cmd = [
+            str(KHISTO_BIN_DIR),
+            "-b",
+            "-e",
+            "-j",
+            temp_input_file.name,
+            temp_output_file.name,
+        ]
+        try:
+            subprocess.run(cmd, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            stdout = e.stdout.strip()
+            stderr = e.stderr.strip()
+            details = "\n".join(part for part in (stdout, stderr) if part)
+            message = _format_runtime_error(
+                f"khisto failed with exit code {e.returncode}",
+                cmd,
+                details or None,
+            )
+            logger.error(message)
+            raise RuntimeError(message) from e
+        except OSError as e:
+            message = _format_runtime_error(
+                "khisto could not be started",
+                cmd,
+                str(e),
+            )
+            logger.error(message)
+            raise RuntimeError(message) from e
+
+        try:
+            return _process_histogram_file(temp_output_file.name)
+        except json.JSONDecodeError as e:
+            message = _format_runtime_error(
+                "khisto produced invalid JSON output",
+                cmd,
+                str(e),
+            )
+            logger.error(message)
+            raise RuntimeError(message) from e
+        except (AttributeError, IndexError, TypeError, ValueError) as e:
+            message = _format_runtime_error(
+                "khisto produced an invalid histogram payload",
+                cmd,
+                str(e),
+            )
+            logger.error(message)
+            raise RuntimeError(message) from e
+    finally:
+        os.unlink(temp_input_file.name)
+        os.unlink(temp_output_file.name)
