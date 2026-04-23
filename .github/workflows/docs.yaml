@@ -47,7 +47,7 @@ jobs:
       - name: Install doc build requirements
         run: |
           uv venv .build-env
-          uv pip install --python .build-env -r docs/requirements.txt
+          uv sync
       - name: Build Sphinx Documentation
         run: |
           . .build-env/bin/activate
@@ -58,9 +58,11 @@ jobs:
         with:
           name: khisto-python-docs
           path: ./docs/_build/html/
-  # Publish to GH pages on Git tag and manually
+  # Publish to GH pages on Git tag push or manual dispatch
   publish:
-    if: github.ref_type == 'tag' && github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true
+    if: >-
+      (github.ref_type == 'tag' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true)
     needs: build
     runs-on: ubuntu-22.04
     permissions:
