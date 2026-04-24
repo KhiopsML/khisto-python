@@ -197,7 +197,7 @@ Key Differences
      - ``bins``, ``stacked``, and ``weights`` raise a ``TypeError``
    * - **Multiple datasets**
      - Supported
-     - Sequences are concatenated into one dataset. Sequences of different lengths are not supported.
+     - Not supported. Only 1-D arrays are accepted.
 
 Usage Comparison
 """"""""""""""""

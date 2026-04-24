@@ -151,15 +151,6 @@ class TestHistBasic:
         assert np.isclose(n[0], len(normal_data))
         plt.close(fig)
 
-    def test_sequence_of_arrays_is_combined(self, normal_data):
-        """Test that sequences of arrays are combined into one histogram."""
-        fig, ax = plt.subplots()
-        datasets = [normal_data[:500], normal_data[500:]]
-        n, bins, patches = hist(datasets, ax=ax)
-
-        assert np.sum(n) == len(normal_data)
-        plt.close(fig)
-
     def test_unsupported_bins_parameter(self, normal_data):
         """Test that bins raises a clear error message."""
         fig, ax = plt.subplots()
