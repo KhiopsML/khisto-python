@@ -172,10 +172,8 @@ class TestHistogramNumpyCompatibility:
         hist, bin_edges = histogram(normal_data)
         assert len(bin_edges) == len(hist) + 1
 
-    def test_2d_array_flattening(self):
-        """Test that 2D arrays are flattened."""
+    def test_2d_array_raises(self):
+        """Test that 2D arrays raise ValueError."""
         data_2d = np.array([[1, 2, 3], [4, 5, 6]])
-        hist, bin_edges = histogram(data_2d)
-
-        # Should process all 6 values
-        assert np.sum(hist) == 6
+        with pytest.raises(ValueError, match="Expected 1-D array"):
+            histogram(data_2d)

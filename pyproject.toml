@@ -7,6 +7,44 @@ license = "BSD-3-Clause-Clear"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = ["numpy>=2.0"]
+authors = [
+    {name = "Elouen Ginat", email = "elouen.ginat@orange.com"},
+]
+keywords = [
+    "histogram",
+    "binning",
+    "optimal",
+    "khiops",
+    "statistics",
+    "data-analysis",
+    "density-estimation",
+    "distribution",
+    "numpy",
+    "matplotlib",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/khiops/khisto-python"
+Documentation = "https://khiops.github.io/khisto-python/"
+Repository = "https://github.com/khiops/khisto-python"
+Issues = "https://github.com/khiops/khisto-python/issues"
+Changelog = "https://github.com/khiops/khisto-python/blob/main/CHANGELOG.md"
 
 [tool.khiops]
 khiops-version = "11.0.1-a.3"
@@ -16,16 +54,32 @@ matplotlib = ["matplotlib>=3.8"]
 all = ["matplotlib>=3.8"]
 
 [dependency-groups]
-dev = [
+test = [
     "pytest>=8.3",
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
     "pytest-sugar>=1.0",
+]
+lint = [
     "pre-commit>=4.1",
     "pre-commit-hooks>=5.0",
     "ruff>=0.9",
+]
+docs = [
+    "sphinx>=6.1",
+    "furo>=2022.12.7",
+    "numpydoc>=1.5",
+    "sphinx-copybutton>=0.5",
+    "sphinx-design>=0.6",
+    "nbsphinx>=0.9",
+    "pypandoc>=1.17",
     "ipykernel>=7",
     "matplotlib>=3.8",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "lint"},
+    {include-group = "docs"},
 ]
 
 [build-system]
