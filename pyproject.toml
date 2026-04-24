@@ -7,6 +7,45 @@ license = "BSD-3-Clause-Clear"
 license-files = ["LICENSE"]
 requires-python = ">=3.10"
 dependencies = ["numpy>=2.0"]
+authors = [
+    {name = "Elouen Ginat", email = "elouen.ginat@orange.com"},
+]
+keywords = [
+    "histogram",
+    "binning",
+    "optimal",
+    "khiops",
+    "statistics",
+    "data-analysis",
+    "density-estimation",
+    "distribution",
+    "numpy",
+    "matplotlib",
+    "visualization",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/khiops/khisto-python"
+Documentation = "https://khiops.github.io/khisto-python/"
+Repository = "https://github.com/khiops/khisto-python"
+Issues = "https://github.com/khiops/khisto-python/issues"
+Changelog = "https://github.com/khiops/khisto-python/blob/main/CHANGELOG.md"
 
 [tool.khiops]
 khiops-version = "11.0.1-a.3"

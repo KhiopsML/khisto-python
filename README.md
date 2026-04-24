@@ -136,7 +136,13 @@ uv run pytest
 
 ## Documentation
 
-See the [documentation index](docs/index.rst), [API comparison guide](docs/api_comparison.rst), and [demo notebook](docs/demo.ipynb) for the current API reference and usage examples.
+Full documentation is hosted at **[khiops.github.io/khisto-python](https://khiops.github.io/khisto-python/)**.
+
+- [API Reference](https://khiops.github.io/khisto-python/array/histogram/index.html) — NumPy-like histogram API
+- [Matplotlib Integration](https://khiops.github.io/khisto-python/matplotlib/index.html) — `hist` plotting function
+- [Core API](https://khiops.github.io/khisto-python/core/index.html) — full access to histogram granularity levels
+- [API Comparison](https://khiops.github.io/khisto-python/api_comparison.html) — side-by-side with NumPy and Matplotlib
+- [Demo Notebook](https://khiops.github.io/khisto-python/demo.html) — interactive walkthrough
 
 ## License
 

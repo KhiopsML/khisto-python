@@ -72,10 +72,8 @@ def hist(
 
     Parameters
     ----------
-    x : array_like or sequence of array_like
-        Input data. Nested arrays are concatenated and histogrammed as a
-        single dataset. This behavior is different from Matplotlib's hist, which treats a sequence of
-        arrays as multiple datasets and plots them separately.
+    x : array_like
+        Input data. Must be 1-dimensional.
     range : tuple of (float, float), optional
         Lower and upper range of the bins. Values outside the range are
         ignored.
