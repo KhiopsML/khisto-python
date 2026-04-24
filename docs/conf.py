@@ -49,6 +49,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "numpydoc",
     "sphinx_copybutton",
+    "sphinx_design",
     "nbsphinx",
 ]
 

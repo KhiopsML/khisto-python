@@ -1,23 +1,88 @@
-.. khisto-python documentation master file, created by
-   sphinx-quickstart on Fri Mar  6 17:40:33 2026.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. khisto-python documentation master file
 
-khisto-python documentation
-===========================
+===========================================
+Khisto — Histograms that fit your data
+===========================================
 
-Khisto helps you build histograms that look right on the first try.
+.. rst-class:: hero-tagline
 
-It replaces fixed-width bin guesses with adaptive bins computed by the Khiops
-algorithm, so dense regions stay detailed and sparse regions stay readable.
+   Drop-in replacements for ``numpy.histogram`` and ``plt.hist`` with
+   adaptive, variable-width bins powered by the Khisto algorithm.
+   Dense regions get fine bins, sparse regions get wide ones — no tuning needed.
 
-Pick the entry point that matches your workflow:
+.. grid:: 2
+   :gutter: 3
 
-- :doc:`demo` for a runnable tour.
-- :doc:`array/histogram/index` for a NumPy-like API with better bins.
-- :doc:`matplotlib/index` for plots that stay familiar but look sharper.
-- :doc:`core/index` for full access to the histogram series.
-- :doc:`api_comparison` for a quick comparison with NumPy and matplotlib.
+   .. grid-item-card:: Standard Gaussian
+      :img-top: images/gaussian-quick-start.png
+
+      Bins concentrate around the interesting areas — exactly
+      matching the density of a normal distribution.
+
+   .. grid-item-card:: Heavy-tailed Pareto
+      :img-top: images/pareto-quick-start.png
+
+      Log-log axes reveal how adaptive bins track a power-law decay
+      over four orders of magnitude.
+
+Get started
+-----------
+
+.. div:: install-cmd
+
+   .. code-block:: bash
+
+      pip install khisto            # core (NumPy only)
+      pip install "khisto[matplotlib]"  # + plotting
+
+.. code-block:: python
+
+   import numpy as np
+   from khisto import histogram
+
+   data = np.random.normal(0, 1, 10_000)
+   hist, bin_edges = histogram(data)          # optimal bins, no guessing
+
+.. grid:: 1 1 3 3
+   :gutter: 3
+   :class-container: sd-mt-3
+
+   .. grid-item-card:: :octicon:`package;1.5em` NumPy-like API
+      :link: array/histogram/index
+      :link-type: doc
+
+      ``histogram(data)`` returns ``(hist, bin_edges)`` — same shape as
+      ``numpy.histogram``, better bins.
+
+   .. grid-item-card:: :octicon:`graph;1.5em` Matplotlib integration
+      :link: matplotlib/index
+      :link-type: doc
+
+      ``khisto.matplotlib.hist`` plots like ``plt.hist`` with density,
+      cumulative, step, and log-scale support.
+
+   .. grid-item-card:: :octicon:`telescope;1.5em` Core engine
+      :link: core/index
+      :link-type: doc
+
+      ``compute_histograms`` exposes every granularity level so you can
+      pick the resolution that suits your analysis.
+
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: sd-mt-1
+
+   .. grid-item-card:: :octicon:`git-compare;1.5em` API comparison
+      :link: api_comparison
+      :link-type: doc
+
+      Side-by-side parameter tables for NumPy, Matplotlib, and Khisto.
+
+   .. grid-item-card:: :octicon:`play;1.5em` Interactive demo
+      :link: demo
+      :link-type: doc
+
+      A runnable notebook tour covering all features.
 
 .. toctree::
    :maxdepth: 2
