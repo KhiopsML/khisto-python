@@ -47,7 +47,7 @@ Issues = "https://github.com/khiops/khisto-python/issues"
 Changelog = "https://github.com/khiops/khisto-python/blob/main/CHANGELOG.md"
 
 [tool.khiops]
-khiops-version = "11.0.1-a.3"
+khiops-version = "11.0.1-rc.1"
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8"]
