@@ -9,6 +9,7 @@ import os
 import re
 import sys
 from pathlib import Path
+import tomllib
 
 DOCS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DOCS_DIR.parent
@@ -18,15 +19,15 @@ sys.path.append(str(ROOT_DIR / "src"))
 
 
 def _read_release() -> str:
-    init_file = ROOT_DIR / "src" / "khisto" / "__init__.py"
-    match = re.search(
-        r'^__version__\s*=\s*"(?P<version>[^"]+)"',
-        init_file.read_text(encoding="utf-8"),
-        re.MULTILINE,
-    )
-    if match is None:
-        raise RuntimeError(f"Could not determine khisto version from {init_file}")
-    return match.group("version")
+    pyproject_file = ROOT_DIR / "pyproject.toml"
+    data = tomllib.loads(pyproject_file.read_text(encoding="utf-8"))
+
+    try:
+        return data["project"]["version"]
+    except KeyError as exc:
+        raise RuntimeError(
+            f"Could not determine khisto version from {pyproject_file}"
+        ) from exc
 
 project = 'khisto-python'
 copyright = '2026, The Khiops Team'

@@ -32,7 +32,7 @@ Get started
 
    .. code-block:: bash
 
-      pip install khisto            # core (NumPy only)
+      pip install khisto                # core (NumPy only)
       pip install "khisto[matplotlib]"  # + plotting
 
 .. code-block:: python
@@ -100,4 +100,3 @@ Get started
 
    API Comparison <api_comparison>
    Demo <demo>
-
