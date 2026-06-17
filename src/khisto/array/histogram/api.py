@@ -34,20 +34,19 @@ def _select_histogram(
     """
     if max_bins is not None:
         # Find the finest granularity that respects max_bins
-        selected = None
-        for r in histogram_results:
+        for r in reversed(histogram_results):
             if len(r) <= max_bins:
-                selected = r
-            else:
-                break
+                return r
         # If no histogram respects the constraint, use the coarsest one
-        return selected if selected is not None else histogram_results[0]
+        return histogram_results[0]
     else:
-        # Return the best (optimal) histogram
+        # Return the best histogram (optimal in terms of interpretability)
+        # There is only one best histogram, so we return the first one we find
         for r in reversed(histogram_results):
             if r.is_best:
                 return r
         # Fallback to finest granularity if no best is marked
+        # It is assumed to be the best because it is the finest granularity
         return histogram_results[-1]
 
 

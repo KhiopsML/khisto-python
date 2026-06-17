@@ -8,9 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal, Optional
 
-import numpy as np
-
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.axes import Axes
 
 from khisto.array import histogram as khisto_histogram
@@ -36,7 +35,7 @@ def _apply_cumulative(
     hist_values: NDArray[np.float64],
     bin_edges: NDArray[np.float64],
     *,
-    density: bool,
+    density: bool = False,
     reverse: bool = False,
 ) -> NDArray[np.float64]:
     """Accumulate histogram values using matplotlib-compatible semantics."""
