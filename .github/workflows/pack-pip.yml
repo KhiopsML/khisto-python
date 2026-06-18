@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025, windows-11-arm, macos-15-intel, macos-15]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-15]
     steps:
       - uses: actions/checkout@v6
       
@@ -38,7 +38,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: cmd
         run: |
-          call "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
+          call "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
           set >> %GITHUB_ENV%
        
       - name: Build wheels
