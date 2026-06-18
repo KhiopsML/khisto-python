@@ -263,7 +263,8 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
         raise ValueError("Input array is empty after filtering")
 
     # Use delete=False so the files are closed before the subprocess reads them.
-    # On Windows, NamedTemporaryFile keeps an exclusive lock while open.
+    # On Windows, files keep an exclusive lock while open, whence,
+    # for portability reasons, the NamedTemporaryFile context manager cannot be used.
     temp_input_fd, temp_input_file_path = tempfile.mkstemp(suffix=".bin")
     temp_output_fd, temp_output_file_path = tempfile.mkstemp(suffix=".json")
     os.close(temp_input_fd)
