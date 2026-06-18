@@ -264,24 +264,21 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
 
     # Use delete=False so the files are closed before the subprocess reads them.
     # On Windows, NamedTemporaryFile keeps an exclusive lock while open.
-    temp_input_file = tempfile.NamedTemporaryFile(
-        mode="wb", suffix=".bin", delete=False
-    )
-    temp_output_file = tempfile.NamedTemporaryFile(
-        mode="r", suffix=".json", delete=False
-    )
+    temp_input_fd, temp_input_file_path = tempfile.mkstemp(suffix=".bin")
+    temp_output_fd, temp_output_file_path = tempfile.mkstemp(suffix=".json")
+    os.close(temp_input_fd)
+    os.close(temp_output_fd)
     try:
-        x.tofile(temp_input_file)
-        temp_input_file.close()
-        temp_output_file.close()
+        with open(temp_input_file_path, "wb") as temp_input_file:
+            x.tofile(temp_input_file)
 
         cmd = [
             str(KHISTO_BIN_DIR),
             "-b",
             "-e",
             "-j",
-            temp_input_file.name,
-            temp_output_file.name,
+            temp_input_file_path,
+            temp_output_file_path,
         ]
         try:
             subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -306,7 +303,7 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
             raise RuntimeError(message) from e
 
         try:
-            return _process_histogram_file(Path(temp_output_file.name))
+            return _process_histogram_file(Path(temp_output_file_path))
         except json.JSONDecodeError as e:
             message = _format_runtime_error(
                 "khisto produced invalid JSON output",
@@ -324,5 +321,5 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
             logger.error(message)
             raise RuntimeError(message) from e
     finally:
-        os.unlink(temp_input_file.name)
-        os.unlink(temp_output_file.name)
+        os.unlink(temp_input_file_path)
+        os.unlink(temp_output_file_path)
