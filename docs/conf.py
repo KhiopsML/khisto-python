@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from importlib.metadata import version
+import importlib
 
 DOCS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DOCS_DIR.parent
@@ -20,7 +20,7 @@ sys.path.append(str(ROOT_DIR / "src"))
 project = 'khisto-python'
 copyright = '2026, The Khiops Team'
 author = 'The Khiops Team'
-release = version("khisto")
+release = importlib.metadata.version("khisto")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
