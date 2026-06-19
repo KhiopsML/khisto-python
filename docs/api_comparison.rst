@@ -191,7 +191,7 @@ Key Differences
      - Not supported
    * - **Weights**
      - Supported
-     - Not supported
+     - Not supported (not relevant to the Khiops approach)
    * - **Unsupported histogram args**
      - None
      - ``bins``, ``stacked``, and ``weights`` raise a ``TypeError``
