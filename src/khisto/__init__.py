@@ -14,6 +14,7 @@ ROOT_DIR = Path(__file__).resolve().parent.parent
 KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
 if (ROOT_DIR / "pyproject.toml").exists():
+    # Development mode: package not installed; pyproject.toml present
     # TODO : Remove on Python 3.10 EOL
     try:
         import tomllib as tomli
@@ -23,6 +24,7 @@ if (ROOT_DIR / "pyproject.toml").exists():
     with open(ROOT_DIR / "pyproject.toml", "rt") as f:
         __version__ = tomli.load(f)["project"]["version"]
 else:
+    # User mode: package installed; pyproject.toml not directly accessible
     from importlib.metadata import version  # noqa: E402
 
     __version__ = version("khisto")

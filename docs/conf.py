@@ -20,6 +20,7 @@ sys.path.append(str(ROOT_DIR / "src"))
 project = 'khisto-python'
 copyright = '2026, The Khiops Team'
 author = 'The Khiops Team'
+# We want to make sure the docs are built on an installed package only
 release = importlib.metadata.version("khisto")
 
 # -- General configuration ---------------------------------------------------
