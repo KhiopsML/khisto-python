@@ -1,5 +1,11 @@
 # Khisto
 
+[![CI](https://github.com/khiops/khisto-python/actions/workflows/ci.yaml/badge.svg)](https://github.com/khiops/khisto-python/actions/workflows/ci.yaml)
+[![Docs](https://github.com/khiops/khisto-python/actions/workflows/docs.yaml/badge.svg)](https://khiops.github.io/khisto-python/)
+[![PyPI](https://img.shields.io/pypi/v/khisto)](https://pypi.org/project/khisto/)
+[![Python](https://img.shields.io/pypi/pyversions/khisto)](https://pypi.org/project/khisto/)
+[![License](https://img.shields.io/pypi/l/khisto)](LICENSE)
+
 **Optimal Binning Histograms for Python**
 
 Khisto is a Python library for creating histograms using the **Khiops optimal binning algorithm**. Unlike standard histograms that use fixed-width bins or simple heuristics, Khisto automatically determines the optimal number of bins and their variable widths to best represent the underlying data distribution.
@@ -10,6 +16,7 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 - **Variable-Width Bins**: Captures dense regions with fine bins and sparse regions with wider bins.
 - **NumPy Compatible**: Drop-in replacement for `numpy.histogram`.
 - **Matplotlib Integration**: `khisto.matplotlib.hist` works like `plt.hist`.
+- **Core Histogram API**: Inspect every available granularity with `khisto.core.compute_histograms` and `HistogramResult`.
 - **Minimal Dependencies**: Only requires NumPy (matplotlib optional for plotting).
 
 | Standard Gaussian | Heavy-tailed Pareto |
@@ -135,7 +142,13 @@ uv run pytest
 
 ## Documentation
 
-See the [API](docs/API.md) and [API Comparison](docs/API_COMPARISON.md) for detailed information on available functions, parameters, and how Khisto compares to standard histogram implementations.
+Full documentation is hosted at **[khiops.github.io/khisto-python](https://khiops.github.io/khisto-python/)**.
+
+- [API Reference](https://khiops.github.io/khisto-python/array/histogram/index.html) — NumPy-like histogram API
+- [Matplotlib Integration](https://khiops.github.io/khisto-python/matplotlib/index.html) — `hist` plotting function
+- [Core API](https://khiops.github.io/khisto-python/core/index.html) — full access to histogram granularity levels
+- [API Comparison](https://khiops.github.io/khisto-python/api_comparison.html) — side-by-side with NumPy and Matplotlib
+- [Demo Notebook](https://khiops.github.io/khisto-python/demo.html) — interactive walkthrough
 
 ## License
 

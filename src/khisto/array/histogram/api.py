@@ -34,20 +34,19 @@ def _select_histogram(
     """
     if max_bins is not None:
         # Find the finest granularity that respects max_bins
-        selected = None
-        for r in histogram_results:
+        for r in reversed(histogram_results):
             if len(r) <= max_bins:
-                selected = r
-            else:
-                break
+                return r
         # If no histogram respects the constraint, use the coarsest one
-        return selected if selected is not None else histogram_results[0]
+        return histogram_results[0]
     else:
-        # Return the best (optimal) histogram
+        # Return the best histogram (optimal in terms of interpretability)
+        # There is only one best histogram, so we return the first one we find
         for r in reversed(histogram_results):
             if r.is_best:
                 return r
         # Fallback to finest granularity if no best is marked
+        # It is assumed to be the best because it is the finest granularity
         return histogram_results[-1]
 
 
@@ -62,7 +61,7 @@ def histogram(
     Parameters
     ----------
     a : array_like
-        Input data. The histogram is computed over the flattened array.
+        Input data. Must be 1-dimensional.
     range : tuple of (float, float), optional
         The lower and upper range of the bins. Values outside the range are
         ignored. If not provided, the range is ``(a.min(), a.max())``.
@@ -105,7 +104,13 @@ def histogram(
        histograms for large-scale data sets. Computational Statistics & Data
        Analysis, 180:0-0, 2023.
     """
-    arr = np.asarray(a, dtype=np.float64).flatten()
+    arr = np.asarray(a, dtype=np.float64)
+
+    if arr.ndim != 1:
+        raise ValueError(
+            f"Expected 1-D array, got {arr.ndim}-D array instead. "
+            "Reshape your data or flatten it before calling histogram."
+        )
 
     if max_bins is not None and max_bins <= 0:
         raise ValueError("max_bins must be a positive integer or None.")
