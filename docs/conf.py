@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from pathlib import Path
-import tomllib
+from importlib.metadata import version
 
 DOCS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DOCS_DIR.parent
@@ -17,22 +17,10 @@ ROOT_DIR = DOCS_DIR.parent
 sys.path.append(str(ROOT_DIR))
 sys.path.append(str(ROOT_DIR / "src"))
 
-
-def _read_release() -> str:
-    pyproject_file = ROOT_DIR / "pyproject.toml"
-    data = tomllib.loads(pyproject_file.read_text(encoding="utf-8"))
-
-    try:
-        return data["project"]["version"]
-    except KeyError as exc:
-        raise RuntimeError(
-            f"Could not determine khisto version from {pyproject_file}"
-        ) from exc
-
 project = 'khisto-python'
 copyright = '2026, The Khiops Team'
 author = 'The Khiops Team'
-release = _read_release()
+release = version("khisto")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

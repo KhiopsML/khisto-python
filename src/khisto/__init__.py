@@ -10,11 +10,22 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-ROOT_DIR = Path(os.path.dirname(os.path.abspath(__file__))).parent.absolute()
-
+ROOT_DIR = Path(__file__).resolve().parent.parent
 KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
-__version__ = version("khisto")
+if (ROOT_DIR / "pyproject.toml").exists():
+    # TODO : Remove on Python 3.10 EOL
+    try:
+        import tomllib as tomli
+    except ModuleNotFoundError:
+        import tomli
+
+    with open(ROOT_DIR / "pyproject.toml", "rt") as f:
+        __version__ = tomli.load(f)["project"]["version"]
+else:
+    from importlib.metadata import version  # noqa: E402
+
+    __version__ = version("khisto")
 
 from .array import histogram  # noqa: E402
 from .core import HistogramResult  # noqa: E402

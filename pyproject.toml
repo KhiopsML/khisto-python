@@ -80,6 +80,7 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
+    "tomli>=2.0.0; python_version < '3.11'" # TODO : Remove on Python 3.10 EOL
 ]
 
 [build-system]
