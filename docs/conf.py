@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from pathlib import Path
-import importlib
+from importlib import metadata
 
 DOCS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DOCS_DIR.parent
@@ -21,7 +21,7 @@ project = 'khisto-python'
 copyright = '2026, The Khiops Team'
 author = 'The Khiops Team'
 # We want to make sure the docs are built on an installed package only
-release = importlib.metadata.version("khisto")
+release = metadata.version("khisto")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
