@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "0.2.0"
+version = "0.3.0"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -80,6 +80,7 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
+    "tomli>=2.0.0; python_version < '3.11'" # TODO : Remove on Python 3.10 EOL
 ]
 
 [build-system]
