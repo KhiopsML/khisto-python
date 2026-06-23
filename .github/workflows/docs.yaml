@@ -68,13 +68,13 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout doc sources (to get the current environment)
+        uses: actions/checkout@v4
       - name: Download the docs artifact
         uses: actions/download-artifact@v4
         with:
           name: khisto-python-docs
           path: ./docs/_build/html
-      - name: Checkout doc sources (to get the current environment)
-        uses: actions/checkout@v6
       - name: Deploy web site
         run: |
           # Install tool for pushing to GH pages
