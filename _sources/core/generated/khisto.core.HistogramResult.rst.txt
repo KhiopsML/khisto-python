@@ -1,0 +1,42 @@
+﻿khisto.core.HistogramResult
+===========================
+
+.. currentmodule:: khisto.core
+
+.. autoclass:: HistogramResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HistogramResult.__init__
+   
+   
+
+   
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~HistogramResult.bin_centers
+      ~HistogramResult.bin_edges
+      ~HistogramResult.bin_widths
+      ~HistogramResult.empty_interval_number
+      ~HistogramResult.granularity
+      ~HistogramResult.information_rate
+      ~HistogramResult.is_best
+      ~HistogramResult.level
+      ~HistogramResult.peak_interval_number
+      ~HistogramResult.spike_interval_number
+      ~HistogramResult.lower_bounds
+      ~HistogramResult.upper_bounds
+      ~HistogramResult.frequencies
+      ~HistogramResult.probabilities
+      ~HistogramResult.densities
+   
+   

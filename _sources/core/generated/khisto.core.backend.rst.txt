@@ -1,0 +1,19 @@
+﻿khisto.core.backend
+===================
+
+.. automodule:: khisto.core.backend
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      camel_to_snake
+      compute_histograms
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      HistogramResult
+   

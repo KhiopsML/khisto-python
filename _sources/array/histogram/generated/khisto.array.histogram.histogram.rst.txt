@@ -1,0 +1,6 @@
+﻿khisto.array.histogram.histogram
+================================
+
+.. currentmodule:: khisto.array.histogram
+
+.. autofunction:: histogram
