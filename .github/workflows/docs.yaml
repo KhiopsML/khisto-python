@@ -73,18 +73,10 @@ jobs:
         with:
           name: khisto-python-docs
           path: ./docs/_build/html
-      - name: Set up UV
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
       - name: Deploy web site
         run: |
-          uv venv .publish-env
-
           # Install tool for pushing to GH pages
-          uv pip install --python .publish-env ghp-import
+          pip install ghp-import
 
           # Push built site directory contents to GH pages
-          . .publish-env/bin/activate
-          uv run ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
-          deactivate
+          ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
