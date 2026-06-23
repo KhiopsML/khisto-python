@@ -43,7 +43,7 @@ Get started
    data = np.random.normal(0, 1, 10_000)
    hist, bin_edges = histogram(data)          # optimal bins, no guessing
 
-.. grid:: 1 1 3 3
+.. grid:: 1 1 2 2
    :gutter: 3
    :class-container: sd-mt-3
 
@@ -67,16 +67,6 @@ Get started
 
       ``compute_histograms`` exposes every granularity level so you can
       pick the resolution that suits your analysis.
-
-.. grid:: 1 1 2 2
-   :gutter: 3
-   :class-container: sd-mt-1
-
-   .. grid-item-card:: :octicon:`git-compare;1.5em` API comparison
-      :link: api_comparison
-      :link-type: doc
-
-      Side-by-side parameter tables for NumPy, Matplotlib, and Khisto.
 
    .. grid-item-card:: :octicon:`play;1.5em` Interactive demo
       :link: demo
