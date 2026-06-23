@@ -98,5 +98,4 @@ Get started
    :caption: Guides
    :hidden:
 
-   API Comparison <api_comparison>
    Demo <demo>

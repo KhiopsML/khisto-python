@@ -73,6 +73,8 @@ jobs:
         with:
           name: khisto-python-docs
           path: ./docs/_build/html
+      - name: Checkout doc sources (to get the current environment)
+        uses: actions/checkout@v6
       - name: Deploy web site
         run: |
           # Install tool for pushing to GH pages
