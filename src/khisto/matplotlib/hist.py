@@ -48,7 +48,7 @@ def hist(
     ax : matplotlib.axes.Axes, optional
         Axes object to plot on. If not provided, the current axes will be used.
     **kwargs :
-        other keyword arguments are described in ``plt.hist()``. The ``bins``,
+        other keyword arguments are described in ``matplotlib.pyplot.hist``. The ``bins``,
         ``weights``, and stacked/multiple dataset features are not supported.
 
     Returns
