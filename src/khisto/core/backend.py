@@ -235,13 +235,14 @@ def _process_histogram_file(file_path: Path) -> list[HistogramResult]:
     ]
 
 
-def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
+def compute_histograms(x: NDArray[np.float64]) -> list[HistogramResult]:
     """Compute optimal histogram of an array using khisto CLI binary input.
 
     Parameters
     ----------
-    x : np.ndarray
-        Array of numeric values.
+    x : NDArray[np.float64]
+        Array of numeric values. Only 1-dimensional arrays are supported.
+        Missing values (NaN) are filtered out.
 
     Returns
     -------
@@ -257,10 +258,14 @@ def compute_histograms(x: np.ndarray) -> list[HistogramResult]:
         If input array is empty after filtering.
     """
     x = np.asarray(x, dtype=np.float64)
+
+    if len(x) == 0:
+        raise ValueError("Input array is empty")
+
     x = x[~np.isnan(x)]
 
     if len(x) == 0:
-        raise ValueError("Input array is empty after filtering")
+        raise ValueError("Input array is empty after filtering missing values")
 
     # Use delete=False so the files are closed before the subprocess reads them.
     # On Windows, files keep an exclusive lock while open, whence,

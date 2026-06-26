@@ -12,6 +12,10 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 
 Documentation is available at **[khiops.github.io/khisto-python](https://khiopsml.github.io/khisto-python/)**.
 
+| Standard Gaussian | Heavy-tailed Pareto |
+| --- | --- |
+| ![Adaptive Gaussian histogram](docs/images/gaussian-quick-start.png) | ![Adaptive Pareto histogram](docs/images/pareto-quick-start.png) |
+
 ## Installation
 
 ```bash
@@ -26,17 +30,26 @@ pip install "khisto[matplotlib]"
 
 ## Quick Start
 
-### NumPy-like API
-
 ```python
 import numpy as np
-from khisto import histogram
+import matplotlib.pyplot as plt
+from khisto.matplotlib import hist
 
-# Generate 10,000 samples from a standard Gaussian distribution.
-data = np.random.normal(0, 1, 10000)
+# Generate 10,000 samples from a Pareto distribution
+long_tail_data = np.random.pareto(3, size=10000)
 
-# Compute optimal histogram (drop-in replacement for np.histogram)
-hist, bin_edges = histogram(data)
+# Plot an adaptive histogram on logarithmic axes.
+n, bins, patches = hist(long_tail_data, density=True)
+plt.xscale("symlog")
+plt.yscale("log")
+plt.show()
+
+# Generate 10,000 samples from a Normal distribution
+normal_data = np.random.normal(size=10000)
+
+# Plot an adaptive histogram
+n, bins, patches = hist(normal_data, density=True)
+plt.show()
 ```
 
 ## Development

@@ -80,8 +80,8 @@ Get started
    :hidden:
 
    Histograms <array/histogram/index>
-   Core <core/index>
    Matplotlib <matplotlib/index>
+   Core <core/index>
 
 .. toctree::
    :maxdepth: 2
