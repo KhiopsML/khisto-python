@@ -35,20 +35,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from khisto.matplotlib import hist
 
-# Generate 10,000 samples from a Pareto distribution
-long_tail_data = np.random.pareto(3, size=10000)
-
-# Plot an adaptive histogram on logarithmic axes.
-n, bins, patches = hist(long_tail_data, density=True)
-plt.xscale("symlog")
-plt.yscale("log")
-plt.show()
-
 # Generate 10,000 samples from a Normal distribution
 normal_data = np.random.normal(size=10000)
 
 # Plot an adaptive histogram
-n, bins, patches = hist(normal_data, density=True)
+n, bins, patches = hist(normal_data)
+plt.show()
+
+# Generate 10,000 samples from a Pareto distribution
+long_tail_data = np.random.pareto(3, size=10000)
+
+# Plot an adaptive histogram on logarithmic axes.
+n, bins, patches = hist(long_tail_data)
+plt.xscale("symlog")
+plt.yscale("log")
 plt.show()
 ```
 
