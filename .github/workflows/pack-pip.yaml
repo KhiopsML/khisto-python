@@ -8,11 +8,16 @@ on:
         type: choice
         default: None  # no publishing to any Package Index by default
         options: [None, testpypi, pypi]
+      signature-activation:
+        type: boolean
+        required: true
+        default: false
+        description: Sign khisto binary
   push:
     tags: ['*']
   pull_request:
     paths:
-      - .github/workflows/pack-pip.yml
+      - .github/workflows/pack-pip.yaml
       - pyproject.toml
       - CMakeLists.txt
 
@@ -23,6 +28,8 @@ concurrency:
 defaults:
   run:
     shell: bash
+env:
+  KEYPAIR: KP_Khiops_HSM
 
 jobs:
   build-wheel:
@@ -31,26 +38,30 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-15]
+    env:
+      SIGN_WINDOWS_WHEELS: ${{ github.event_name == 'workflow_dispatch' && inputs.signature-activation }}
     steps:
       - uses: actions/checkout@v6
-      
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
         shell: cmd
         run: |
           call "C:\\Program Files\\Microsoft Visual Studio\\18\\Enterprise\\VC\\Auxiliary\\Build\\vcvars64.bat"
           set >> %GITHUB_ENV%
-       
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.1
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-
-      - name: Set up UV
-        uses: astral-sh/setup-uv@v6
-        with:
-          enable-cache: true
 
       - name: Test built wheel
         run: |
@@ -59,7 +70,52 @@ jobs:
           uv sync --python .test-env --group dev --no-install-project
           uv run --python .test-env pytest tests/ --no-cov
 
-      - uses: actions/upload-artifact@v6
+      # Non-Windows wheels uploaded directly (no signing)
+      - uses: actions/upload-artifact@v7
+        if: runner.os != 'Windows'
+        with:
+          name: pkg-wheel-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
+
+      # Windows wheels are unpackad, signed and repacked before uploading
+      - name: Set SIGN_X64_WHEEL flag
+        if: runner.os == 'Windows' && runner.arch == 'X64'
+        run: echo "SIGN_X64_WHEEL=${{ env.SIGN_WINDOWS_WHEELS }}" >> "$GITHUB_ENV"
+      - name: Warn smctl does not support ARM64 yet
+        if: runner.os == 'Windows' && runner.arch == 'ARM64' && env.SIGN_WINDOWS_WHEELS == 'true'
+        run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
+      - name: Install wheel package for signing
+        if: env.SIGN_X64_WHEEL == 'true'
+        run: python -m pip install wheel
+      - name: Unpack khisto wheel
+        if: env.SIGN_X64_WHEEL == 'true'
+        run: |
+          mkdir -p wheelhouse/unpacked
+          python -m wheel unpack wheelhouse/khisto-*.whl --dest wheelhouse/unpacked
+      - name: Setup SM_CLIENT_CERT_FILE from base64 secret data
+        if: env.SIGN_X64_WHEEL == 'true'
+        run: |
+          echo "SM_CLIENT_CERT_FILE=D:\\Certificate_pkcs12.p12" >> "$GITHUB_ENV"
+          echo "${{ secrets.SM_CLIENT_CERT_FILE_B64 }}" | base64 --decode > /d/Certificate_pkcs12.p12
+      - name: Sign unpacked wheel binaries
+        if: env.SIGN_X64_WHEEL == 'true'
+        uses: digicert/code-signing-software-trust-action@v1.2.1
+        with:
+          input: wheelhouse/unpacked/
+          keypair-alias: ${{ env.KEYPAIR }}
+          simple-signing-mode: true
+        env:
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+      - name: Repack signed wheels
+        if: env.SIGN_X64_WHEEL == 'true'
+        run: |
+          rm wheelhouse/khisto-*.whl
+          python -m wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
+      - uses: actions/upload-artifact@v7
+        if: runner.os == 'Windows'
         with:
           name: pkg-wheel-${{ matrix.os }}
           path: wheelhouse/*.whl
@@ -76,7 +132,7 @@ jobs:
     environment:
       name: testpypi
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           pattern: pkg-*
           path: dist
@@ -97,7 +153,7 @@ jobs:
     environment:
       name: pypi
     steps:
-      - uses: actions/download-artifact@v6
+      - uses: actions/download-artifact@v7
         with:
           pattern: pkg-*
           path: dist
