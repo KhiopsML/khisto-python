@@ -60,7 +60,7 @@ class TestHistBasic:
     def test_frequency_histogram(self, normal_data):
         """Test frequency histogram is the default behavior."""
         fig, ax = plt.subplots()
-        n, bins, patches = hist(normal_data, ax=ax)
+        n, bins, patches = hist(normal_data, ax=ax, density=False)
 
         # Frequencies should sum to total count
         assert np.sum(n) == len(normal_data)
@@ -146,7 +146,7 @@ class TestHistBasic:
     def test_reverse_cumulative_frequency_histogram(self, normal_data):
         """Test reverse cumulative frequency histogram."""
         fig, ax = plt.subplots()
-        n, bins, patches = hist(normal_data, cumulative=-1, ax=ax)
+        n, bins, patches = hist(normal_data, density=False, cumulative=-1, ax=ax)
 
         assert np.isclose(n[0], len(normal_data))
         plt.close(fig)
