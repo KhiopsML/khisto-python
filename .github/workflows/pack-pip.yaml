@@ -10,7 +10,6 @@ on:
         options: [None, testpypi, pypi]
       signature-activation:
         type: boolean
-        required: true
         default: false
         description: Sign khisto binary
   push:
@@ -70,14 +69,6 @@ jobs:
           uv sync --python .test-env --group dev --no-install-project
           uv run --python .test-env pytest tests/ --no-cov
 
-      # Non-Windows wheels uploaded directly (no signing)
-      - uses: actions/upload-artifact@v7
-        if: runner.os != 'Windows'
-        with:
-          name: pkg-wheel-${{ matrix.os }}
-          path: wheelhouse/*.whl
-          if-no-files-found: error
-
       # Windows wheels are unpackad, signed and repacked before uploading
       - name: Set SIGN_X64_WHEEL flag
         if: runner.os == 'Windows' && runner.arch == 'X64'
@@ -115,7 +106,6 @@ jobs:
           rm wheelhouse/khisto-*.whl
           python -m wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
       - uses: actions/upload-artifact@v7
-        if: runner.os == 'Windows'
         with:
           name: pkg-wheel-${{ matrix.os }}
           path: wheelhouse/*.whl
