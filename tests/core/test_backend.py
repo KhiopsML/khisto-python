@@ -13,8 +13,8 @@ import pytest
 
 from khisto.core import compute_histograms
 from khisto.core.backend import (
-    _process_histogram_file,
     HistogramResult,
+    _process_histogram_file,
 )
 
 

@@ -86,14 +86,14 @@ class TestHistogram:
 
     def test_histogram_frequency_sum(self, normal_data):
         """Test that histogram frequencies sum to total count."""
-        hist, bin_edges = histogram(normal_data, density=False)
+        hist, _ = histogram(normal_data, density=False)
 
         # Sum of frequencies should equal total count
         assert np.sum(hist) == len(normal_data)
 
     def test_histogram_bin_coverage(self, simple_data):
         """Test that bin edges cover the full range of data."""
-        hist, bin_edges = histogram(simple_data)
+        _, bin_edges = histogram(simple_data)
 
         assert bin_edges[0] <= min(simple_data)
         assert bin_edges[-1] >= max(simple_data)
@@ -108,7 +108,7 @@ class TestHistogram:
 
     def test_histogram_with_range(self, normal_data):
         """Test histogram with range parameter."""
-        hist, bin_edges = histogram(normal_data, range=(-1, 1))
+        _, bin_edges = histogram(normal_data, range=(-1, 1))
 
         # Bin edges should be within the specified range
         assert bin_edges[0] >= -1
@@ -116,7 +116,7 @@ class TestHistogram:
 
     def test_histogram_with_max_bins(self, normal_data):
         """Test histogram with max_bins parameter."""
-        hist, bin_edges = histogram(normal_data, max_bins=5)
+        hist, _ = histogram(normal_data, max_bins=5)
 
         # Number of bins should not exceed max_bins
         assert len(hist) <= 5
@@ -139,13 +139,11 @@ class TestHistogram:
     def test_histogram_range_filters_data(self, normal_data):
         """Test that range filters input values (not just zooms)."""
         # Get full histogram first
-        hist_full, edges_full = histogram(normal_data, density=False)
+        hist_full, _ = histogram(normal_data, density=False)
         total_count_full = np.sum(hist_full)
 
         # Filter to a narrower range
-        hist_filtered, edges_filtered = histogram(
-            normal_data, range=(-1, 1), density=False
-        )
+        hist_filtered, _ = histogram(normal_data, range=(-1, 1), density=False)
         total_count_filtered = np.sum(hist_filtered)
 
         # Filtered should have fewer points (data is normal, so some is outside [-1,1])

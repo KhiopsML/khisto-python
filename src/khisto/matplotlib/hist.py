@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from matplotlib.axes import Axes
@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 
 def hist(
     x: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
+    range: tuple[float, float] | None = None,
+    max_bins: int | None = None,
     density: bool = True,
     *,
-    ax: Optional[Axes] = None,
+    ax: Axes | None = None,
     **kwargs: Any,
 ) -> tuple[np.ndarray, np.ndarray, Any]:
     """Compute and plot an optimal histogram.

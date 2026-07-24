@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
@@ -16,7 +14,7 @@ from khisto.core import HistogramResult, compute_histograms
 
 def _select_histogram(
     histogram_results: list[HistogramResult],
-    max_bins: Optional[int] = None,
+    max_bins: int | None = None,
 ) -> HistogramResult:
     """Select the appropriate histogram from the list of results.
 
@@ -52,8 +50,8 @@ def _select_histogram(
 
 def histogram(
     a: ArrayLike,
-    range: Optional[tuple[float, float]] = None,
-    max_bins: Optional[int] = None,
+    range: tuple[float, float] | None = None,
+    max_bins: int | None = None,
     density: bool = False,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute an optimal histogram using the Khiops binning algorithm.
