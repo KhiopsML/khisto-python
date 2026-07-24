@@ -25,14 +25,14 @@ if (ROOT_DIR / "pyproject.toml").exists():
         __version__ = tomli.load(f)["project"]["version"]
 else:
     # User mode: package installed; pyproject.toml not directly accessible
-    from importlib.metadata import version  # noqa: E402
+    from importlib.metadata import version
 
     __version__ = version("khisto")
 
-from .array import histogram  # noqa: E402
-from .core import HistogramResult  # noqa: E402
+from .array import histogram
+from .core import HistogramResult
 
 __all__ = [
-    "histogram",
     "HistogramResult",
+    "histogram",
 ]
