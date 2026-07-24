@@ -25,7 +25,7 @@ khisto.histogram(
     a,
     range=None,
     max_bins=None,
-    density=False,
+    density=True,
 )
 ```
 
@@ -113,7 +113,7 @@ khisto.matplotlib.hist(
     x,
     range=None,
     max_bins=None,
-    density=False,
+    density=True,
     cumulative=False,
     histtype='bar',
     orientation='vertical',

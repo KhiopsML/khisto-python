@@ -259,12 +259,12 @@ def compute_histograms(x: NDArray[np.float64]) -> list[HistogramResult]:
     """
     x = np.asarray(x, dtype=np.float64)
 
-    if len(x) == 0:
+    if x.size == 0:
         raise ValueError("Input array is empty")
 
     x = x[~np.isnan(x)]
 
-    if len(x) == 0:
+    if x.size == 0:
         raise ValueError("Input array is empty after filtering missing values")
 
     # Use delete=False so the files are closed before the subprocess reads them.
