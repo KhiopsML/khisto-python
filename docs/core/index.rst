@@ -6,14 +6,13 @@ Use ``khisto.core`` when you want to go beyond the default answer and inspect
 the full histogram series returned by the Khiops backend.
 
 .. automodule:: khisto.core
+  :no-members:
 
-Main Modules
-============
+API Reference
+=============
 .. autosummary::
   :toctree: generated
-  :recursive:
   :nosignatures:
 
   compute_histograms
   HistogramResult
-  backend
