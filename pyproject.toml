@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "0.4.0"
+version = "0.5.0"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -47,7 +47,7 @@ Issues = "https://github.com/KhiopsML/khisto-python/issues"
 Changelog = "https://github.com/KhiopsML/khisto-python/blob/main/CHANGELOG.md"
 
 [tool.khiops]
-khiops-version = "11.0.1-rc.1"
+khiops-version = "11.0.1"
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8"]

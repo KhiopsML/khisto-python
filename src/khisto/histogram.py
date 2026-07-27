@@ -31,14 +31,20 @@ def _select_histogram(
         The selected histogram result.
     """
     if max_bins is not None:
-        for result in reversed(histogram_results):
-            if len(result) <= max_bins:
-                return result
+        # Find the finest granularity that respects max_bins
+        for r in reversed(histogram_results):
+            if len(r) <= max_bins:
+                return r
+        # If no histogram respects the constraint, use the coarsest one
         return histogram_results[0]
 
-    for result in reversed(histogram_results):
-        if result.is_best:
-            return result
+    # Return the best histogram (optimal in terms of interpretability)
+    # There is only one best histogram, so we return the first one we find
+    for r in reversed(histogram_results):
+        if r.is_best:
+            return r
+    # Fallback to finest granularity if no best is marked
+    # It is assumed to be the best because it is the finest granularity
     return histogram_results[-1]
 
 
@@ -107,6 +113,7 @@ def histogram(
     if max_bins is not None and max_bins <= 0:
         raise ValueError("max_bins must be a positive integer or None.")
 
+    # Filter values by range if specified
     if range is not None:
         min_value, max_value = range
         array = array[(array >= min_value) & (array <= max_value)]
