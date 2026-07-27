@@ -29,8 +29,8 @@ else:
 
     __version__ = version("khisto")
 
-from .array import histogram
 from .core import HistogramResult
+from .histogram import histogram
 
 __all__ = [
     "HistogramResult",

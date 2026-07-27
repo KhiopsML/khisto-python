@@ -2,7 +2,7 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Optimal histogram functions with numpy-compatible interface."""
+"""Optimal histogram functions with a NumPy-compatible interface."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def _select_histogram(
 
     Parameters
     ----------
-    results : list[HistogramResult]
+    histogram_results : list[HistogramResult]
         List of histogram results at different granularity levels.
     max_bins : int, optional
         Maximum number of bins. If None, return the best (optimal) histogram.
@@ -37,22 +37,22 @@ def _select_histogram(
                 return r
         # If no histogram respects the constraint, use the coarsest one
         return histogram_results[0]
-    else:
-        # Return the best histogram (optimal in terms of interpretability)
-        # There is only one best histogram, so we return the first one we find
-        for r in reversed(histogram_results):
-            if r.is_best:
-                return r
-        # Fallback to finest granularity if no best is marked
-        # It is assumed to be the best because it is the finest granularity
-        return histogram_results[-1]
+
+    # Return the best histogram (optimal in terms of interpretability)
+    # There is only one best histogram, so we return the first one we find
+    for r in reversed(histogram_results):
+        if r.is_best:
+            return r
+    # Fallback to finest granularity if no best is marked
+    # It is assumed to be the best because it is the finest granularity
+    return histogram_results[-1]
 
 
 def histogram(
     a: ArrayLike,
     range: tuple[float, float] | None = None,
     max_bins: int | None = None,
-    density: bool = False,
+    density: bool = True,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute an optimal histogram using the Khiops binning algorithm.
 
@@ -70,7 +70,7 @@ def histogram(
         If False, the result will contain the number of samples in each bin.
         If True, the result is the value of the probability density function
         at the bin, normalized such that the integral over the range is 1.
-        Default is False.
+        Default is True.
 
     Returns
     -------
@@ -102,11 +102,11 @@ def histogram(
        histograms for large-scale data sets. Computational Statistics & Data
        Analysis, 180:0-0, 2023.
     """
-    arr = np.asarray(a, dtype=np.float64)
+    array = np.asarray(a, dtype=np.float64)
 
-    if arr.ndim != 1:
+    if array.ndim != 1:
         raise ValueError(
-            f"Expected 1-D array, got {arr.ndim}-D array instead. "
+            f"Expected 1-D array, got {array.ndim}-D array instead. "
             "Reshape your data or flatten it before calling histogram."
         )
 
@@ -115,15 +115,15 @@ def histogram(
 
     # Filter values by range if specified
     if range is not None:
-        min_val, max_val = range
-        arr = arr[(arr >= min_val) & (arr <= max_val)]
+        min_value, max_value = range
+        array = array[(array >= min_value) & (array <= max_value)]
 
-    histogram_results = compute_histograms(arr)
+    histogram_results = compute_histograms(array)
     histogram_result = _select_histogram(histogram_results, max_bins=max_bins)
 
     if density:
         return histogram_result.densities.copy(), histogram_result.bin_edges.copy()
-    else:
-        return histogram_result.frequencies.astype(
-            np.float64
-        ), histogram_result.bin_edges.copy()
+    return (
+        histogram_result.frequencies.astype(np.float64),
+        histogram_result.bin_edges.copy(),
+    )

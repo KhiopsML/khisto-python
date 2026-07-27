@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 from matplotlib.axes import Axes
 
-from khisto.array import histogram as khisto_histogram
+from khisto.histogram import histogram as khisto_histogram
 
 if TYPE_CHECKING:
     from numpy.typing import ArrayLike
@@ -63,7 +63,7 @@ def hist(
     See Also
     --------
     matplotlib.pyplot.hist : Matplotlib's histogram function.
-    khisto.array.histogram : Underlying histogram computation.
+    khisto.histogram : Underlying histogram computation.
     """
     unsupported_kwargs = {
         "bins": "Use max_bins to limit the number of bins.",

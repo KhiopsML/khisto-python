@@ -48,7 +48,7 @@ Get started
    :class-container: sd-mt-3
 
    .. grid-item-card:: :octicon:`package;1.5em` NumPy-like API
-      :link: array/histogram/index
+      :link: histogram/index
       :link-type: doc
 
       ``histogram(data)`` returns ``(hist, bin_edges)`` — same shape as
@@ -79,7 +79,7 @@ Get started
    :caption: API Reference
    :hidden:
 
-   Histograms <array/histogram/index>
+   Histograms <histogram/index>
    Matplotlib <matplotlib/index>
    Core <core/index>
 
