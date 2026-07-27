@@ -12,7 +12,7 @@ import pytest
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
 
-from khisto.array import histogram
+from khisto import histogram
 from khisto.matplotlib import hist
 
 

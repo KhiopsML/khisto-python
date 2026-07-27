@@ -12,7 +12,7 @@ on:
     tags: ['*']
   pull_request:
     paths:
-      - .github/workflows/pack-pip.yml
+      - .github/workflows/pack-pip.yaml
       - pyproject.toml
       - CMakeLists.txt
 
