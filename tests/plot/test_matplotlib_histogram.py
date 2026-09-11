@@ -66,6 +66,19 @@ class TestHistBasic:
         assert np.sum(n) == len(normal_data)
         plt.close(fig)
 
+    @pytest.mark.parametrize("density", [False, True])
+    def test_histogram_matches_khiops_at_internal_edges(self, density):
+        """Test that observations on internal edges keep their Khiops bins."""
+        data = np.repeat([1, 2, 3, 4, 5, 6], [458, 82, 43, 11, 3, 2])
+        expected, expected_bins = histogram(data, max_bins=100, density=density)
+        fig, ax = plt.subplots()
+
+        values, bins, _ = hist(data, max_bins=100, density=density, ax=ax)
+
+        np.testing.assert_array_equal(bins, expected_bins)
+        np.testing.assert_allclose(values, expected)
+        plt.close(fig)
+
     def test_horizontal_orientation(self, normal_data):
         """Test horizontal histogram."""
         fig, ax = plt.subplots()
