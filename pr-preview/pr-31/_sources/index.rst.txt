@@ -112,4 +112,4 @@ Get started
    :hidden:
 
    Demo <demo>
-   Counts, density, and bin widths <counts_vs_density>
+   Counts vs density <counts_vs_density>
