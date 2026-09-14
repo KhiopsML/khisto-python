@@ -1,0 +1,51 @@
+/* Custom header sizes */
+h1 {
+  font-size: 1.85em;
+}
+
+h2 {
+  font-size: 1.55em;
+}
+
+h3 {
+  font-size: 1.30em;
+}
+
+h4 {
+  font-size: 1.10em;
+}
+
+h5 {
+  font-size: 0.90em;
+}
+
+img.sidebar-logo {
+  width: 40px;
+}
+
+/* Hero tagline */
+.hero-tagline {
+  font-size: 1.25em;
+  color: var(--color-foreground-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Card styling overrides for Furo + sphinx-design */
+.sd-card {
+  border-radius: 0px !important;
+  transition: box-shadow 0.2s ease;
+}
+
+.sd-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Gallery images */
+.sd-card img {
+  border-radius: 4px;
+}
+
+/* Install code block on landing page */
+.install-cmd .highlight {
+  font-size: 1.05em;
+}
