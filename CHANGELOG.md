@@ -2,16 +2,6 @@
 
 All notable changes to Khisto are documented in this file.
 
-## [1.0.2] - 2026-09-09
-
-### Added
-
-- Explain counts, densities, and variable-width bins in a dedicated guide.
-
-### Changed
-
-- Highlight and update links to the official Khiops histogram documentation.
-
 ## [1.0.1] - 2026-09-07
 
 ### Fixed
@@ -30,5 +20,4 @@ First stable release.
 - Prebuilt wheels for Linux, macOS, and Windows.
 - Public API documentation and usage examples.
 
-[1.0.2]: https://github.com/KhiopsML/khisto-python/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/KhiopsML/khisto-python/compare/v1.0.0...v1.0.1

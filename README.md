@@ -55,9 +55,8 @@ plt.show()
 ## Development
 
 On Windows, install [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
-with the **Desktop development with C++** workload. Then run the commands below
-from an **x64 Native Tools Command Prompt for VS 2022** and verify that the
-compiler is available with `where cl`.
+with the **Desktop development with C++** workload before running the commands
+below.
 
 ```bash
 # Clone repository

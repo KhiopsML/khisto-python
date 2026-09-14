@@ -8,9 +8,9 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.lines import Line2D
 
 from khisto.matplotlib import hist
-
 
 SEED = 42
 SAMPLE_SIZE = 10_000
@@ -51,8 +51,8 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
 
     fig, axes = plt.subplots(2, 2, figsize=(9, 5.5), sharex=True)
     configurations = (
-        (equal_edges, equal_counts, "Equal-width bins"),
-        (variable_edges, variable_counts, "Variable-width bins"),
+        (equal_edges, equal_counts, "Without Khisto\nEqual-width bins"),
+        (variable_edges, variable_counts, "With Khisto\nVariable-width bins"),
     )
     for column, (edges, counts, title) in enumerate(configurations):
         widths = np.diff(edges)
@@ -91,11 +91,12 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
     axes[0, 1].text(
         15,
         245,
-        "Counts suggest\nthis bin dominates",
+        "Counts apply to the whole interval;\ndo not rely on rectangle area",
         color="white",
         ha="center",
         va="center",
         weight="bold",
+        fontsize=9,
     )
     axes[1, 1].text(
         15,
@@ -107,7 +108,7 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
         weight="bold",
     )
     axes[1, 1].annotate(
-        "30–40 is twice \nas dense as 0-30",
+        "bin 30–40 is twice \nas dense as bin 0-30",
         xy=(35, 0.034),
         xytext=(15, 0.034),
         arrowprops={"arrowstyle": "->", "color": "#333333"},
@@ -117,6 +118,17 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
     )
     fig.suptitle("Same 500 observations, two binning choices")
     fig.tight_layout()
+    left_column_right = axes[0, 0].get_position().x1
+    right_column_left = axes[0, 1].get_position().x0
+    separator_x = (left_column_right + right_column_left) / 2
+    fig.add_artist(Line2D(
+        [separator_x, separator_x],
+        [axes[1, 0].get_position().y0, axes[0, 0].get_position().y1],
+        transform=fig.transFigure,
+        color="#777777",
+        linewidth=1,
+        linestyle="--",
+    ))
     fig.savefig(output_path, dpi=180)
     plt.close(fig)
 
