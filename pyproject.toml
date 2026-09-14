@@ -131,7 +131,6 @@ ignore = [
 [tool.scikit-build]
 wheel.py-api = "py3"             # We specify full compatibility with all Python 3 releases
 cmake.version = "CMakeLists.txt" # Read CMake minimal version from file
-cmake.args = ["-G", "Ninja"]     # Generator specification and build configuration
 
 # CMake variables
 # Build khisto binary in Release mode for better performance, as it is not intended for debugging
@@ -143,7 +142,7 @@ cmake.define.BUILD_LEX_YACC = false
 cmake.define.BUILD_JARS = false
 cmake.define.GENERATE_VIEWS = false
 cmake.define.C11 = true
-ninja.make-fallback = false
+ninja.make-fallback = true
 build.targets = ["khisto"]      # Build only khisto
 install.components = ["KHISTO"] # Only install KHISTO component in wheel
 

@@ -9,23 +9,18 @@ on:
         type: boolean
         default: false
   pull_request:
+    types: [opened, reopened, synchronize, closed]
     paths:
-      - docs/**.rst
-      - docs/conf.py
-      - docs/make.bat
-      - docs/Makefile
-      - docs/requirements.txt
-      - docs/_static/**.css
-      - src/khisto/**.py
+      - docs/**
+      - pyproject.toml
+      - src/khisto/**/*.py
       - .github/workflows/docs.yaml
   push:
     tags: ['*']
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+# Keep default workflow permissions read-only; deployment jobs elevate explicitly.
 permissions:
   contents: read
-  id-token: write
   packages: read
-  pages: write
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest
 # queued. However, do NOT cancel in-progress runs as we want to allow these production deployments
 # to complete.
@@ -34,6 +29,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout khisto-python
@@ -61,7 +57,34 @@ jobs:
         with:
           name: khisto-python-docs
           path: ./docs/_build/html/
-  # Publish to GH pages on Git tag push
+  preview:
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' || needs.build.result == 'success')
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout khisto-python
+        uses: actions/checkout@v4
+      - name: Download the docs artifact
+        if: github.event.action != 'closed'
+        uses: actions/download-artifact@v4
+        with:
+          name: khisto-python-docs
+          path: ./docs/_build/html
+      - name: Deploy PR preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./docs/_build/html
+          preview-branch: gh-pages
+          wait-for-pages-deployment: true
+          qr-code: false
+  # Publish production docs to GitHub Pages on manual request.
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true
     needs: build
@@ -77,9 +100,9 @@ jobs:
           name: khisto-python-docs
           path: ./docs/_build/html
       - name: Deploy web site
-        run: |
-          # Install tool for pushing to GH pages
-          pip install ghp-import
-
-          # Push built site directory contents to GH pages
-          ghp-import -m "Deployed ${GITHUB_SHA:0:7}" --push --force --no-jekyll ./docs/_build/html/
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: ./docs/_build/html
+          branch: gh-pages
+          clean-exclude: pr-preview
+          force: false

@@ -54,6 +54,10 @@ plt.show()
 
 ## Development
 
+On Windows, install [Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/)
+with the **Desktop development with C++** workload before running the commands
+below.
+
 ```bash
 # Clone repository
 git clone https://github.com/KhiopsML/khisto-python.git

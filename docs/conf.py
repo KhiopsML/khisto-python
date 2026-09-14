@@ -72,6 +72,9 @@ exclude_patterns = ['_templates', '_build', 'Thumbs.db', '.DS_Store', '**.ipynb_
 
 html_theme = 'furo'
 html_theme_options = {
+    "source_repository": "https://github.com/KhiopsML/khisto-python/",
+    "source_branch": "main",
+    "source_directory": "docs/",
     "light_css_variables": {
         "color-brand-primary": "#FF7900",
         "color-brand-content": "#F16E00",
@@ -80,7 +83,7 @@ html_theme_options = {
         "color-highlighted-background": "#FFD200",
         "color-admonition-title--note": "#FF7900",
         "color-admonition-title-background--note": "#FFF0E2",
-        "font-stack": "Helvetica Neue, Helvetica, sans-serif",
+        "font-stack": "Helvetica Neue, Helvetica, Arial, sans-serif",
     },
     "dark_css_variables": {
         "color-brand-primary": "#FF7900",
@@ -90,7 +93,7 @@ html_theme_options = {
         "color-highlighted-background": "#FFD200",
         "color-admonition-title--note": "#FF7900",
         "color-admonition-title-background--note": "#CC6100",
-        "font-stack": "Helvetica Neue, Helvetica, sans-serif",
+        "font-stack": "Helvetica Neue, Helvetica, Arial, sans-serif",
     },
     # Sets the Github Icon (the SVG is embedded, copied from furo's repo)
     "footer_icons": [
