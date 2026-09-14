@@ -8,7 +8,6 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.lines import Line2D
 
 from khisto.matplotlib import hist
 
@@ -118,17 +117,6 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
     )
     fig.suptitle("Same 500 observations, two binning choices")
     fig.tight_layout()
-    left_column_right = axes[0, 0].get_position().x1
-    right_column_left = axes[0, 1].get_position().x0
-    separator_x = (left_column_right + right_column_left) / 2
-    fig.add_artist(Line2D(
-        [separator_x, separator_x],
-        [axes[1, 0].get_position().y0, axes[0, 0].get_position().y1],
-        transform=fig.transFigure,
-        color="#777777",
-        linewidth=1,
-        linestyle="--",
-    ))
     fig.savefig(output_path, dpi=180)
     plt.close(fig)
 
