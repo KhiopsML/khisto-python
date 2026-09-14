@@ -30,22 +30,29 @@ def _select_histogram(
     HistogramResult
         The selected histogram result.
     """
-    if max_bins is not None:
-        # Find the finest granularity that respects max_bins
-        for r in reversed(histogram_results):
-            if len(r) <= max_bins:
-                return r
-        # If no histogram respects the constraint, use the coarsest one
-        return histogram_results[0]
 
-    # Return the best histogram (optimal in terms of interpretability)
-    # There is only one best histogram, so we return the first one we find
-    for r in reversed(histogram_results):
-        if r.is_best:
-            return r
-    # Fallback to finest granularity if no best is marked
-    # It is assumed to be the best because it is the finest granularity
-    return histogram_results[-1]
+    # Find the best histogram marked as is_best,
+    # or default to the last one if none is marked.
+    best_histogram = next(
+        (result for result in reversed(histogram_results) if result.is_best),
+        histogram_results[-1],
+    )
+
+    if max_bins is None:
+        return best_histogram
+
+    # Select the histogram with the highest granularity
+    # that does not exceed max_bins.
+    # Histograms finer than the best interpretable one are skipped.
+    return next(
+        (
+            result
+            for result in reversed(histogram_results)
+            if result.granularity <= best_histogram.granularity
+            and len(result) <= max_bins
+        ),
+        histogram_results[0],
+    )
 
 
 def histogram(
@@ -55,6 +62,10 @@ def histogram(
     density: bool = True,
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute an optimal histogram using the Khiops binning algorithm.
+
+    .. warning::
+       Bins are right-closed: a value on an internal edge belongs to the bin
+       on its left, unlike with NumPy histograms.
 
     Parameters
     ----------

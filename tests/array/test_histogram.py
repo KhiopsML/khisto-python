@@ -10,6 +10,23 @@ import numpy as np
 import pytest
 
 from khisto import histogram
+from khisto.core import HistogramResult
+from khisto.histogram import _select_histogram
+
+
+def _histogram_result(
+    n_bins: int, granularity: int, *, is_best: bool = False
+) -> HistogramResult:
+    edges = np.arange(n_bins + 1, dtype=np.float64)
+    return HistogramResult(
+        lower_bounds=edges[:-1],
+        upper_bounds=edges[1:],
+        frequencies=np.ones(n_bins, dtype=np.int64),
+        probabilities=np.full(n_bins, 1 / n_bins),
+        densities=np.full(n_bins, 1 / n_bins),
+        is_best=is_best,
+        granularity=granularity,
+    )
 
 
 # Test data fixtures
@@ -44,6 +61,18 @@ def bimodal_data():
 
 class TestHistogram:
     """Test cases for histogram function."""
+
+    def test_max_bins_does_not_select_finer_than_best(self):
+        """Test that max_bins cannot select a granularity after the best one."""
+        results = [
+            _histogram_result(1, granularity=1),
+            _histogram_result(3, granularity=2, is_best=True),
+            _histogram_result(4, granularity=3),
+        ]
+
+        selected = _select_histogram(results, max_bins=10)
+
+        assert selected is results[1]
 
     def test_histogram_with_list(self, simple_data):
         """Test histogram with Python list input."""

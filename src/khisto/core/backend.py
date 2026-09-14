@@ -105,6 +105,10 @@ class _KhistoOutput:
 class HistogramResult:
     """Result of optimal histogram computation.
 
+    .. warning::
+       Bins are right-closed: a value on an internal edge belongs to the bin
+       on its left, unlike with NumPy histograms.
+
     Attributes
     ----------
     lower_bounds : NDArray[np.float64]
@@ -237,6 +241,10 @@ def _process_histogram_file(file_path: Path) -> list[HistogramResult]:
 
 def compute_histograms(x: NDArray[np.float64]) -> list[HistogramResult]:
     """Compute optimal histogram of an array using khisto CLI binary input.
+
+    .. warning::
+       Bins are right-closed: a value on an internal edge belongs to the bin
+       on its left, unlike with NumPy histograms.
 
     Parameters
     ----------
