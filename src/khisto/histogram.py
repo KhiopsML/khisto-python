@@ -64,8 +64,8 @@ def histogram(
     """Compute an optimal histogram using the Khiops binning algorithm.
 
     .. warning::
-       Bins are right-closed: a value on an internal edge belongs to the bin
-       on its left, unlike with NumPy histograms.
+       Khiops bins are right-closed, ``(lower, upper]``, unlike Numpy bins which
+       are left-closed, ``[lower, upper)``.
 
     Parameters
     ----------

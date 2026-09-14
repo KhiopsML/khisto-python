@@ -106,8 +106,8 @@ class HistogramResult:
     """Result of optimal histogram computation.
 
     .. warning::
-       Bins are right-closed: a value on an internal edge belongs to the bin
-       on its left, unlike with NumPy histograms.
+       Khiops bins are right-closed, ``(lower, upper]``, unlike Numpy bins which
+       are left-closed, ``[lower, upper)``.
 
     Attributes
     ----------
@@ -243,8 +243,8 @@ def compute_histograms(x: NDArray[np.float64]) -> list[HistogramResult]:
     """Compute optimal histogram of an array using khisto CLI binary input.
 
     .. warning::
-       Bins are right-closed: a value on an internal edge belongs to the bin
-       on its left, unlike with NumPy histograms.
+       Khiops bins are right-closed, ``(lower, upper]``, unlike Numpy bins which
+       are left-closed, ``[lower, upper)``.
 
     Parameters
     ----------

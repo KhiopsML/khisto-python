@@ -60,13 +60,10 @@ def hist(
     patches
         Container with the bar patches.
 
-    Notes
-    -----
-    Khiops bins are right-closed, ``(lower, upper]``, while Matplotlib bins are
-    left-closed, ``[lower, upper)`` (except for its final bin). This function
-    adjusts observations by one floating-point step before delegating to
-    Matplotlib so that values on internal bin edges retain their Khiops bin
-    assignments. The returned bin edges are not modified.
+    .. warning::
+        Khiops bins are right-closed, ``(lower, upper]``, unlike Matplotlib bins
+        which are left-closed, ``[lower, upper)``, but the displayed plot is still
+        correct.
 
     See Also
     --------
