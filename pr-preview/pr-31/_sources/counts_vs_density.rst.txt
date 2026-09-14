@@ -1,5 +1,5 @@
-Understanding counts with variable-width bins
-=============================================
+Counts vs Density
+=================
 
 Both columns show the same 500 observations with two different binning schemes.
 With equal-width bins, counts and density have the same shape. With variable-width
