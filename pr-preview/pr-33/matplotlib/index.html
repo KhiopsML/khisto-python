@@ -309,6 +309,12 @@ unlike in matplotlib.</p>
 <dt>patches</dt><dd><p>Container with the bar patches.</p>
 </dd>
 </dl>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Khiops bins are right-closed, <code class="docutils literal notranslate"><span class="pre">(lower,</span> <span class="pre">upper]</span></code>, unlike Matplotlib bins
+which are left-closed, <code class="docutils literal notranslate"><span class="pre">[lower,</span> <span class="pre">upper)</span></code>, but the displayed plot is still
+correct.</p>
+</div>
 </dd>
 </dl>
 <div class="admonition seealso">
@@ -320,12 +326,6 @@ unlike in matplotlib.</p>
 </dd>
 </dl>
 </div>
-<p class="rubric">Notes</p>
-<p>Khiops bins are right-closed, <code class="docutils literal notranslate"><span class="pre">(lower,</span> <span class="pre">upper]</span></code>, while Matplotlib bins are
-left-closed, <code class="docutils literal notranslate"><span class="pre">[lower,</span> <span class="pre">upper)</span></code> (except for its final bin). This function
-adjusts observations by one floating-point step before delegating to
-Matplotlib so that values on internal bin edges retain their Khiops bin
-assignments. The returned bin edges are not modified.</p>
 </dd></dl>
 
 </section>
