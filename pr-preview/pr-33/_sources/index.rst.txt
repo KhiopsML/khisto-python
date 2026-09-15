@@ -28,6 +28,12 @@ Khisto — Histograms that fit your data
 Get started
 -----------
 
+.. admonition:: Density by default
+   :class: important
+
+   Unlike NumPy and Matplotlib, Khisto uses density by default.
+   :doc:`Learn how to read variable-width histograms <counts_vs_density>`.
+
 .. div:: install-cmd
 
    .. code-block:: bash
@@ -74,6 +80,23 @@ Get started
 
       A runnable notebook tour covering all features.
 
+.. grid:: 1 1 2 2
+   :gutter: 3
+   :class-container: sd-mt-3
+
+   .. grid-item-card:: :octicon:`law;1.5em` Counts or density?
+      :link: counts_vs_density
+      :link-type: doc
+
+      See why counts mislead when bins have different widths.
+
+   .. grid-item-card:: :octicon:`info;1.5em` Histograms - Khiops
+      :link: https://khiops.org/learn/histograms/
+      :link-type: url
+      :class-card: histogram-guide-card
+
+      Go further, from the simplest histogram to the most complex.
+
 .. toctree::
    :maxdepth: 2
    :caption: API Reference
@@ -89,3 +112,4 @@ Get started
    :hidden:
 
    Demo <demo>
+   Counts vs density <counts_vs_density>
