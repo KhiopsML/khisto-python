@@ -283,8 +283,8 @@ adaptive bins, optional <code class="docutils literal notranslate"><span class="
 <dd><p>Compute an optimal histogram using the Khiops binning algorithm.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Khiops bins are right-closed, <code class="docutils literal notranslate"><span class="pre">(lower,</span> <span class="pre">upper]</span></code>, unlike Numpy bins which
-are left-closed, <code class="docutils literal notranslate"><span class="pre">[lower,</span> <span class="pre">upper)</span></code>.</p>
+<p>Khiops bins are left-open and right-closed, <code class="docutils literal notranslate"><span class="pre">(lower,</span> <span class="pre">upper]</span></code>, unlike
+NumPy bins which are left-closed and right-open, <code class="docutils literal notranslate"><span class="pre">[lower,</span> <span class="pre">upper)</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
