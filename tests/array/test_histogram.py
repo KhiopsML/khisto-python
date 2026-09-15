@@ -10,23 +10,6 @@ import numpy as np
 import pytest
 
 from khisto import histogram
-from khisto.core import HistogramResult
-from khisto.histogram import _select_histogram
-
-
-def _histogram_result(
-    n_bins: int, granularity: int, *, is_best: bool = False
-) -> HistogramResult:
-    edges = np.arange(n_bins + 1, dtype=np.float64)
-    return HistogramResult(
-        lower_bounds=edges[:-1],
-        upper_bounds=edges[1:],
-        frequencies=np.ones(n_bins, dtype=np.int64),
-        probabilities=np.full(n_bins, 1 / n_bins),
-        densities=np.full(n_bins, 1 / n_bins),
-        is_best=is_best,
-        granularity=granularity,
-    )
 
 
 # Test data fixtures
@@ -64,15 +47,16 @@ class TestHistogram:
 
     def test_max_bins_does_not_select_finer_than_best(self):
         """Test that max_bins cannot select a granularity after the best one."""
-        results = [
-            _histogram_result(1, granularity=1),
-            _histogram_result(3, granularity=2, is_best=True),
-            _histogram_result(4, granularity=3),
-        ]
+        # This distribution produces histograms finer than the best one.
+        data = np.repeat([1, 2, 3, 4, 5, 6], [458, 82, 43, 11, 3, 2])
+        expected_values, expected_edges = histogram(data, density=False)
 
-        selected = _select_histogram(results, max_bins=10)
+        # A loose bin limit must still select the best interpretable histogram.
+        values, edges = histogram(data, max_bins=100, density=False)
 
-        assert selected is results[1]
+        # The limit must not expose a finer histogram after the best one.
+        np.testing.assert_array_equal(values, expected_values)
+        np.testing.assert_array_equal(edges, expected_edges)
 
     def test_histogram_with_list(self, simple_data):
         """Test histogram with Python list input."""

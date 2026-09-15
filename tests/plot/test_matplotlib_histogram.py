@@ -16,6 +16,13 @@ from khisto import histogram
 from khisto.matplotlib import hist
 
 
+@pytest.fixture(autouse=True)
+def close_figures():
+    """Close every figure, including when a test fails."""
+    yield
+    plt.close("all")
+
+
 class TestHistBasic:
     """Test basic hist functionality."""
 
@@ -27,7 +34,7 @@ class TestHistBasic:
 
     def test_simple_array(self, normal_data):
         """Test hist with simple numpy array."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, bins, patches = hist(normal_data, ax=ax)
 
         assert isinstance(n, np.ndarray)
@@ -35,7 +42,6 @@ class TestHistBasic:
         assert patches is not None
         assert len(n) > 0
         assert len(bins) == len(n) + 1
-        plt.close(fig)
 
     def test_without_ax(self, normal_data):
         """Test hist without explicit ax parameter."""
@@ -44,134 +50,118 @@ class TestHistBasic:
         assert isinstance(n, np.ndarray)
         assert isinstance(bins, np.ndarray)
         assert len(n) > 0
-        plt.close()
 
     def test_density_histogram(self, normal_data):
         """Test density histogram."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, bins, _ = hist(normal_data, density=True, ax=ax)
 
         # Density should integrate to 1
         bin_widths = np.diff(bins)
         total = np.sum(n * bin_widths)
         assert np.isclose(total, 1.0, rtol=1e-5)
-        plt.close(fig)
 
     def test_frequency_histogram(self, normal_data):
         """Test frequency histogram is the default behavior."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, ax=ax, density=False)
 
         # Frequencies should sum to total count
         assert np.sum(n) == len(normal_data)
-        plt.close(fig)
 
     @pytest.mark.parametrize("density", [False, True])
     def test_histogram_matches_khiops_at_internal_edges(self, density):
         """Test that observations on internal edges keep their Khiops bins."""
         data = np.repeat([1, 2, 3, 4, 5, 6], [458, 82, 43, 11, 3, 2])
         expected, expected_bins = histogram(data, max_bins=100, density=density)
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
 
         values, bins, _ = hist(data, max_bins=100, density=density, ax=ax)
 
         np.testing.assert_array_equal(bins, expected_bins)
         np.testing.assert_allclose(values, expected)
-        plt.close(fig)
 
     def test_horizontal_orientation(self, normal_data):
         """Test horizontal histogram."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, orientation="horizontal", ax=ax)
 
         assert isinstance(n, np.ndarray)
         assert len(n) > 0
-        plt.close(fig)
 
     def test_with_max_bins(self, normal_data):
         """Test histogram with max_bins parameter."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, max_bins=5, ax=ax)
 
         assert len(n) <= 5
-        plt.close(fig)
 
     def test_with_range(self, normal_data):
         """Test histogram with range parameter."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         _, bins, _ = hist(normal_data, range=(-1, 1), ax=ax)
 
         assert bins[0] >= -1
         assert bins[-1] <= 1
-        plt.close(fig)
 
     def test_log_scale(self, normal_data):
         """Test histogram with log scale."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         hist(normal_data, log=True, ax=ax)
 
         assert ax.get_yscale() == "log"
-        plt.close(fig)
 
     def test_color_parameter(self, normal_data):
         """Test histogram with color parameter."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         _, _, patches = hist(normal_data, color="red", ax=ax)
 
         assert patches is not None
-        plt.close(fig)
 
     def test_step_histtype(self, normal_data):
         """Test histogram with step histtype."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, histtype="step", ax=ax)
 
         assert isinstance(n, np.ndarray)
-        plt.close(fig)
 
     def test_stepfilled_histtype(self, normal_data):
         """Test histogram with stepfilled histtype."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, histtype="stepfilled", ax=ax)
 
         assert isinstance(n, np.ndarray)
-        plt.close(fig)
 
     def test_cumulative_density_histogram(self, normal_data):
         """Test cumulative density histogram."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, density=True, cumulative=True, ax=ax)
 
         assert np.isclose(n[-1], 1.0, rtol=1e-5)
-        plt.close(fig)
 
     def test_cumulative_hist_matches_array_api(self, normal_data):
         """Test that the plotting wrapper matches cumulative histogram values."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, bins, _ = hist(normal_data, density=True, cumulative=True, ax=ax)
         density, expected_bins = histogram(normal_data, density=True)
         expected = np.cumsum(density * np.diff(expected_bins))
 
         np.testing.assert_array_equal(bins, expected_bins)
         np.testing.assert_allclose(n, expected)
-        plt.close(fig)
 
     def test_reverse_cumulative_frequency_histogram(self, normal_data):
         """Test reverse cumulative frequency histogram."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         n, _, _ = hist(normal_data, density=False, cumulative=-1, ax=ax)
 
         assert np.isclose(n[0], len(normal_data))
-        plt.close(fig)
 
     def test_unsupported_bins_parameter(self, normal_data):
         """Test that bins raises a clear error message."""
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
 
         with pytest.raises(TypeError, match="bins is not supported"):
             hist(normal_data, bins=10, ax=ax)
-
-        plt.close(fig)
 
 
 class TestHistReturnValues:

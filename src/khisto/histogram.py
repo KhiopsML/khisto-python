@@ -33,10 +33,12 @@ def _select_histogram(
 
     # Find the best histogram marked as is_best,
     # or default to the last one if none is marked.
-    best_histogram = next(
-        (result for result in reversed(histogram_results) if result.is_best),
-        histogram_results[-1],
-    )
+    for result in reversed(histogram_results):
+        if result.is_best:
+            best_histogram = result
+            break
+    else:
+        best_histogram = histogram_results[-1]
 
     if max_bins is None:
         return best_histogram
@@ -44,15 +46,11 @@ def _select_histogram(
     # Select the histogram with the highest granularity
     # that does not exceed max_bins.
     # Histograms finer than the best interpretable one are skipped.
-    return next(
-        (
-            result
-            for result in reversed(histogram_results)
-            if result.granularity <= best_histogram.granularity
-            and len(result) <= max_bins
-        ),
-        histogram_results[0],
-    )
+    for result in reversed(histogram_results):
+        if result.granularity <= best_histogram.granularity and len(result) <= max_bins:
+            return result
+
+    return histogram_results[0]
 
 
 def histogram(
