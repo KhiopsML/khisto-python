@@ -60,7 +60,7 @@ def hist(
     patches
         Container with the bar patches.
 
-    .. warning::
+    .. note::
         Khiops bins are right-closed, ``(lower, upper]``, unlike Matplotlib bins
         which are left-closed, ``[lower, upper)``, but the displayed plot is still
         correct.

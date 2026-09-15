@@ -63,7 +63,7 @@ def histogram(
 ) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
     """Compute an optimal histogram using the Khiops binning algorithm.
 
-    .. warning::
+    .. note::
        Khiops bins are right-closed, ``(lower, upper]``, unlike Numpy bins which
        are left-closed, ``[lower, upper)``.
 
