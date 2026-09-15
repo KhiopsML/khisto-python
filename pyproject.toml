@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "1.0.1"
+version = "1.0.2"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -129,6 +129,7 @@ ignore = [
 ]
 
 [tool.scikit-build]
+build-dir = "build/{wheel_tag}" # Reuse CMake and Ninja artifacts across uv sync runs
 wheel.py-api = "py3"             # We specify full compatibility with all Python 3 releases
 cmake.version = "CMakeLists.txt" # Read CMake minimal version from file
 

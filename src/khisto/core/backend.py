@@ -105,6 +105,10 @@ class _KhistoOutput:
 class HistogramResult:
     """Result of optimal histogram computation.
 
+    .. note::
+         Khiops bins are left-open and right-closed, ``(lower, upper]``, unlike
+         NumPy bins which are left-closed and right-open, ``[lower, upper)``.
+
     Attributes
     ----------
     lower_bounds : NDArray[np.float64]
@@ -237,6 +241,10 @@ def _process_histogram_file(file_path: Path) -> list[HistogramResult]:
 
 def compute_histograms(x: NDArray[np.float64]) -> list[HistogramResult]:
     """Compute optimal histogram of an array using khisto CLI binary input.
+
+    .. note::
+         Khiops bins are left-open and right-closed, ``(lower, upper]``, unlike
+         NumPy bins which are left-closed and right-open, ``[lower, upper)``.
 
     Parameters
     ----------

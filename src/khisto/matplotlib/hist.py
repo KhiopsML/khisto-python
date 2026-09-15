@@ -60,6 +60,11 @@ def hist(
     patches
         Container with the bar patches.
 
+    .. note::
+        Khiops bins are left-open and right-closed, ``(lower, upper]``, unlike
+        Matplotlib bins which are left-closed and right-open, ``[lower, upper)``.
+        The displayed plot is still correct.
+
     See Also
     --------
     matplotlib.pyplot.hist : Matplotlib's histogram function.
@@ -83,4 +88,7 @@ def hist(
 
         ax = plt.gca()
 
-    return ax.hist(x, bin_edges, density=density, range=range, **kwargs)
+    # Khiops bins are right-closed, whereas Matplotlib bins are left-closed.
+    # Moving each value down one ULP preserves Khiops assignments at shared edges.
+    plot_values = np.nextafter(np.asarray(x, dtype=np.float64), -np.inf)
+    return ax.hist(plot_values, bin_edges, density=density, range=range, **kwargs)

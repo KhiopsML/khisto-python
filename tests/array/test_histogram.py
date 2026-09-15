@@ -45,6 +45,19 @@ def bimodal_data():
 class TestHistogram:
     """Test cases for histogram function."""
 
+    def test_max_bins_does_not_select_finer_than_best(self):
+        """Test that max_bins cannot select a granularity after the best one."""
+        # This distribution produces histograms finer than the best one.
+        data = np.repeat([1, 2, 3, 4, 5, 6], [458, 82, 43, 11, 3, 2])
+        expected_values, expected_edges = histogram(data, density=False)
+
+        # A loose bin limit must still select the best interpretable histogram.
+        values, edges = histogram(data, max_bins=100, density=False)
+
+        # The limit must not expose a finer histogram after the best one.
+        np.testing.assert_array_equal(values, expected_values)
+        np.testing.assert_array_equal(edges, expected_edges)
+
     def test_histogram_with_list(self, simple_data):
         """Test histogram with Python list input."""
         hist, bin_edges = histogram(simple_data)
