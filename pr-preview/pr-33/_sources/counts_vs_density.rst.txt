@@ -23,5 +23,5 @@ Reading variable-width histograms
    :widths: 35, 35, 30
 
    "How many observations?", "Counts (``density=False``)", "Bar heights"
-   "What fraction of observations?", "Counts divided by :math:`N`, or density", "Bar areas"
+   "What fraction of observations?", "Counts divided by :math:`N`, or density times bin width", "Bar areas"
    "Where are values concentrated?", "Density (``density=True``, the Khisto default)", "Bar heights"
