@@ -3,17 +3,17 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="prev" title="khisto.core.HistogramResult" href="core/generated/khisto.core.HistogramResult.html">
+<link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Counts vs Density" href="counts_vs_density.html"><link rel="prev" title="khisto.core.HistogramResult" href="core/generated/khisto.core.HistogramResult.html">
 
     <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
-        <title>Khisto — optimal binning histograms - khisto-python 1.0.1</title>
+        <title>Khisto — optimal binning histograms - khisto-python 1.0.2</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=4c4de8d9" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=f54c7f42" />
     
     
 
@@ -29,7 +29,7 @@
   --color-highlighted-background: #FFD200;
   --color-admonition-title--note: #FF7900;
   --color-admonition-title-background--note: #FFF0E2;
-  --font-stack: Helvetica Neue, Helvetica, sans-serif;
+  --font-stack: Helvetica Neue, Helvetica, Arial, sans-serif;
   
   }
   @media not print {
@@ -43,7 +43,7 @@
   --color-highlighted-background: #FFD200;
   --color-admonition-title--note: #FF7900;
   --color-admonition-title-background--note: #CC6100;
-  --font-stack: Helvetica Neue, Helvetica, sans-serif;
+  --font-stack: Helvetica Neue, Helvetica, Arial, sans-serif;
   
     }
     @media (prefers-color-scheme: dark) {
@@ -57,7 +57,7 @@
   --color-highlighted-background: #FFD200;
   --color-admonition-title--note: #FF7900;
   --color-admonition-title-background--note: #CC6100;
-  --font-stack: Helvetica Neue, Helvetica, sans-serif;
+  --font-stack: Helvetica Neue, Helvetica, Arial, sans-serif;
   
       }
     }
@@ -189,7 +189,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand"><h6><center>khisto-python 1.0.1</center></h6></div></a>
+      <a href="index.html"><div class="brand"><h6><center>khisto-python 1.0.2</center></h6></div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -210,7 +210,7 @@
       
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
-  <span class="sidebar-brand-text"><h6><center>khisto-python 1.0.1</center></h6></span>
+  <span class="sidebar-brand-text"><h6><center>khisto-python 1.0.2</center></h6></span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -231,6 +231,7 @@
 <p class="caption" role="heading"><span class="caption-text">Guides</span></p>
 <ul class="current">
 <li class="toctree-l1 current current-page"><a class="current reference internal" href="#">Demo</a></li>
+<li class="toctree-l1"><a class="reference internal" href="counts_vs_density.html">Counts vs density</a></li>
 </ul>
 
 </div>
@@ -251,12 +252,16 @@
         </a>
         <div class="content-icon-container">
           <div class="view-this-page">
-  <a class="muted-link" href="_sources/demo.ipynb.txt" title="View this page">
+  <a class="muted-link" href="https://github.com/KhiopsML/khisto-python/blob/main/docs/demo.ipynb?plain=true" title="View this page">
     <svg><use href="#svg-eye"></use></svg>
     <span class="visually-hidden">View this page</span>
   </a>
-</div>
-<div class="theme-toggle-container theme-toggle-content">
+</div><div class="edit-this-page">
+  <a class="muted-link" href="https://github.com/KhiopsML/khisto-python/edit/main/docs/demo.ipynb" rel="edit" title="Edit this page">
+    <svg><use href="#svg-pencil"></use></svg>
+    <span class="visually-hidden">Edit this page</span>
+  </a>
+</div><div class="theme-toggle-container theme-toggle-content">
             <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
               <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
               <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
@@ -279,13 +284,13 @@
 </ol>
 <p>Throughout, we plot the <strong>density</strong> rather than raw counts. With variable-width bins this is almost always the right choice: a tall-but-narrow bin and a short-but-wide bin can hold the <em>same</em> number of points, so only the density (count divided by bin width) shows the true shape of the distribution.</p>
 <blockquote>
-<div><p>📚 For a didactic walk-through of optimal histograms — from the simplest to the most complex — see the histogram documentation in <a class="reference external" href="https://khiops.org/learn/understand/">Khiops fundations</a></p>
+<div><p>📚 Go further with <a class="reference external" href="https://khiops.org/learn/histograms/">Histograms - Khiops</a>, a didactic walk-through from the simplest histogram to the most complex.</p>
 </div></blockquote>
 <section id="1.-Quick-start">
 <h2>1. Quick start<a class="headerlink" href="#1.-Quick-start" title="Link to this heading">¶</a></h2>
 <p>The simplest promise: one call, sensible bins, a readable density. We start with two distributions where the “right” binning is well understood, so you can see that Khisto does the natural thing.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -302,7 +307,7 @@
 <h3>A standard Gaussian — linear scale<a class="headerlink" href="#A-standard-Gaussian-—-linear-scale" title="Link to this heading">¶</a></h3>
 <p>For a bell curve, a linear axis is the natural view. <code class="docutils literal notranslate"><span class="pre">khisto.matplotlib.hist</span></code> works like <code class="docutils literal notranslate"><span class="pre">plt.hist</span></code>, but the bins adapt to the data.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">gaussian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
@@ -329,7 +334,7 @@
 <h3>A heavy-tailed Pareto — log-log scale<a class="headerlink" href="#A-heavy-tailed-Pareto-—-log-log-scale" title="Link to this heading">¶</a></h3>
 <p>Heavy-tailed data spans several orders of magnitude, so a <strong>log-log</strong> view is the natural one. Fixed-width bins struggle here — they are either too coarse in the body or empty in the tail — while adaptive bins stay informative all the way out.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pareto</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">pareto</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span>  <span class="c1"># shift to start at 1 for log axes</span>
@@ -365,7 +370,7 @@
 </ul>
 <p>10,000 samples keep the adaptive refinement visible while staying fast to compute. This single <code class="docutils literal notranslate"><span class="pre">data</span></code> array is reused for every example below.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span>
@@ -395,7 +400,7 @@ Shape: a broad bell, a sharp spike near 3, and a long lognormal tail.
 <h3>Adaptive vs fixed-width bins — linear scale<a class="headerlink" href="#Adaptive-vs-fixed-width-bins-—-linear-scale" title="Link to this heading">¶</a></h3>
 <p>The same data, the same density normalization, the same axes — only the binning differs. Fixed-width bins blur the sharp mode and waste resolution on the empty tail; Khisto’s adaptive bins keep both readable.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">matplotlib_ax</span><span class="p">,</span> <span class="n">khisto_ax</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">13</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">),</span> <span class="n">sharey</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -429,7 +434,7 @@ Shape: a broad bell, a sharp spike near 3, and a long lognormal tail.
 <h3>The same comparison — log-log scale<a class="headerlink" href="#The-same-comparison-—-log-log-scale" title="Link to this heading">¶</a></h3>
 <p>On log-log axes the tail behaviour comes to the foreground. Empty fixed-width bins simply vanish (a zero has no place on a log axis), whereas adaptive bins widen to keep the tail populated and visible.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">matplotlib_ax</span><span class="p">,</span> <span class="n">khisto_ax</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span>
@@ -468,10 +473,10 @@ Shape: a broad bell, a sharp spike near 3, and a long lognormal tail.
 <h2>3. NumPy-like API: <code class="docutils literal notranslate"><span class="pre">khisto.histogram</span></code><a class="headerlink" href="#3.-NumPy-like-API:-khisto.histogram" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">khisto.histogram</span></code> is a drop-in replacement for <code class="docutils literal notranslate"><span class="pre">numpy.histogram</span></code>: same return value <code class="docutils literal notranslate"><span class="pre">(hist,</span> <span class="pre">bin_edges)</span></code>, but the bins adapt to the data instead of being fixed-width.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hist_counts</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hist_counts</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">density</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Number of bins: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">hist_counts</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Bin edges: </span><span class="si">{</span><span class="n">bin_edges</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -495,7 +500,7 @@ Frequencies: [   2.   36.   99.  137.  386.  890. 1101.  386. 1668.  788.  818. 
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># With density normalization the integral over the range is ~1</span>
@@ -516,7 +521,7 @@ Integral of density: 1.000000
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cap the number of bins</span>
@@ -543,7 +548,7 @@ Bin edges: [-3.6484375  0.         4.         8.        16.        56.03125  ]
 <h3>Cumulative plots<a class="headerlink" href="#Cumulative-plots" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">khisto.matplotlib.hist</span></code> follows matplotlib’s <code class="docutils literal notranslate"><span class="pre">cumulative</span></code> semantics, including the cumulative density (CDF), raw cumulative counts, and reverse accumulation.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cumulative density (CDF) first — the most interpretable cumulative view</span>
@@ -557,7 +562,7 @@ Bin edges: [-3.6484375  0.         4.         8.        16.        56.03125  ]
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -578,7 +583,7 @@ Text(0, 0.5, &#39;Cumulative probability&#39;)
 <h2>5. Core API: <code class="docutils literal notranslate"><span class="pre">compute_histograms</span></code> and <code class="docutils literal notranslate"><span class="pre">HistogramResult</span></code><a class="headerlink" href="#5.-Core-API:-compute_histograms-and-HistogramResult" title="Link to this heading">¶</a></h2>
 <p>When a single histogram is not enough, the core API exposes the full sequence of granularities and tells you exactly where Khiops chooses to stop.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">khisto.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_histograms</span>
@@ -616,28 +621,42 @@ Granularity levels:
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Each level carries densities, so we visualize the series as densities</span>
-<span class="n">n_levels</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize selected resolutions through the public plotting API</span>
+<span class="n">best_result</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">result</span> <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span> <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_best</span><span class="p">)</span>
+<span class="n">coarser_limits</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">result</span> <span class="ow">in</span> <span class="n">results</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">granularity</span> <span class="o">&lt;</span> <span class="n">best_result</span><span class="o">.</span><span class="n">granularity</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">best_result</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+<span class="n">max_bins_values</span> <span class="o">=</span> <span class="n">coarser_limits</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span> <span class="o">+</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span>
+
 <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
 <span class="n">axes</span> <span class="o">=</span> <span class="n">axes</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 
-<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">result</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="n">n_levels</span><span class="p">:]):</span>
-    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">stairs</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">densities</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">bin_edges</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
-              <span class="n">color</span><span class="o">=</span><span class="s2">"steelblue"</span><span class="p">)</span>
-    <span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Granularity </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">granularity</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">frequencies</span><span class="p">)</span><span class="si">}</span><span class="s2"> bins)"</span>
-    <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">is_best</span><span class="p">:</span>
-        <span class="n">title</span> <span class="o">+=</span> <span class="s2">" — BEST"</span>
+<span class="k">for</span> <span class="n">ax</span><span class="p">,</span> <span class="n">max_bins</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">max_bins_values</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">density</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">hist</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">max_bins</span><span class="o">=</span><span class="n">max_bins</span><span class="p">,</span>
+        <span class="n">density</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span>
+        <span class="n">color</span><span class="o">=</span><span class="s2">"steelblue"</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">max_bins</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Best histogram (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">density</span><span class="p">)</span><span class="si">}</span><span class="s2"> bins)"</span><span class="p">)</span>
         <span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">"aliceblue"</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"max_bins=</span><span class="si">{</span><span class="n">max_bins</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">density</span><span class="p">)</span><span class="si">}</span><span class="s2"> bins selected)"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Value"</span><span class="p">)</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Density"</span><span class="p">)</span>
 
-<span class="c1"># Hide any unused axes</span>
-<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="n">n_levels</span><span class="p">:]:</span>
+<span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">max_bins_values</span><span class="p">):]:</span>
     <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
@@ -661,7 +680,7 @@ Granularity levels:
 <li><p><strong>``khisto.matplotlib.hist``</strong> — readable density plots by default, with the usual matplotlib workflow.</p></li>
 <li><p><strong>``khisto.core.compute_histograms``</strong> — full control over the granularity series, with <code class="docutils literal notranslate"><span class="pre">HistogramResult</span></code> exposing counts, probabilities and densities.</p></li>
 </ol>
-<p>To go further, the <a class="reference external" href="https://github.com/KhiopsML/khiops-doc/blob/dev/docs/learn/histograms.md">Khiops histograms guide</a> builds the intuition from the simplest histogram to the most complex.</p>
+<p>To go further, <a class="reference external" href="https://khiops.org/learn/histograms/">Histograms - Khiops</a> builds the intuition from the simplest histogram to the most complex.</p>
 </section>
 </section>
 
@@ -670,7 +689,15 @@ Granularity levels:
       <footer>
         
         <div class="related-pages">
-          
+          <a class="next-page" href="counts_vs_density.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">Counts vs Density</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
           <a class="prev-page" href="core/generated/khisto.core.HistogramResult.html">
               <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
               <div class="page-info">
@@ -748,7 +775,7 @@ Granularity levels:
       
     </aside>
   </div>
-</div><script src="_static/documentation_options.js?v=292eb321"></script>
+</div><script src="_static/documentation_options.js?v=1ed6394b"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/scripts/furo.js?v=46bd48cc"></script>

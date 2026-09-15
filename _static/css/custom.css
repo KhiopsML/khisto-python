@@ -40,6 +40,53 @@ img.sidebar-logo {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .sd-card {
+    transition: none;
+  }
+}
+
+.histogram-guide-card {
+  border-color: #4170d8 !important;
+  background: #4170d8 !important;
+  color: #ffffff !important;
+}
+
+.histogram-guide-card .sd-card-title,
+.histogram-guide-card .sd-card-text {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .histogram-guide-card {
+  border-color: #6699ff !important;
+  background: #6699ff !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .histogram-guide-card .sd-card-title,
+[data-theme="dark"] .histogram-guide-card .sd-card-text {
+  color: #000000;
+}
+
+.histogram-guide-card:hover {
+  border-color: #f16e00 !important;
+}
+
+[data-theme="dark"] .histogram-guide-card:hover {
+  border-color: #ff7900 !important;
+}
+
+.histogram-guide-card:focus-within {
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff !important;
+}
+
+[data-theme="dark"] .histogram-guide-card:focus-within {
+  outline-color: #ffffff;
+  box-shadow: 0 0 0 2px #000000 !important;
+}
+
 /* Gallery images */
 .sd-card img {
   border-radius: 4px;
