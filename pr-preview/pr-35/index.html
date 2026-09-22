@@ -318,10 +318,10 @@ pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"khis
 </div>
 </div>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">khisto</span><span class="w"> </span><span class="kn">import</span> <span class="n">histogram</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">khisto</span>
 
 <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10_000</span><span class="p">)</span>
-<span class="n">hist</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>          <span class="c1"># optimal bins, no guessing</span>
+<span class="n">hist</span><span class="p">,</span> <span class="n">bin_edges</span> <span class="o">=</span> <span class="n">khisto</span><span class="o">.</span><span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>          <span class="c1"># optimal bins, no guessing</span>
 </pre></div>
 </div>
 <div class="sd-container-fluid sd-sphinx-override sd-mb-4 sd-mt-3 docutils">
