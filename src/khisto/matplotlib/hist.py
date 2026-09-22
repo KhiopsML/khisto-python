@@ -175,7 +175,7 @@ def hist(
     else:
         raise TypeError("Matplotlib returned unexpected histogram patches.")
 
-    if histtype == "bar" and "edgecolor" not in kwargs:
+    if histtype == "bar" and not {"edgecolor", "ec"} & kwargs.keys():
         if not isinstance(histogram_patches, BarContainer):
             raise TypeError("Matplotlib unexpectedly returned non-bar patches.")
         for patch in histogram_patches.patches:

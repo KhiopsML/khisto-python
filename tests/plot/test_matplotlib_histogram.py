@@ -146,14 +146,15 @@ class TestHistBasic:
         for patch in patches.patches:
             assert patch.get_edgecolor() == patch.get_facecolor()
 
-    def test_explicit_bar_edge_style_is_preserved(self, normal_data):
-        """Test that explicit edge styling overrides the khisto default."""
+    @pytest.mark.parametrize("edgecolor_keyword", ["edgecolor", "ec"])
+    def test_explicit_bar_edge_style_is_preserved(self, normal_data, edgecolor_keyword):
+        """Test that explicit edge styling aliases override the khisto default."""
         _fig, ax = plt.subplots()
         _, _, patches = hist(
             normal_data,
-            edgecolor="red",
             linewidth=2.0,
             ax=ax,
+            **{edgecolor_keyword: "red"},
         )
 
         for patch in patches.patches:
