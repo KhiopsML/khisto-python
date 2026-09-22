@@ -30,6 +30,35 @@ jobs:
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files
 
+  test-base-install:
+    name: Test base install without Matplotlib
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          version: "0.11.32"
+
+      - name: Test base API without optional dependencies
+        run: |
+          uv run --isolated --no-project --with . python - <<'PY'
+          import importlib.util
+
+          import numpy as np
+
+          import khisto
+
+          assert importlib.util.find_spec("matplotlib") is None
+          counts, edges = khisto.histogram(
+              np.array([1.0, 2.0, 3.0]),
+              density=False,
+          )
+          assert counts.sum() == 3
+          assert len(edges) == len(counts) + 1
+          PY
+
   get-python-versions:
     name: Get Python versions
     runs-on: ubuntu-latest
