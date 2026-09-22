@@ -153,12 +153,15 @@ def hist(
 
     # Weighted left edges preserve Khiops' right-closed bins and [-1e100, 1e100]
     # clamping when Matplotlib renders its left-closed bins.
+    cumulative = kwargs.get("cumulative", False)
+    plot_weights = (
+        frequencies / frequencies.sum() if density and cumulative else frequencies
+    )
     values, edges, patches = ax.hist(
         bin_edges[:-1].tolist(),
         bin_edges.tolist(),
-        weights=frequencies.tolist(),
-        density=density,
-        range=range,
+        weights=plot_weights.tolist(),
+        density=density and not cumulative,
         **kwargs,
     )
     if isinstance(values, list):
