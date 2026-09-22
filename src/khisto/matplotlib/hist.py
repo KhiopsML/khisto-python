@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import numpy as np
 
@@ -17,6 +17,49 @@ if TYPE_CHECKING:
     from matplotlib.container import BarContainer
     from matplotlib.patches import Polygon
     from numpy.typing import ArrayLike, NDArray
+
+
+@overload
+def hist(
+    x: ArrayLike,
+    range: tuple[float, float] | None = None,
+    max_bins: int | None = None,
+    density: bool = True,
+    *,
+    ax: Axes | None = None,
+    histtype: Literal["bar"] = "bar",
+    **kwargs: Any,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], BarContainer]: ...
+
+
+@overload
+def hist(
+    x: ArrayLike,
+    range: tuple[float, float] | None = None,
+    max_bins: int | None = None,
+    density: bool = True,
+    *,
+    ax: Axes | None = None,
+    histtype: Literal["step", "stepfilled"],
+    **kwargs: Any,
+) -> tuple[NDArray[np.float64], NDArray[np.float64], list[Polygon]]: ...
+
+
+@overload
+def hist(
+    x: ArrayLike,
+    range: tuple[float, float] | None = None,
+    max_bins: int | None = None,
+    density: bool = True,
+    *,
+    ax: Axes | None = None,
+    histtype: str,
+    **kwargs: Any,
+) -> tuple[
+    NDArray[np.float64],
+    NDArray[np.float64],
+    BarContainer | list[Polygon],
+]: ...
 
 
 def hist(

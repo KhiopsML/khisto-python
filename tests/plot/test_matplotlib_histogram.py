@@ -6,11 +6,15 @@
 
 from __future__ import annotations
 
+from typing import assert_type
+
 import numpy as np
 import pytest
 
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
+from matplotlib.container import BarContainer
+from matplotlib.patches import Polygon
 
 from khisto import histogram
 from khisto.matplotlib import hist
@@ -154,16 +158,20 @@ class TestHistBasic:
     def test_step_histtype(self, normal_data):
         """Test histogram with step histtype."""
         _fig, ax = plt.subplots()
-        n, _, _ = hist(normal_data, histtype="step", ax=ax)
+        n, _, patches = hist(normal_data, histtype="step", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        assert_type(patches, list[Polygon])
+        assert all(isinstance(patch, Polygon) for patch in patches)
 
     def test_stepfilled_histtype(self, normal_data):
         """Test histogram with stepfilled histtype."""
         _fig, ax = plt.subplots()
-        n, _, _ = hist(normal_data, histtype="stepfilled", ax=ax)
+        n, _, patches = hist(normal_data, histtype="stepfilled", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        assert_type(patches, list[Polygon])
+        assert all(isinstance(patch, Polygon) for patch in patches)
 
     def test_cumulative_density_histogram(self, normal_data):
         """Test cumulative density histogram."""
@@ -222,9 +230,11 @@ class TestHistReturnValues:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        n, bins, _ = result
+        n, bins, patches = result
         assert isinstance(n, np.ndarray)
         assert isinstance(bins, np.ndarray)
+        assert_type(patches, BarContainer)
+        assert isinstance(patches, BarContainer)
 
     def test_bins_edges_count(self, data):
         """Test that bins has n+1 edges."""
