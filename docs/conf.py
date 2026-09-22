@@ -47,6 +47,7 @@ extensions = [
 numpydoc_show_class_members = False
 
 ## Autodoc extension config
+autodoc_typehints = "none"
 autodoc_default_options = {
     "members": True,
     "inherited-members": False,
