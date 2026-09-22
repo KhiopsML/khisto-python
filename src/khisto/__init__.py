@@ -31,8 +31,10 @@ else:
 
 from .core import HistogramResult
 from .histogram import histogram
+from .matplotlib import hist
 
 __all__ = [
     "HistogramResult",
+    "hist",
     "histogram",
 ]
