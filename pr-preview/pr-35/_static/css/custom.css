@@ -1,0 +1,98 @@
+/* Custom header sizes */
+h1 {
+  font-size: 1.85em;
+}
+
+h2 {
+  font-size: 1.55em;
+}
+
+h3 {
+  font-size: 1.30em;
+}
+
+h4 {
+  font-size: 1.10em;
+}
+
+h5 {
+  font-size: 0.90em;
+}
+
+img.sidebar-logo {
+  width: 40px;
+}
+
+/* Hero tagline */
+.hero-tagline {
+  font-size: 1.25em;
+  color: var(--color-foreground-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* Card styling overrides for Furo + sphinx-design */
+.sd-card {
+  border-radius: 0px !important;
+  transition: box-shadow 0.2s ease;
+}
+
+.sd-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sd-card {
+    transition: none;
+  }
+}
+
+.histogram-guide-card {
+  border-color: #4170d8 !important;
+  background: #4170d8 !important;
+  color: #ffffff !important;
+}
+
+.histogram-guide-card .sd-card-title,
+.histogram-guide-card .sd-card-text {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .histogram-guide-card {
+  border-color: #6699ff !important;
+  background: #6699ff !important;
+  color: #000000 !important;
+}
+
+[data-theme="dark"] .histogram-guide-card .sd-card-title,
+[data-theme="dark"] .histogram-guide-card .sd-card-text {
+  color: #000000;
+}
+
+.histogram-guide-card:hover {
+  border-color: #f16e00 !important;
+}
+
+[data-theme="dark"] .histogram-guide-card:hover {
+  border-color: #ff7900 !important;
+}
+
+.histogram-guide-card:focus-within {
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px #ffffff !important;
+}
+
+[data-theme="dark"] .histogram-guide-card:focus-within {
+  outline-color: #ffffff;
+  box-shadow: 0 0 0 2px #000000 !important;
+}
+
+/* Gallery images */
+.sd-card img {
+  border-radius: 4px;
+}
+
+/* Install code block on landing page */
+.install-cmd .highlight {
+  font-size: 1.05em;
+}

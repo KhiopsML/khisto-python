@@ -1,0 +1,18 @@
+﻿khisto.core.HistogramResult
+===========================
+
+.. currentmodule:: khisto.core
+
+.. autoclass:: HistogramResult
+
+   
+   .. automethod:: __init__
+
+   
+   .. rubric:: Methods
+
+   .. autosummary::
+   
+      ~HistogramResult.__init__
+   
+   
