@@ -6,7 +6,12 @@
 
 from __future__ import annotations
 
-from typing import assert_type
+import sys
+
+if sys.version_info >= (3, 11):
+    from typing import assert_type
+else:
+    from typing_extensions import assert_type
 
 import numpy as np
 import pytest

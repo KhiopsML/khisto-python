@@ -59,6 +59,7 @@ test = [
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
     "pytest-sugar>=1.0",
+    "typing-extensions>=4.0; python_version < '3.11'",
 ]
 lint = [
     "pre-commit>=4.1",
