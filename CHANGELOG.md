@@ -2,6 +2,19 @@
 
 All notable changes to Khisto are documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Draw bar edges in their face color by default so that very narrow adaptive bins
+  remain visible.
+- Reject ``histtype="barstacked"` because Khisto only accepts a single dataset.
+
+### Fixed
+
+- Reuse Khisto frequencies when plotting so values remain assigned to the bins
+  selected by Khisto, including for extreme finite values.
+
 ## [1.0.2] - 2026-09-15
 
 ### Added

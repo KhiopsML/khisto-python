@@ -9,12 +9,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from matplotlib.axes import Axes
 
 from khisto.histogram import histogram as khisto_histogram
 
 if TYPE_CHECKING:
-    from numpy.typing import ArrayLike
+    from matplotlib.axes import Axes
+    from matplotlib.container import BarContainer
+    from matplotlib.patches import Polygon
+    from numpy.typing import ArrayLike, NDArray
 
 
 def hist(
@@ -25,7 +27,11 @@ def hist(
     *,
     ax: Axes | None = None,
     **kwargs: Any,
-) -> tuple[np.ndarray, np.ndarray, Any]:
+) -> tuple[
+    NDArray[np.float64],
+    NDArray[np.float64],
+    BarContainer | list[Polygon],
+]:
     """Compute and plot an optimal histogram.
 
     Parameters
@@ -49,7 +55,8 @@ def hist(
         Axes object to plot on. If not provided, the current axes will be used.
     **kwargs :
         other keyword arguments are described in ``matplotlib.pyplot.hist``. The ``bins``,
-        ``weights``, and stacked/multiple dataset features are not supported.
+        ``weights``, ``stacked``, ``histtype="barstacked"``, and multiple dataset
+        features are not supported.
 
     Returns
     -------
@@ -58,7 +65,7 @@ def hist(
     bins : ndarray
         Bin edges.
     patches
-        Container with the bar patches.
+        Container with the bar patches, or a list containing the step polygon.
 
     .. note::
         Khiops bins are left-open and right-closed, ``(lower, upper]``, unlike
@@ -70,6 +77,11 @@ def hist(
     matplotlib.pyplot.hist : Matplotlib's histogram function.
     khisto.histogram : Underlying histogram computation.
     """
+    # optional dependency; only import if strictly needed.
+    import matplotlib.pyplot as plt
+    from matplotlib.container import BarContainer
+    from matplotlib.patches import Polygon
+
     unsupported_kwargs = {
         "bins": "Use max_bins to limit the number of bins.",
         "stacked": "Stacked histograms are not supported.",
@@ -79,16 +91,48 @@ def hist(
         if name in kwargs:
             raise TypeError(f"{name} is not supported. {hint}")
 
-    # Compute histogram using khisto
-    _, bin_edges = khisto_histogram(x, range=range, max_bins=max_bins, density=density)
+    histtype = kwargs.get("histtype", "bar")
+    if histtype == "barstacked":
+        raise ValueError(
+            "histtype='barstacked' is not supported. Khisto only accepts a single dataset."
+        )
+
+    # Use frequencies so Matplotlib applies density and cumulative only once.
+    frequencies, bin_edges = khisto_histogram(
+        x,
+        range=range,
+        max_bins=max_bins,
+        density=False,
+    )
 
     if ax is None:
-        # optional dependency; only import if strictly needed.
-        import matplotlib.pyplot as plt
-
         ax = plt.gca()
 
-    # Khiops bins are right-closed, whereas Matplotlib bins are left-closed.
-    # Moving each value down one ULP preserves Khiops assignments at shared edges.
-    plot_values = np.nextafter(np.asarray(x, dtype=np.float64), -np.inf)
-    return ax.hist(plot_values, bin_edges, density=density, range=range, **kwargs)
+    # Weighted left edges preserve Khiops' right-closed bins and [-1e100, 1e100]
+    # clamping when Matplotlib renders its left-closed bins.
+    values, edges, patches = ax.hist(
+        bin_edges[:-1].tolist(),
+        bin_edges.tolist(),
+        weights=frequencies.tolist(),
+        density=density,
+        range=range,
+        **kwargs,
+    )
+    if isinstance(values, list):
+        raise TypeError("Matplotlib unexpectedly returned multiple histograms.")
+    if isinstance(patches, BarContainer):
+        histogram_patches: BarContainer | list[Polygon] = patches
+    elif isinstance(patches, list):
+        histogram_patches = [patch for patch in patches if isinstance(patch, Polygon)]
+        if len(histogram_patches) != len(patches):
+            raise TypeError("Matplotlib returned unexpected histogram patches.")
+    else:
+        raise TypeError("Matplotlib returned unexpected histogram patches.")
+
+    if histtype == "bar" and "edgecolor" not in kwargs:
+        if not isinstance(histogram_patches, BarContainer):
+            raise TypeError("Matplotlib unexpectedly returned non-bar patches.")
+        for patch in histogram_patches.patches:
+            patch.set_edgecolor(patch.get_facecolor())
+
+    return values, edges, histogram_patches
