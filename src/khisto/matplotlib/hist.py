@@ -158,9 +158,9 @@ def hist(
         frequencies / frequencies.sum() if density and cumulative else frequencies
     )
     values, edges, patches = ax.hist(
-        bin_edges[:-1].tolist(),
-        bin_edges.tolist(),
-        weights=plot_weights.tolist(),
+        x=bin_edges[:-1],
+        bins=bin_edges.tolist(),
+        weights=plot_weights,
         density=density and not cumulative,
         **kwargs,
     )
