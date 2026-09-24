@@ -171,11 +171,20 @@ def hist(
     elif isinstance(patches, list):
         histogram_patches = [patch for patch in patches if isinstance(patch, Polygon)]
         if len(histogram_patches) != len(patches):
-            raise TypeError("Matplotlib returned unexpected histogram patches.")
+            raise TypeError(
+                "Matplotlib returned unexpected histogram patches. "
+                "The patches should all be of type Polygon."
+            )
     else:
-        raise TypeError("Matplotlib returned unexpected histogram patches.")
+        raise TypeError(
+            "Matplotlib returned unexpected histogram patches of type "
+            f"{type(patches).__name__}; expected BarContainer or list of Polygon."
+        )
 
-    if histtype == "bar" and not {"edgecolor", "ec"} & kwargs.keys():
+    # Adaptive bins can be narrower than a pixel and vanish when only filled.
+    # Drawing the edge in the face color gives them a visible minimal width.
+    # The patches are rendered at draw time, so updating them here still applies.
+    if histtype == "bar" and not {"edgecolor", "ec"}.intersection(kwargs.keys()):
         if not isinstance(histogram_patches, BarContainer):
             raise TypeError("Matplotlib unexpectedly returned non-bar patches.")
         for patch in histogram_patches.patches:
