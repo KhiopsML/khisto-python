@@ -139,7 +139,7 @@ khisto.matplotlib.hist(
 | **Reverse cumulative** | Supported with negative `cumulative` | Supported with negative `cumulative` |
 | **Stacked** | Supported | Not supported |
 | **Weights** | Supported | Not supported |
-| **Unsupported histogram args** | None | `bins`, `stacked`, and `weights` raise a `TypeError` |
+| **Unsupported histogram args** | None | `bins`, `stacked`, and `weights` raise a `TypeError`; `histtype="barstacked"` raises a `ValueError` |
 | **Multiple datasets** | Supported | Not supported; only 1-D arrays are accepted |
 
 #### Usage Comparison

@@ -44,10 +44,10 @@ Get started
 .. code-block:: python
 
    import numpy as np
-   from khisto import histogram
+   import khisto
 
    data = np.random.normal(0, 1, 10_000)
-   hist, bin_edges = histogram(data)          # optimal bins, no guessing
+   hist, bin_edges = khisto.histogram(data)          # optimal bins, no guessing
 
 .. grid:: 1 1 2 2
    :gutter: 3

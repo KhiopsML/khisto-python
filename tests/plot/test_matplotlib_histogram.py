@@ -4,13 +4,20 @@
 
 """Tests for matplotlib histogram plotting."""
 
-from __future__ import annotations
+import sys
+
+if sys.version_info >= (3, 11):
+    from typing import assert_type
+else:
+    from typing_extensions import assert_type
 
 import numpy as np
 import pytest
 
 pytest.importorskip("matplotlib")
 import matplotlib.pyplot as plt
+from matplotlib.container import BarContainer
+from matplotlib.patches import Polygon
 
 from khisto import histogram
 from khisto.matplotlib import hist
@@ -81,6 +88,17 @@ class TestHistBasic:
         np.testing.assert_array_equal(bins, expected_bins)
         np.testing.assert_allclose(values, expected)
 
+    def test_histogram_matches_khiops_for_large_values(self):
+        """Test that plotting reuses counts when Khiops adjusts extreme edges."""
+        data = np.array([1e300, np.nextafter(1e300, np.inf), 2e300])
+        expected, expected_bins = histogram(data, density=False)
+        _fig, ax = plt.subplots()
+
+        values, bins, _ = hist(data, density=False, ax=ax)
+
+        np.testing.assert_array_equal(bins, expected_bins)
+        np.testing.assert_array_equal(values, expected)
+
     def test_horizontal_orientation(self, normal_data):
         """Test horizontal histogram."""
         _fig, ax = plt.subplots()
@@ -118,19 +136,46 @@ class TestHistBasic:
 
         assert patches is not None
 
+    def test_bar_edges_match_face_color_by_default(self, normal_data):
+        """Test that default bar edges reveal narrow adaptive bins."""
+        _fig, ax = plt.subplots()
+        _, _, patches = hist(normal_data, color="tab:blue", alpha=0.5, ax=ax)
+
+        for patch in patches.patches:
+            assert patch.get_edgecolor() == patch.get_facecolor()
+
+    @pytest.mark.parametrize("edgecolor_keyword", ["edgecolor", "ec"])
+    def test_explicit_bar_edge_style_is_preserved(self, normal_data, edgecolor_keyword):
+        """Test that explicit edge styling aliases override the khisto default."""
+        _fig, ax = plt.subplots()
+        _, _, patches = hist(
+            normal_data,
+            linewidth=2.0,
+            ax=ax,
+            **{edgecolor_keyword: "red"},
+        )
+
+        for patch in patches.patches:
+            assert patch.get_edgecolor() == (1.0, 0.0, 0.0, 1.0)
+            assert patch.get_linewidth() == 2.0
+
     def test_step_histtype(self, normal_data):
         """Test histogram with step histtype."""
         _fig, ax = plt.subplots()
-        n, _, _ = hist(normal_data, histtype="step", ax=ax)
+        n, _, patches = hist(normal_data, histtype="step", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        assert_type(patches, list[Polygon])
+        assert all(isinstance(patch, Polygon) for patch in patches)
 
     def test_stepfilled_histtype(self, normal_data):
         """Test histogram with stepfilled histtype."""
         _fig, ax = plt.subplots()
-        n, _, _ = hist(normal_data, histtype="stepfilled", ax=ax)
+        n, _, patches = hist(normal_data, histtype="stepfilled", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        assert_type(patches, list[Polygon])
+        assert all(isinstance(patch, Polygon) for patch in patches)
 
     def test_cumulative_density_histogram(self, normal_data):
         """Test cumulative density histogram."""
@@ -156,12 +201,22 @@ class TestHistBasic:
 
         assert np.isclose(n[0], len(normal_data))
 
-    def test_unsupported_bins_parameter(self, normal_data):
-        """Test that bins raises a clear error message."""
+    @pytest.mark.parametrize(
+        "name, value", [("bins", 10), ("stacked", False), ("weights", [])]
+    )
+    def test_unsupported_parameter(self, normal_data, name, value):
+        """Test that unsupported parameters raise clear error messages."""
         _fig, ax = plt.subplots()
 
-        with pytest.raises(TypeError, match="bins is not supported"):
-            hist(normal_data, bins=10, ax=ax)
+        with pytest.raises(TypeError, match=rf"{name} is not supported"):
+            hist(normal_data, ax=ax, **{name: value})
+
+    def test_unsupported_barstacked_histtype(self, normal_data):
+        """Test that barstacked raises a clear error message."""
+        _fig, ax = plt.subplots()
+
+        with pytest.raises(ValueError, match="barstacked.*not supported"):
+            hist(normal_data, histtype="barstacked", ax=ax)
 
 
 class TestHistReturnValues:
@@ -179,9 +234,11 @@ class TestHistReturnValues:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        n, bins, _ = result
+        n, bins, patches = result
         assert isinstance(n, np.ndarray)
         assert isinstance(bins, np.ndarray)
+        assert_type(patches, BarContainer)
+        assert isinstance(patches, BarContainer)
 
     def test_bins_edges_count(self, data):
         """Test that bins has n+1 edges."""

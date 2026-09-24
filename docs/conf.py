@@ -8,8 +8,11 @@
 import os
 import re
 import sys
+from functools import wraps
 from pathlib import Path
 from importlib import metadata
+
+import khisto.matplotlib
 
 DOCS_DIR = Path(__file__).resolve().parent
 ROOT_DIR = DOCS_DIR.parent
@@ -54,6 +57,18 @@ autodoc_default_options = {
     "show-inheritance": True,
     "special-members": False,
 }
+
+_runtime_hist = khisto.matplotlib.hist
+
+
+@wraps(_runtime_hist)
+def _documented_hist(*args, **kwargs):
+    return _runtime_hist(*args, **kwargs)
+
+
+_documented_hist.__module__ = khisto.matplotlib.__name__
+_documented_hist.__qualname__ = "hist"
+khisto.matplotlib.hist = _documented_hist
 
 ## Intersphinx extension config
 intersphinx_mapping = {

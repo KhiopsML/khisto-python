@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/ci.yaml
       - pyproject.toml
+      - scripts/check-base-install.py
       - src/**
       - tests/**
 
@@ -29,6 +30,20 @@ jobs:
 
       - name: Run pre-commit hooks
         run: uv run pre-commit run --all-files
+
+  test-base-install:
+    name: Test base install without Matplotlib
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          version: "0.11.32"
+
+      - name: Test base API without optional dependencies
+        run: uv run --isolated --no-project --with . python scripts/check-base-install.py
 
   get-python-versions:
     name: Get Python versions
