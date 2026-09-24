@@ -14,6 +14,9 @@ All notable changes to Khisto are documented in this file.
 
 - Reuse Khisto frequencies when plotting so values remain assigned to the bins
   selected by Khisto, including for extreme finite values.
+- Read `khisto.__version__` from the installed package metadata first, and fall
+  back to the repository `pyproject.toml` only when Khisto is not installed, so an
+  unrelated `pyproject.toml` in `site-packages` no longer breaks `import khisto`.
 
 ## [1.0.2] - 2026-09-15
 
