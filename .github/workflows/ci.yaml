@@ -5,6 +5,7 @@ on:
     paths:
       - .github/workflows/ci.yaml
       - pyproject.toml
+      - scripts/check-base-install.py
       - src/**
       - tests/**
 
@@ -42,22 +43,7 @@ jobs:
           version: "0.11.32"
 
       - name: Test base API without optional dependencies
-        run: |
-          uv run --isolated --no-project --with . python - <<'PY'
-          import importlib.util
-
-          import numpy as np
-
-          import khisto
-
-          assert importlib.util.find_spec("matplotlib") is None
-          counts, edges = khisto.histogram(
-              np.array([1.0, 2.0, 3.0]),
-              density=False,
-          )
-          assert counts.sum() == 3
-          assert len(edges) == len(counts) + 1
-          PY
+        run: uv run --isolated --no-project --with . python scripts/check-base-install.py
 
   get-python-versions:
     name: Get Python versions
