@@ -4,19 +4,16 @@ All notable changes to Khisto are documented in this file.
 
 ## Unreleased
 
-### Changed
-
-- Draw bar edges in their face color by default so that very narrow adaptive bins
-  remain visible.
-- Reject ``histtype="barstacked"` because Khisto only accepts a single dataset.
-
 ### Fixed
 
-- Reuse Khisto frequencies when plotting so values remain assigned to the bins
-  selected by Khisto, including for extreme finite values.
-- Read `khisto.__version__` from the installed package metadata first, and fall
-  back to the repository `pyproject.toml` only when Khisto is not installed, so an
-  unrelated `pyproject.toml` in `site-packages` no longer breaks `import khisto`.
+- Kept very narrow adaptive histogram bins visible by drawing, by default, bar edges in the
+  same color as their fill.
+- Prevented incorrect histogram frequencies in `hist()` for extreme finite values, including
+  values above `1e100` and below `-1e100`, by reusing the frequencies computed by Khisto.
+- Prevented `import khisto` from failing when an unrelated `pyproject.toml` is
+  present in `site-packages` in a virtual environment.
+- Rejected `histtype="barstacked"` in `hist()`, which is not supported because
+  Khisto accepts only one dataset at a time.
 
 ## [1.0.2] - 2026-09-15
 
