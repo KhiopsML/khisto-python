@@ -102,10 +102,6 @@ def hist(
         ``weights``, ``stacked``, ``histtype="barstacked"``, and multiple dataset
         features are not supported.
 
-        By default, bar edges use the face color's RGB values with alpha 0.5.
-        An explicit ``alpha`` applies to both fill and edges. ``edgecolor``
-        (or ``ec``) overrides the default edge styling.
-
     Returns
     -------
     n : ndarray
@@ -137,6 +133,7 @@ def hist(
         )
 
     import matplotlib.pyplot as plt
+    from matplotlib.colors import to_rgba
     from matplotlib.container import BarContainer
     from matplotlib.patches import Polygon
 
@@ -203,6 +200,6 @@ def hist(
         if not isinstance(histogram_patches, BarContainer):
             raise TypeError("Matplotlib unexpectedly returned non-bar patches.")
         for patch in histogram_patches.patches:
-            patch.set_edgecolor((*patch.get_facecolor()[:3], 0.5))
+            patch.set_edgecolor(to_rgba(patch.get_facecolor(), alpha=0.5))
 
     return values, edges, histogram_patches
