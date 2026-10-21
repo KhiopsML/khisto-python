@@ -3,7 +3,7 @@
 [![CI](https://github.com/KhiopsML/khisto-python/actions/workflows/ci.yaml/badge.svg)](https://github.com/KhiopsML/khisto-python/actions/workflows/ci.yaml)
 [![Docs](https://github.com/KhiopsML/khisto-python/actions/workflows/docs.yaml/badge.svg)](https://khiopsml.github.io/khisto-python/)
 [![Release](https://img.shields.io/github/v/release/KhiopsML/khisto-python?include_prereleases)](https://github.com/KhiopsML/khisto-python/releases)
-[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue)](https://github.com/KhiopsML/khisto-python/blob/main/pyproject.toml)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.11-blue)](https://github.com/KhiopsML/khisto-python/blob/main/pyproject.toml)
 [![License](https://img.shields.io/badge/license-BSD--3--Clause--Clear-blue)](LICENSE)
 
 **Optimal Binning Histograms for Python**

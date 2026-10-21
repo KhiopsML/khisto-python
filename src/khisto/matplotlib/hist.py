@@ -6,6 +6,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 import numpy as np
@@ -101,6 +102,10 @@ def hist(
         ``weights``, ``stacked``, ``histtype="barstacked"``, and multiple dataset
         features are not supported.
 
+        By default, bar edges use the face color's RGB values with alpha 0.5.
+        An explicit ``alpha`` applies to both fill and edges. ``edgecolor``
+        (or ``ec``) overrides the default edge styling.
+
     Returns
     -------
     n : ndarray
@@ -109,6 +114,12 @@ def hist(
         Bin edges.
     patches
         Container with the bar patches, or a list containing the step polygon.
+
+    Raises
+    ------
+    ImportError
+        If Matplotlib is not installed. Install plotting support with
+        ``pip install "khisto[matplotlib]"``.
 
     .. note::
         Khiops bins are left-open and right-closed, ``(lower, upper]``, unlike
@@ -120,7 +131,11 @@ def hist(
     matplotlib.pyplot.hist : Matplotlib's histogram function.
     khisto.histogram : Underlying histogram computation.
     """
-    # optional dependency; only import if strictly needed.
+    if importlib.util.find_spec("matplotlib") is None:
+        raise ImportError(
+            'Plotting requires Matplotlib. Install it with: pip install "khisto[matplotlib]"'
+        )
+
     import matplotlib.pyplot as plt
     from matplotlib.container import BarContainer
     from matplotlib.patches import Polygon
@@ -182,12 +197,12 @@ def hist(
         )
 
     # Adaptive bins can be narrower than a pixel and vanish when only filled.
-    # Drawing the edge in the face color gives them a visible minimal width.
+    # Drawing a translucent edge in the face color keeps them visible.
     # The patches are rendered at draw time, so updating them here still applies.
     if histtype == "bar" and not {"edgecolor", "ec"}.intersection(kwargs.keys()):
         if not isinstance(histogram_patches, BarContainer):
             raise TypeError("Matplotlib unexpectedly returned non-bar patches.")
         for patch in histogram_patches.patches:
-            patch.set_edgecolor(patch.get_facecolor())
+            patch.set_edgecolor((*patch.get_facecolor()[:3], 0.5))
 
     return values, edges, histogram_patches

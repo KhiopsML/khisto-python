@@ -17,11 +17,7 @@ try:
     __version__ = version("khisto")
 except PackageNotFoundError:
     # Source checkout without install: read the repository's pyproject.toml.
-    # TODO : Remove on Python 3.10 EOL
-    try:
-        import tomllib
-    except ModuleNotFoundError:
-        import tomli as tomllib
+    import tomllib
 
     with open(Path(__file__).resolve().parents[2] / "pyproject.toml", "rb") as f:
         __version__ = tomllib.load(f)["project"]["version"]

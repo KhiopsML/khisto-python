@@ -5,7 +5,7 @@ description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
 license-files = ["LICENSE"]
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = ["numpy>=2.0"]
 authors = [
     {name = "Elouen Ginat", email = "elouen.ginat@orange.com"},
@@ -29,7 +29,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -59,7 +58,6 @@ test = [
     "pytest-xdist>=3.6",
     "pytest-cov>=6",
     "pytest-sugar>=1.0",
-    "typing-extensions>=4.0; python_version < '3.11'",
 ]
 lint = [
     "pre-commit>=4.1",
@@ -81,7 +79,6 @@ dev = [
     {include-group = "test"},
     {include-group = "lint"},
     {include-group = "docs"},
-    "tomli>=2.0.0; python_version < '3.11'" # TODO : Remove on Python 3.10 EOL
 ]
 
 [build-system]
@@ -131,7 +128,7 @@ ignore = [
 
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}" # Reuse CMake and Ninja artifacts across uv sync runs
-wheel.py-api = "py3"             # We specify full compatibility with all Python 3 releases
+wheel.py-api = "py3"             # Interpreter-independent wheel; requires-python sets the minimum
 cmake.version = "CMakeLists.txt" # Read CMake minimal version from file
 
 # CMake variables
@@ -153,7 +150,7 @@ provider = "scikit_build_core.metadata.regex"
 input = "src/khisto/__init__.py"
 
 [tool.cibuildwheel]
-build = "cp310-*"
+build = "cp311-*"
 skip = "*musllinux*"       # Khiops does not compile when using musl as the C standard library
 archs = "auto64"           # Do not build 32-bit wheels
 

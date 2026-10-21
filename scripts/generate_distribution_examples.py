@@ -32,7 +32,7 @@ def generate_pareto_data(
 
 def save_gaussian_figure(data: np.ndarray, output_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="steelblue", edgecolor="white", linewidth=0.8)
+    hist(data, density=True, ax=ax, color="steelblue", linewidth=0.8)
     ax.set_title("Adaptive histogram on a standard Gaussian")
     ax.set_xlabel("Value")
     ax.set_ylabel("Density")
@@ -123,7 +123,7 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
 
 def save_pareto_figure(data: np.ndarray, output_path: Path) -> None:
     fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="darkorange", edgecolor="white", linewidth=0.8)
+    hist(data, density=True, ax=ax, color="darkorange", linewidth=0.8)
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_title("Adaptive histogram on a heavy-tailed Pareto law")

@@ -58,6 +58,7 @@ autodoc_default_options = {
     "special-members": False,
 }
 
+# Give Sphinx a readable public path for hist: khisto.matplotlib.hist.
 _runtime_hist = khisto.matplotlib.hist
 
 

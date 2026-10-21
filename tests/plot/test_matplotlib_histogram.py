@@ -4,12 +4,8 @@
 
 """Tests for matplotlib histogram plotting."""
 
-import sys
-
-if sys.version_info >= (3, 11):
-    from typing import assert_type
-else:
-    from typing_extensions import assert_type
+import builtins
+from typing import assert_type
 
 import numpy as np
 import pytest
@@ -28,6 +24,34 @@ def close_figures():
     """Close every figure, including when a test fails."""
     yield
     plt.close("all")
+
+
+def test_missing_matplotlib_reports_install_extra(monkeypatch):
+    """Test that plotting without Matplotlib explains how to install it."""
+    monkeypatch.setattr("importlib.util.find_spec", lambda name: None)
+
+    with pytest.raises(ImportError, match=r'pip install "khisto\[matplotlib\]"'):
+        hist([1.0, 2.0, 3.0])
+
+
+def test_matplotlib_dependency_import_error_is_preserved(monkeypatch):
+    """Test that broken Matplotlib dependencies retain their original error."""
+    original_import = builtins.__import__
+    expected_error = ModuleNotFoundError(
+        "No module named 'matplotlib_dependency'", name="matplotlib_dependency"
+    )
+
+    def import_without_dependency(name, *args, **kwargs):
+        if name == "matplotlib.pyplot":
+            raise expected_error
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", import_without_dependency)
+
+    with pytest.raises(ModuleNotFoundError) as excinfo:
+        hist([1.0, 2.0, 3.0])
+
+    assert excinfo.value is expected_error
 
 
 class TestHistBasic:
@@ -136,27 +160,49 @@ class TestHistBasic:
 
         assert patches is not None
 
-    def test_bar_edges_match_face_color_by_default(self, normal_data):
-        """Test that default bar edges reveal narrow adaptive bins."""
+    @pytest.mark.parametrize(
+        "alpha, expected_edge_alpha",
+        [(None, 0.5), (0.5, 0.5), (0.0, 0.0), (1.0, 1.0)],
+    )
+    def test_bar_edges_match_face_rgb_with_default_opacity(
+        self, normal_data, alpha, expected_edge_alpha
+    ):
+        """Test default edge opacity and explicit histogram alpha overrides."""
         _fig, ax = plt.subplots()
-        _, _, patches = hist(normal_data, color="tab:blue", alpha=0.5, ax=ax)
+        _, _, patches = hist(normal_data, color="tab:blue", alpha=alpha, ax=ax)
 
         for patch in patches.patches:
-            assert patch.get_edgecolor() == patch.get_facecolor()
+            assert patch.get_edgecolor()[:3] == patch.get_facecolor()[:3]
+            assert patch.get_edgecolor()[3] == pytest.approx(expected_edge_alpha)
+            assert patch.get_facecolor()[3] == pytest.approx(
+                1.0 if alpha is None else alpha
+            )
+            assert patch.get_alpha() == alpha
 
     @pytest.mark.parametrize("edgecolor_keyword", ["edgecolor", "ec"])
-    def test_explicit_bar_edge_style_is_preserved(self, normal_data, edgecolor_keyword):
+    @pytest.mark.parametrize(
+        "edgecolor, expected_rgba",
+        [
+            ("red", (1.0, 0.0, 0.0, 1.0)),
+            ("none", (0.0, 0.0, 0.0, 0.0)),
+            ((0.1, 0.2, 0.3, 0.4), (0.1, 0.2, 0.3, 0.4)),
+        ],
+    )
+    def test_explicit_bar_edge_style_is_preserved(
+        self, normal_data, edgecolor_keyword, edgecolor, expected_rgba
+    ):
         """Test that explicit edge styling aliases override the khisto default."""
         _fig, ax = plt.subplots()
         _, _, patches = hist(
             normal_data,
             linewidth=2.0,
             ax=ax,
-            **{edgecolor_keyword: "red"},
+            **{edgecolor_keyword: edgecolor},
         )
 
         for patch in patches.patches:
-            assert patch.get_edgecolor() == (1.0, 0.0, 0.0, 1.0)
+            # Matplotlib returns edge colors as RGBA, including their opacity.
+            assert patch.get_edgecolor() == expected_rgba
             assert patch.get_linewidth() == 2.0
 
     def test_step_histtype(self, normal_data):
