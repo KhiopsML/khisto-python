@@ -5,7 +5,7 @@
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="index" title="Index" href="genindex.html"><link rel="search" title="Search" href="search.html"><link rel="next" title="Counts vs Density" href="counts_vs_density.html"><link rel="prev" title="khisto.core.HistogramResult" href="core/generated/khisto.core.HistogramResult.html">
 
-    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+    <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
         <title>Khisto — optimal binning histograms - khisto-python 1.0.2</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?v=7bdb33bb" />
@@ -276,7 +276,7 @@
         <article role="main" id="furo-main-content">
           <section id="Khisto-—-optimal-binning-histograms">
 <h1>Khisto — optimal binning histograms<a class="headerlink" href="#Khisto-—-optimal-binning-histograms" title="Link to this heading">¶</a></h1>
-<p>Khisto uses the <strong>Khiops optimal binning algorithm</strong> to choose both the number and width of bins. This notebook introduces its plotting API with quick examples.</p>
+<p>Khisto uses the <strong>Khiops optimal binning algorithm</strong> to choose both the number and width of bins. This notebook introduces its plotting API with basic examples.</p>
 <blockquote>
 <div><p>New to variable-width histograms? Read the <a class="reference internal" href="counts_vs_density.html"><span class="doc">counts vs density tutorial</span></a> to learn how to interpret them.</p>
 </div></blockquote>
@@ -304,7 +304,7 @@
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">gaussian</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">))</span>
-<span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">gaussian</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"steelblue"</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">gaussian</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Adaptive histogram on a standard Gaussian"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Value"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">"Density"</span><span class="p">)</span>
@@ -331,7 +331,7 @@
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pareto</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">SEED</span><span class="p">)</span><span class="o">.</span><span class="n">pareto</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">10000</span><span class="p">)</span> <span class="o">+</span> <span class="mf">1.0</span>  <span class="c1"># shift to start at 1 for log axes</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">7</span><span class="p">,</span> <span class="mf">4.5</span><span class="p">))</span>
-<span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">pareto</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"darkorange"</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">pareto</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"darkorange"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"log"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">"log"</span><span class="p">)</span>
 <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">"Adaptive histogram on a heavy-tailed Pareto law"</span><span class="p">)</span>
@@ -439,7 +439,7 @@ Shape: a broad bell, a sharp spike near 3, and a long lognormal tail.
 <span class="n">matplotlib_ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"symlog"</span><span class="p">)</span>
 <span class="n">matplotlib_ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s2">"log"</span><span class="p">)</span>
 
-<span class="n">khisto_density</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">khisto_ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"steelblue"</span><span class="p">,</span> <span class="n">edgecolor</span><span class="o">=</span><span class="s2">"white"</span><span class="p">)</span>
+<span class="n">khisto_density</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">khisto</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">khisto_ax</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s2">"steelblue"</span><span class="p">)</span>
 <span class="n">khisto_ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Khisto: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">khisto_density</span><span class="p">)</span><span class="si">}</span><span class="s2"> adaptive bins"</span><span class="p">)</span>
 <span class="n">khisto_ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">"Value"</span><span class="p">)</span>
 <span class="n">khisto_ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s2">"symlog"</span><span class="p">)</span>
@@ -539,7 +539,7 @@ Bin edges: [-3.6484375  0.         4.         8.        16.        56.03125  ]
 <h3>Cumulative plots<a class="headerlink" href="#Cumulative-plots" title="Link to this heading">¶</a></h3>
 <p><code class="docutils literal notranslate"><span class="pre">khisto.matplotlib.hist</span></code> follows matplotlib’s <code class="docutils literal notranslate"><span class="pre">cumulative</span></code> semantics, including the cumulative density (CDF), raw cumulative counts, and reverse accumulation.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cumulative density (CDF) first — the most interpretable cumulative view</span>
@@ -553,7 +553,7 @@ Bin edges: [-3.6484375  0.         4.         8.        16.        56.03125  ]
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -649,6 +649,26 @@ Granularity levels:
 <li><p><strong>khisto.core.compute_histograms</strong> — full control over the granularity series, with <code class="docutils literal notranslate"><span class="pre">HistogramResult</span></code> exposing counts, probabilities and densities.</p></li>
 </ol>
 <p>To go further, <a class="reference external" href="https://khiops.org/learn/histograms/">Histograms - Khiops</a> builds the intuition from the simplest histogram to the most complex.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">))</span> <span class="o">+</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]</span> <span class="o">*</span> <span class="mi">11</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">khisto.matplotlib.hist</span><span class="w"> </span><span class="kn">import</span> <span class="n">hist</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/demo_24_0.png" src="_images/demo_24_0.png" />
+</div>
+</div>
 </section>
 </section>
 
