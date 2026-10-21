@@ -59,11 +59,9 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
         colors = ["darkorange" if edge >= 30 else "steelblue" for edge in edges[:-1]]
         count_bars = axes[0, column].bar(
             edges[:-1], counts, width=widths, align="edge", color=colors,
-            edgecolor="white",
         )
         density_bars = axes[1, column].bar(
             edges[:-1], densities, width=widths, align="edge", color=colors,
-            edgecolor="white",
         )
         axes[0, column].bar_label(count_bars, labels=[str(count) for count in counts], padding=3)
         axes[1, column].bar_label(
