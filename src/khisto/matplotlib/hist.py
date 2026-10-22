@@ -6,8 +6,7 @@
 
 from __future__ import annotations
 
-import importlib.util
-from typing import TYPE_CHECKING, Any, Literal, overload
+from typing import TYPE_CHECKING, Any, Literal, cast, overload
 
 import numpy as np
 
@@ -127,15 +126,15 @@ def hist(
     matplotlib.pyplot.hist : Matplotlib's histogram function.
     khisto.histogram : Underlying histogram computation.
     """
-    if importlib.util.find_spec("matplotlib") is None:
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.colors import to_rgba
+        from matplotlib.container import BarContainer
+        from matplotlib.patches import Polygon
+    except ImportError as exc:
         raise ImportError(
-            'Plotting requires Matplotlib. Install it with: pip install "khisto[matplotlib]"'
-        )
-
-    import matplotlib.pyplot as plt
-    from matplotlib.colors import to_rgba
-    from matplotlib.container import BarContainer
-    from matplotlib.patches import Polygon
+            "Plotting requires Matplotlib. Install it with: pip install 'khisto[matplotlib]'"
+        ) from exc
 
     unsupported_kwargs = {
         "bins": "Use max_bins to limit the number of bins.",
@@ -181,12 +180,13 @@ def hist(
     if isinstance(patches, BarContainer):
         histogram_patches: BarContainer | list[Polygon] = patches
     elif isinstance(patches, list):
-        histogram_patches = [patch for patch in patches if isinstance(patch, Polygon)]
-        if len(histogram_patches) != len(patches):
-            raise TypeError(
-                "Matplotlib returned unexpected histogram patches. "
-                "The patches should all be of type Polygon."
-            )
+        for patch in patches:
+            if not isinstance(patch, Polygon):
+                raise TypeError(
+                    "Matplotlib returned unexpected histogram patches. "
+                    "The patches should all be of type Polygon."
+                )
+        histogram_patches = cast(list[Polygon], patches)
     else:
         raise TypeError(
             "Matplotlib returned unexpected histogram patches of type "

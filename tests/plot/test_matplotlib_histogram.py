@@ -28,14 +28,27 @@ def close_figures():
 
 def test_missing_matplotlib_reports_install_extra(monkeypatch):
     """Test that plotting without Matplotlib explains how to install it."""
-    monkeypatch.setattr("importlib.util.find_spec", lambda name: None)
+    original_import = builtins.__import__
+    missing_matplotlib = ModuleNotFoundError(
+        "No module named 'matplotlib'", name="matplotlib"
+    )
 
-    with pytest.raises(ImportError, match=r'pip install "khisto\[matplotlib\]"'):
+    def import_without_matplotlib(name, *args, **kwargs):
+        if name == "matplotlib.pyplot":
+            raise missing_matplotlib
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", import_without_matplotlib)
+
+    with pytest.raises(
+        ImportError, match=r"pip install 'khisto\[matplotlib\]'"
+    ) as excinfo:
         hist([1.0, 2.0, 3.0])
+    assert excinfo.value.__cause__ is missing_matplotlib
 
 
-def test_matplotlib_dependency_import_error_is_preserved(monkeypatch):
-    """Test that broken Matplotlib dependencies retain their original error."""
+def test_matplotlib_dependency_import_error_is_chained(monkeypatch):
+    """Test that broken Matplotlib dependencies remain available as the cause."""
     original_import = builtins.__import__
     expected_error = ModuleNotFoundError(
         "No module named 'matplotlib_dependency'", name="matplotlib_dependency"
@@ -48,10 +61,10 @@ def test_matplotlib_dependency_import_error_is_preserved(monkeypatch):
 
     monkeypatch.setattr(builtins, "__import__", import_without_dependency)
 
-    with pytest.raises(ModuleNotFoundError) as excinfo:
+    with pytest.raises(ImportError, match=r"Plotting requires Matplotlib") as excinfo:
         hist([1.0, 2.0, 3.0])
 
-    assert excinfo.value is expected_error
+    assert excinfo.value.__cause__ is expected_error
 
 
 class TestHistBasic:
@@ -211,6 +224,7 @@ class TestHistBasic:
         n, _, patches = hist(normal_data, histtype="step", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        # assert_type checks static inference; isinstance checks runtime values.
         assert_type(patches, list[Polygon])
         assert all(isinstance(patch, Polygon) for patch in patches)
 
@@ -220,6 +234,7 @@ class TestHistBasic:
         n, _, patches = hist(normal_data, histtype="stepfilled", ax=ax)
 
         assert isinstance(n, np.ndarray)
+        # assert_type checks static inference; isinstance checks runtime values.
         assert_type(patches, list[Polygon])
         assert all(isinstance(patch, Polygon) for patch in patches)
 
@@ -283,6 +298,7 @@ class TestHistReturnValues:
         n, bins, patches = result
         assert isinstance(n, np.ndarray)
         assert isinstance(bins, np.ndarray)
+        # assert_type checks static inference; isinstance checks runtime values.
         assert_type(patches, BarContainer)
         assert isinstance(patches, BarContainer)
 
