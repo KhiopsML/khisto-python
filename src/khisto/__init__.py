@@ -4,35 +4,30 @@
 
 import logging
 import os
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
 KHISTO_BIN_DIR = os.environ.get("KHISTO_BIN_DIR", "khisto")
 
-if (ROOT_DIR / "pyproject.toml").exists():
-    # Development mode: package not installed; pyproject.toml present
-    # TODO : Remove on Python 3.10 EOL
-    try:
-        import tomllib as tomli
-    except ModuleNotFoundError:
-        import tomli
-
-    with open(ROOT_DIR / "pyproject.toml", "rt") as f:
-        __version__ = tomli.load(f)["project"]["version"]
-else:
-    # User mode: package installed; pyproject.toml not directly accessible
-    from importlib.metadata import version
-
+# Metadata first: a pyproject.toml check broke installs with a stray one in site-packages.
+try:
     __version__ = version("khisto")
+except PackageNotFoundError:
+    # Source checkout without install: read the repository's pyproject.toml.
+    import tomllib
+
+    with open(Path(__file__).resolve().parents[2] / "pyproject.toml", "rb") as f:
+        __version__ = tomllib.load(f)["project"]["version"]
 
 from .core import HistogramResult
 from .histogram import histogram
+from .matplotlib import hist
 
 __all__ = [
     "HistogramResult",
+    "hist",
     "histogram",
 ]

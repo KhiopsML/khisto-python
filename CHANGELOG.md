@@ -2,6 +2,25 @@
 
 All notable changes to Khisto are documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Require Python 3.11 or newer, dropping support for Python 3.10 after its end of life.
+
+### Fixed
+
+- Make very narrow adaptive histogram bins visible by drawing, by default, bar edges in the
+  same color as their fill with alpha 0.5. Explicit histogram alpha and edge styling
+  are preserved.
+- Prevent incorrect histogram frequencies in `hist()` for extreme finite values, including
+  values above `1e100` and below `-1e100`, by reusing the frequencies computed by Khisto.
+- Prevent `import khisto` from failing when an unrelated `pyproject.toml` is
+  present in `site-packages` in a virtual environment.
+- Reject `histtype="barstacked"` in `hist()`, which is not supported because
+  Khisto accepts only one dataset at a time.
+- Explain how to install the Matplotlib extra when plotting without Matplotlib installed.
+
 ## [1.0.2] - 2026-09-15
 
 ### Added
