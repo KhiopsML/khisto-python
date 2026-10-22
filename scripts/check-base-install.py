@@ -25,7 +25,7 @@ assert len(edges) == len(counts) + 1
 try:
     khisto.hist(np.array([1.0, 2.0, 3.0]))
 except ImportError as exc:
-    assert 'pip install "khisto[matplotlib]"' in str(exc)
+    assert "pip install 'khisto[matplotlib]'" in str(exc)
 else:
     raise AssertionError("Plotting without Matplotlib should raise ImportError.")
 
