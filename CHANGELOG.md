@@ -4,6 +4,8 @@ All notable changes to Khisto are documented in this file.
 
 ## Unreleased
 
+## [1.0.3] - 2026-10-22
+
 ### Changed
 
 - Require Python 3.11 or newer, dropping support for Python 3.10 after its end of life.
@@ -59,5 +61,6 @@ First stable release.
 - Prebuilt wheels for Linux, macOS, and Windows.
 - Public API documentation and usage examples.
 
+[1.0.3]: https://github.com/KhiopsML/khisto-python/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/KhiopsML/khisto-python/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/KhiopsML/khisto-python/compare/v1.0.0...v1.0.1
