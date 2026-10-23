@@ -51,7 +51,7 @@ jobs:
           DIGEST: ghcr.io/pypa/gh-action-pypi-publish@sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc
         run: |
           docker pull "$DIGEST"
-          docker run --rm --entrypoint python -e SSL_CERT_FILE -e SSL_CERT_DIR -e REQUESTS_CA_BUNDLE -v "$PWD/scripts:/checks:ro" "$DIGEST" /checks/check-tls-tools.py certifi sigstore system
+          docker run --rm --entrypoint python -e SSL_CERT_FILE -e SSL_CERT_DIR -e REQUESTS_CA_BUNDLE -v "$PWD/scripts:/checks:ro" "$DIGEST" /checks/check-tls-tools.py certifi sigstore default
 
   build-wheel:
     name: Build wheel

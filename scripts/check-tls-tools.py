@@ -55,12 +55,12 @@ def check_certificates() -> None:
 def main() -> None:
     """Controle les outils effectivement utilises par le job appelant."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("packages", nargs="+", choices=[*MINIMUM_VERSIONS, "system"])
+    parser.add_argument("packages", nargs="+", choices=[*MINIMUM_VERSIONS, "default"])
     arguments = parser.parse_args()
     for name in arguments.packages:
-        if name == "system":
+        if name == "default":
             check_context(ssl.create_default_context())
-            print(f"System CA paths: {ssl.get_default_verify_paths()}")
+            print(f"Default CA paths: {ssl.get_default_verify_paths()}")
             continue
         if name == "uv":
             installed = subprocess.check_output(

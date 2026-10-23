@@ -79,6 +79,8 @@ See the [Python packaging advisory](https://discuss.python.org/t/109576).
 
 CI bootstraps pip with patched uv, disables dependency caches, and installs
 development dependencies from the committed lockfile with `uv sync --frozen`.
+It updates Linux system certificates, distrusts the compromised root on Windows
+and macOS, and configures an explicit patched CA bundle for Python, Git, and curl.
 Wheel builds use cibuildwheel 4.3.4 with post-incident, digest-pinned Linux
 images. The jobs verify the active TLS clients, test the wheel files themselves,
 and check the publisher image's certifi and sigstore before Trusted Publishing

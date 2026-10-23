@@ -17,6 +17,39 @@ runs:
       run: |
         sudo apt-get update
         sudo apt-get install -y --only-upgrade ca-certificates
+    - name: Distrust the compromised Windows root
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $certificates = @(Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root |
+          Where-Object { $_.GetNameInfo('SimpleName', $false) -eq 'emSign ECC Root CA - G3' })
+        foreach ($certificate in $certificates) {
+          Write-Host "Distrusting emSign ECC Root CA - G3: $($certificate.Thumbprint)"
+          $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('Disallowed', 'LocalMachine')
+          try {
+            $store.Open('ReadWrite')
+            $store.Add($certificate)
+          } finally {
+            $store.Close()
+          }
+          Remove-Item -LiteralPath $certificate.PSPath -Force
+        }
+        Write-Host "Removed $($certificates.Count) compromised root entries"
+    - name: Distrust the compromised macOS root
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        certificate="$RUNNER_TEMP/emsign-g3.pem"
+        if security find-certificate -c "emSign ECC Root CA - G3" -p /System/Library/Keychains/SystemRootCertificates.keychain > "$certificate"; then
+          openssl x509 -in "$certificate" -noout -subject -fingerprint -sha256
+          sudo security add-trusted-cert -d -r deny -k /Library/Keychains/System.keychain "$certificate"
+        else
+          status=$?
+          if [ "$status" -ne 44 ]; then
+            exit "$status"
+          fi
+          echo "emSign ECC Root CA - G3 is already absent from the macOS system roots"
+        fi
     - uses: actions/setup-python@v5
       id: python
       with:
@@ -30,12 +63,16 @@ runs:
       shell: bash
       run: |
         uv --no-cache pip install --system --python python "pip==26.2.2" "certifi==2026.10.19"
-        python scripts/check-tls-tools.py uv pip certifi system
+        export SSL_CERT_FILE="$(python -c 'import certifi, pathlib, sys; sys.stdout.write(pathlib.Path(certifi.where()).as_posix())')"
+        export SSL_CERT_DIR="$(dirname "$SSL_CERT_FILE")"
+        export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
+        export CURL_CA_BUNDLE="$SSL_CERT_FILE"
+        export GIT_SSL_CAINFO="$SSL_CERT_FILE"
+        python scripts/check-tls-tools.py uv pip certifi default
         python - <<'PY'
         import os
-        import certifi
 
         with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
-            for name in ("SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"):
-                environment.write(f"{name}={certifi.where()}\n")
+            for name in ("SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"):
+                environment.write(f"{name}={os.environ[name]}\n")
         PY
