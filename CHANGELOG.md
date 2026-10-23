@@ -4,6 +4,17 @@ All notable changes to Khisto are documented in this file.
 
 ## Unreleased
 
+### Fixed
+
+- Convert date-like inputs and registered Matplotlib units before binning in
+  `hist()`, preserving axis formatting and unit-aware range bounds.
+
+### Changed
+
+- Replace the landing page's Gaussian and Pareto plots with a before/after
+  comparison on heavy-tailed Lévy data and real California Housing ages,
+  stored locally so figure generation works offline without scikit-learn.
+
 ## [1.0.3] - 2026-10-22
 
 ### Changed

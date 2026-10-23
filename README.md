@@ -12,9 +12,7 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 
 Documentation is available at **[khiopsml.github.io/khisto-python](https://khiopsml.github.io/khisto-python/)**.
 
-| Standard Gaussian | Heavy-tailed Pareto |
-| --- | --- |
-| ![Adaptive Gaussian histogram](https://khiopsml.github.io/khisto-python/_images/gaussian-quick-start.png) | ![Adaptive Pareto histogram](https://khiopsml.github.io/khisto-python/_images/pareto-quick-start.png) |
+![BEFORE: equal-width binning artifacts. AFTER: Khisto reveals Lévy and California Housing age distributions automatically.](https://khiopsml.github.io/khisto-python/_images/binning-comparison.png)
 
 ## Installation
 
