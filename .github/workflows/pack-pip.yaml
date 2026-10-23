@@ -39,16 +39,19 @@ jobs:
   check-publisher:
     name: Check publisher TLS clients
     runs-on: ubuntu-latest
+    env:
+      # Do not supplement the patched bundle with the image's older system roots.
+      SSL_CERT_FILE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
+      SSL_CERT_DIR: /root/.local/lib/python3.13/site-packages/certifi
+      REQUESTS_CA_BUNDLE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
     steps:
       - uses: actions/checkout@v6
       - name: Verify the audited publisher image and its active TLS clients
         env:
-          IMAGE: ghcr.io/pypa/gh-action-pypi-publish:7245906fb61fa33a13554f9d5fb856fe61758086
           DIGEST: ghcr.io/pypa/gh-action-pypi-publish@sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc
         run: |
-          docker pull "$IMAGE"
-          test "$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE")" = "$DIGEST"
-          docker run --rm --entrypoint python -v "$PWD/scripts:/checks:ro" "$DIGEST" /checks/check-tls-tools.py certifi sigstore system
+          docker pull "$DIGEST"
+          docker run --rm --entrypoint python -e SSL_CERT_FILE -e SSL_CERT_DIR -e REQUESTS_CA_BUNDLE -v "$PWD/scripts:/checks:ro" "$DIGEST" /checks/check-tls-tools.py certifi sigstore system
 
   build-wheel:
     name: Build wheel
@@ -95,7 +98,7 @@ jobs:
         run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
       - name: Install wheel package for signing
         if: env.SIGN_X64_WHEEL == 'true'
-        run: uv pip install --python python wheel
+        run: uv pip install --system --python python wheel
       - name: Unpack khisto wheel
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
@@ -134,6 +137,10 @@ jobs:
     name: Publish to Test.PyPI.org
     needs: [build-wheel, check-publisher]
     runs-on: ubuntu-latest
+    env:
+      SSL_CERT_FILE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
+      SSL_CERT_DIR: /root/.local/lib/python3.13/site-packages/certifi
+      REQUESTS_CA_BUNDLE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
     permissions:
       id-token: write
     environment:
@@ -144,11 +151,18 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-        with:
-          verbose: true
-          repository-url: https://test.pypi.org/legacy/
-          attestations: true
+      # Use exactly the official image inspected by check-publisher.
+      - uses: docker://ghcr.io/pypa/gh-action-pypi-publish@sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc
+        env:
+          INPUT_USER: __token__
+          INPUT_PASSWORD: ''
+          INPUT_REPOSITORY_URL: https://test.pypi.org/legacy/
+          INPUT_PACKAGES_DIR: dist
+          INPUT_VERIFY_METADATA: 'true'
+          INPUT_SKIP_EXISTING: 'false'
+          INPUT_VERBOSE: 'true'
+          INPUT_PRINT_HASH: 'true'
+          INPUT_ATTESTATIONS: 'true'
 
   release-pypi:
     # Publish only on tag pushes in the KhiopsML repository
@@ -156,6 +170,10 @@ jobs:
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'pypi'
     needs: [build-wheel, check-publisher]
     runs-on: ubuntu-latest
+    env:
+      SSL_CERT_FILE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
+      SSL_CERT_DIR: /root/.local/lib/python3.13/site-packages/certifi
+      REQUESTS_CA_BUNDLE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
     permissions:
       id-token: write
     environment:
@@ -166,7 +184,14 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
-        with:
-          verbose: true
-          attestations: true
+      - uses: docker://ghcr.io/pypa/gh-action-pypi-publish@sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc
+        env:
+          INPUT_USER: __token__
+          INPUT_PASSWORD: ''
+          INPUT_REPOSITORY_URL: https://upload.pypi.org/legacy/
+          INPUT_PACKAGES_DIR: dist
+          INPUT_VERIFY_METADATA: 'true'
+          INPUT_SKIP_EXISTING: 'false'
+          INPUT_VERBOSE: 'true'
+          INPUT_PRINT_HASH: 'true'
+          INPUT_ATTESTATIONS: 'true'

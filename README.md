@@ -82,7 +82,10 @@ development dependencies from the committed lockfile with `uv sync --frozen`.
 Wheel builds use cibuildwheel 4.3.4 with post-incident, digest-pinned Linux
 images. The jobs verify the active TLS clients, test the wheel files themselves,
 and check the publisher image's certifi and sigstore before Trusted Publishing
-with attestations.
+with attestations. Publishing explicitly restricts Python's default trust store
+to the patched certifi bundle instead of supplementing it with older image roots.
+The official publisher image is invoked directly by digest so the inspected
+image and the image receiving the publishing identity are identical.
 
 For a recovery release, use a fresh checkout and hosted runners, do not restore
 old build artifacts or container layers, and publish a new version: PyPI does

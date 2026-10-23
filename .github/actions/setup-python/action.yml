@@ -29,7 +29,7 @@ runs:
     - name: Bootstrap patched pip and certificates using patched uv
       shell: bash
       run: |
-        uv --no-cache pip install --python python "pip==26.2.2" "certifi==2026.10.19"
+        uv --no-cache pip install --system --python python "pip==26.2.2" "certifi==2026.10.19"
         python scripts/check-tls-tools.py uv pip certifi system
         python - <<'PY'
         import os
