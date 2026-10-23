@@ -21,20 +21,24 @@ runs:
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $certificates = @(Get-ChildItem Cert:\LocalMachine\Root, Cert:\CurrentUser\Root |
-          Where-Object { $_.GetNameInfo('SimpleName', $false) -eq 'emSign ECC Root CA - G3' })
-        foreach ($certificate in $certificates) {
-          Write-Host "Distrusting emSign ECC Root CA - G3: $($certificate.Thumbprint)"
-          $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('Disallowed', 'LocalMachine')
-          try {
-            $store.Open('ReadWrite')
-            $store.Add($certificate)
-          } finally {
-            $store.Close()
+        $removed = 0
+        foreach ($path in 'Cert:\LocalMachine\Root', 'Cert:\LocalMachine\CA', 'Cert:\CurrentUser\Root', 'Cert:\CurrentUser\CA') {
+          $certificates = @(Get-ChildItem -LiteralPath $path |
+            Where-Object { $_.GetNameInfo('SimpleName', $false) -eq 'emSign ECC Root CA - G3' })
+          foreach ($certificate in $certificates) {
+            Write-Host "Distrusting emSign ECC Root CA - G3: $($certificate.Thumbprint)"
+            $store = [System.Security.Cryptography.X509Certificates.X509Store]::new('Disallowed', 'LocalMachine')
+            try {
+              $store.Open('ReadWrite')
+              $store.Add($certificate)
+            } finally {
+              $store.Close()
+            }
+            Remove-Item -LiteralPath $certificate.PSPath -Force
+            $removed++
           }
-          Remove-Item -LiteralPath $certificate.PSPath -Force
         }
-        Write-Host "Removed $($certificates.Count) compromised root entries"
+        Write-Host "Removed $removed compromised root entries"
     - name: Distrust the compromised macOS root
       if: runner.os == 'macOS'
       shell: bash

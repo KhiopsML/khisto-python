@@ -57,6 +57,7 @@ jobs:
     name: Build wheel
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-15]
     env:
