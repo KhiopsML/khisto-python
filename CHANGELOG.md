@@ -4,6 +4,17 @@ All notable changes to Khisto are documented in this file.
 
 ## Unreleased
 
+## [1.0.4] - 2026-10-23
+
+### Security
+
+- Rebuild the 1.0.3 application code after the emSign CA incident using patched
+  uv, pip, certifi, cibuildwheel, and post-incident Linux build images.
+- Disable dependency-cache reuse in CI and commit the dependency lockfile for
+  repeatable builds with patched certificate bundles.
+- Test the actual built wheels without replacing them with a source installation.
+  There is no demonstrated compromise of the 1.0.3 distributions.
+
 ## [1.0.3] - 2026-10-22
 
 ### Changed
@@ -61,6 +72,7 @@ First stable release.
 - Prebuilt wheels for Linux, macOS, and Windows.
 - Public API documentation and usage examples.
 
+[1.0.4]: https://github.com/KhiopsML/khisto-python/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/KhiopsML/khisto-python/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/KhiopsML/khisto-python/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/KhiopsML/khisto-python/compare/v1.0.0...v1.0.1

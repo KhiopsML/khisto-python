@@ -17,7 +17,9 @@ on:
   pull_request:
     paths:
       - .github/workflows/pack-pip.yaml
+      - .github/actions/setup-python/**
       - pyproject.toml
+      - uv.lock
       - CMakeLists.txt
 
 concurrency:
@@ -29,12 +31,15 @@ defaults:
     shell: bash
 env:
   KEYPAIR: KP_Khiops_HSM
+  UV_NO_CACHE: '1'
+  PIP_NO_CACHE_DIR: '1'
 
 jobs:
   build-wheel:
     name: Build wheel
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-15]
     env:
@@ -42,16 +47,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Set up UV
-        uses: astral-sh/setup-uv@v9.0.0
-        with:
-          enable-cache: true
-          version: "0.11.32"
+      - uses: ./.github/actions/setup-python
+        id: python
 
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
@@ -61,14 +58,17 @@ jobs:
           set >> %GITHUB_ENV%
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.1
+        uses: pypa/cibuildwheel@b9e566a2b284570af229f6c2a33673410d0389a3 # v4.3.4
+        with:
+          python-path: ${{ steps.python.outputs.python-path }}
 
       - name: Test built wheel
+        env:
+          UV_PROJECT_ENVIRONMENT: .test-env
         run: |
-          uv venv .test-env
-          uv pip install --python .test-env --find-links=wheelhouse "khisto[all]"
-          uv sync --python .test-env --group dev --no-install-project
-          uv run --python .test-env pytest tests/ --no-cov
+          uv sync --frozen --group dev --extra all --no-install-project
+          uv pip install --python .test-env wheelhouse/khisto-*.whl
+          uv run --no-sync pytest tests/ --no-cov
 
       # Windows wheels are unpackad, signed and repacked before uploading
       - name: Set SIGN_X64_WHEEL flag
@@ -79,7 +79,7 @@ jobs:
         run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
       - name: Install wheel package for signing
         if: env.SIGN_X64_WHEEL == 'true'
-        run: python -m pip install wheel
+        run: uv pip install --system --python python wheel
       - name: Unpack khisto wheel
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
@@ -118,6 +118,10 @@ jobs:
     name: Publish to Test.PyPI.org
     needs: [build-wheel]
     runs-on: ubuntu-latest
+    env:
+      SSL_CERT_FILE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
+      SSL_CERT_DIR: /root/.local/lib/python3.13/site-packages/certifi
+      REQUESTS_CA_BUNDLE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
     permissions:
       id-token: write
     environment:
@@ -128,10 +132,11 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
+          attestations: true
 
   release-pypi:
     # Publish only on tag pushes in the KhiopsML repository
@@ -139,6 +144,10 @@ jobs:
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'pypi'
     needs: [build-wheel]
     runs-on: ubuntu-latest
+    env:
+      SSL_CERT_FILE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
+      SSL_CERT_DIR: /root/.local/lib/python3.13/site-packages/certifi
+      REQUESTS_CA_BUNDLE: /root/.local/lib/python3.13/site-packages/certifi/cacert.pem
     permissions:
       id-token: write
     environment:
@@ -149,6 +158,7 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
+          attestations: true
