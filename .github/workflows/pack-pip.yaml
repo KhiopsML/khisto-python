@@ -17,7 +17,10 @@ on:
   pull_request:
     paths:
       - .github/workflows/pack-pip.yaml
+      - .github/actions/setup-python/**
+      - scripts/check-tls-tools.py
       - pyproject.toml
+      - uv.lock
       - CMakeLists.txt
 
 concurrency:
@@ -29,8 +32,24 @@ defaults:
     shell: bash
 env:
   KEYPAIR: KP_Khiops_HSM
+  UV_NO_CACHE: '1'
+  PIP_NO_CACHE_DIR: '1'
 
 jobs:
+  check-publisher:
+    name: Check publisher TLS clients
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verify the audited publisher image and its active TLS clients
+        env:
+          IMAGE: ghcr.io/pypa/gh-action-pypi-publish:7245906fb61fa33a13554f9d5fb856fe61758086
+          DIGEST: ghcr.io/pypa/gh-action-pypi-publish@sha256:411241df99067c98b6d08fd8e26d14e86740a22460599c2af571e6dc26e27ffc
+        run: |
+          docker pull "$IMAGE"
+          test "$(docker image inspect --format '{{index .RepoDigests 0}}' "$IMAGE")" = "$DIGEST"
+          docker run --rm --entrypoint python -v "$PWD/scripts:/checks:ro" "$DIGEST" /checks/check-tls-tools.py certifi sigstore system
+
   build-wheel:
     name: Build wheel
     runs-on: ${{ matrix.os }}
@@ -42,16 +61,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
-      - name: Set up UV
-        uses: astral-sh/setup-uv@v9.0.0
-        with:
-          enable-cache: true
-          version: "0.11.32"
+      - uses: ./.github/actions/setup-python
+        id: python
 
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
@@ -61,14 +72,19 @@ jobs:
           set >> %GITHUB_ENV%
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.1
+        uses: pypa/cibuildwheel@b9e566a2b284570af229f6c2a33673410d0389a3 # v4.3.4
+        with:
+          python-path: ${{ steps.python.outputs.python-path }}
 
       - name: Test built wheel
+        env:
+          UV_PROJECT_ENVIRONMENT: .test-env
         run: |
-          uv venv .test-env
-          uv pip install --python .test-env --find-links=wheelhouse "khisto[all]"
-          uv sync --python .test-env --group dev --no-install-project
-          uv run --python .test-env pytest tests/ --no-cov
+          uv sync --frozen --group dev --extra all --no-install-project
+          uv pip install --python .test-env wheelhouse/khisto-*.whl
+          uv run --no-sync python -c 'import khisto, tomllib; expected = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]; assert khisto.__version__ == expected; print(khisto.__version__, khisto.__file__)'
+          uv run --no-sync python scripts/check-tls-tools.py certifi
+          uv run --no-sync pytest tests/ --no-cov
 
       # Windows wheels are unpackad, signed and repacked before uploading
       - name: Set SIGN_X64_WHEEL flag
@@ -79,7 +95,7 @@ jobs:
         run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
       - name: Install wheel package for signing
         if: env.SIGN_X64_WHEEL == 'true'
-        run: python -m pip install wheel
+        run: uv pip install --python python wheel
       - name: Unpack khisto wheel
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
@@ -116,7 +132,7 @@ jobs:
     # Publish only on tag pushes in the KhiopsML repository
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'testpypi'
     name: Publish to Test.PyPI.org
-    needs: [build-wheel]
+    needs: [build-wheel, check-publisher]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -128,16 +144,17 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
+          attestations: true
 
   release-pypi:
     # Publish only on tag pushes in the KhiopsML repository
     name: Publish to PyPI.org
     if: github.ref_type == 'tag' && github.repository_owner == 'KhiopsML' && inputs.python_repository == 'pypi'
-    needs: [build-wheel]
+    needs: [build-wheel, check-publisher]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -149,6 +166,7 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
+          attestations: true

@@ -1,0 +1,41 @@
+name: Set up secure Python tooling
+description: Install patched TLS clients without reusing dependency caches
+inputs:
+  python-version:
+    description: Python version to install
+    default: '3.13'
+outputs:
+  python-path:
+    description: Path to the bootstrapped Python interpreter
+    value: ${{ steps.python.outputs.python-path }}
+runs:
+  using: composite
+  steps:
+    - name: Refresh Linux system certificates
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --only-upgrade ca-certificates
+    - uses: actions/setup-python@v5
+      id: python
+      with:
+        python-version: ${{ inputs.python-version }}
+        check-latest: true
+    - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+      with:
+        version: '0.13.5'
+        enable-cache: false
+    - name: Bootstrap patched pip and certificates using patched uv
+      shell: bash
+      run: |
+        uv --no-cache pip install --python python "pip==26.2.2" "certifi==2026.10.19"
+        python scripts/check-tls-tools.py uv pip certifi system
+        python - <<'PY'
+        import os
+        import certifi
+
+        with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
+            for name in ("SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"):
+                environment.write(f"{name}={certifi.where()}\n")
+        PY

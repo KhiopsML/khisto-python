@@ -13,6 +13,9 @@ on:
     paths:
       - docs/**
       - pyproject.toml
+      - uv.lock
+      - .github/actions/setup-python/**
+      - scripts/check-tls-tools.py
       - src/khisto/**/*.py
       - .github/workflows/docs.yaml
   push:
@@ -21,6 +24,9 @@ on:
 permissions:
   contents: read
   packages: read
+env:
+  UV_NO_CACHE: '1'
+  PIP_NO_CACHE_DIR: '1'
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest
 # queued. However, do NOT cancel in-progress runs as we want to allow these production deployments
 # to complete.
@@ -34,24 +40,16 @@ jobs:
     steps:
       - name: Checkout khisto-python
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-      - name: Set up UV
-        uses: astral-sh/setup-uv@v9.0.0
-        with:
-          enable-cache: true
-          version: "0.11.32"
+      - uses: ./.github/actions/setup-python
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
       - name: Install doc build requirements
         run: |
-          uv venv .build-env
-          uv sync
+          uv sync --frozen --group docs
+          uv run --frozen python scripts/check-tls-tools.py certifi
       - name: Build Sphinx Documentation
         run: |
-          . .build-env/bin/activate
-          uv run --active --directory docs make html
-          deactivate
+          uv run --frozen --directory docs make html
       - name: Upload the docs as an artifact
         uses: actions/upload-artifact@v4
         with:

@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "1.0.3"
+version = "1.0.4"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -85,6 +85,9 @@ dev = [
 requires = ["scikit-build-core>=0.11.6", "ninja"]
 build-backend = "scikit_build_core.build"
 
+[tool.uv]
+constraint-dependencies = ["certifi>=2026.10.19"]
+
 [tool.pytest.ini_options]
 addopts = "-n 4 --cov --cov-report term-missing --durations=10"
 testpaths = ["tests"]
@@ -153,10 +156,14 @@ input = "src/khisto/__init__.py"
 build = "cp311-*"
 skip = "*musllinux*"       # Khiops does not compile when using musl as the C standard library
 archs = "auto64"           # Do not build 32-bit wheels
+build-frontend = "build"
+before-build = "python {project}/scripts/check-tls-tools.py pip"
+environment = { PIP_NO_CACHE_DIR = "1", UV_NO_CACHE = "1" }
 
 # Install build-time dependencies in containers created by cibuildwheel
 # This is compatible with Debian-like and Fedora-like distributions
 [tool.cibuildwheel.linux]
 before-all = [
-    "apt-get install -y ninja-build || dnf install -y ninja-build"
+    "if command -v apt-get >/dev/null; then apt-get update && apt-get install -y ca-certificates ninja-build; else dnf update -y ca-certificates && dnf install -y ninja-build; fi",
+    "python {project}/scripts/check-tls-tools.py system"
 ]
