@@ -10,8 +10,8 @@ All notable changes to Khisto are documented in this file.
 
 - Rebuild the 1.0.3 application code after the emSign CA incident using patched
   uv, pip, certifi, cibuildwheel, and post-incident Linux build images.
-- Disable dependency-cache reuse in CI, commit the dependency lockfile, and
-  verify the effective build and publishing TLS clients before publication.
+- Disable dependency-cache reuse in CI and commit the dependency lockfile for
+  repeatable builds with patched certificate bundles.
 - Test the actual built wheels without replacing them with a source installation.
   There is no demonstrated compromise of the 1.0.3 distributions.
 

@@ -157,15 +157,13 @@ build = "cp311-*"
 skip = "*musllinux*"       # Khiops does not compile when using musl as the C standard library
 archs = "auto64"           # Do not build 32-bit wheels
 build-frontend = "build"
-before-build = "python {project}/scripts/check-tls-tools.py pip"
 environment = { PIP_NO_CACHE_DIR = "1", UV_NO_CACHE = "1" }
 
 # Install build-time dependencies in containers created by cibuildwheel
 # This is compatible with Debian-like and Fedora-like distributions
 [tool.cibuildwheel.linux]
 before-all = [
-    "if command -v apt-get >/dev/null; then apt-get update && apt-get install -y ca-certificates ninja-build; else dnf update -y ca-certificates && dnf install -y ninja-build; fi",
-    "python {project}/scripts/check-tls-tools.py default"
+    "if command -v apt-get >/dev/null; then apt-get update && apt-get install -y ca-certificates ninja-build; else dnf update -y ca-certificates && dnf install -y ninja-build; fi"
 ]
 
 [tool.cibuildwheel.linux.environment]

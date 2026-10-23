@@ -70,32 +70,6 @@ uv sync --group dev --extra all
 uv run pytest
 ```
 
-### Secure release builds
-
-After the October 2026 emSign CA incident, CI uses uv >=0.13.4, pip >=26.2.2,
-and certifi >=2026.10.19. A new virtual environment alone is not sufficient:
-its installer and build-container certificate bundles must also be patched.
-See the [Python packaging advisory](https://discuss.python.org/t/109576).
-
-CI bootstraps pip with patched uv, disables dependency caches, and installs
-development dependencies from the committed lockfile with `uv sync --frozen`.
-It updates Linux system certificates, distrusts the compromised root on Windows
-and macOS, and configures an explicit patched CA bundle for Python, Git, and curl.
-Wheel builds use cibuildwheel 4.3.4 with post-incident, digest-pinned Linux
-images. The jobs verify the active TLS clients, test the wheel files themselves,
-and check the publisher image's certifi and sigstore before Trusted Publishing
-with attestations. Publishing explicitly restricts Python's default trust store
-to the patched certifi bundle instead of supplementing it with older image roots.
-The official publisher image is invoked directly by digest so the inspected
-image and the image receiving the publishing identity are identical.
-
-For a recovery release, use a fresh checkout and hosted runners, do not restore
-old build artifacts or container layers, and publish a new version: PyPI does
-not allow replacing an existing filename. Verify all platform tests, PyPI file
-hashes and attestations, an uncached installation, and the deployed documentation
-version. These checks establish the new build's provenance; they do not prove
-that a previous build or a developer workstation was uncompromised.
-
 ## License
 
 [BSD 3-Clause Clear License](LICENSE)

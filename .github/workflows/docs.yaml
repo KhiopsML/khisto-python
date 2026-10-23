@@ -15,7 +15,6 @@ on:
       - pyproject.toml
       - uv.lock
       - .github/actions/setup-python/**
-      - scripts/check-tls-tools.py
       - src/khisto/**/*.py
       - .github/workflows/docs.yaml
   push:
@@ -44,12 +43,9 @@ jobs:
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
       - name: Install doc build requirements
-        run: |
-          uv sync --frozen --group docs
-          uv run --frozen python scripts/check-tls-tools.py certifi
+        run: uv sync --frozen --group docs
       - name: Build Sphinx Documentation
-        run: |
-          uv run --frozen --directory docs make html
+        run: uv run --frozen --directory docs make html
       - name: Upload the docs as an artifact
         uses: actions/upload-artifact@v4
         with:

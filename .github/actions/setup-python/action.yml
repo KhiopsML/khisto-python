@@ -67,16 +67,15 @@ runs:
       shell: bash
       run: |
         uv --no-cache pip install --system --python python "pip==26.2.2" "certifi==2026.10.19"
-        export SSL_CERT_FILE="$(python -c 'import certifi, pathlib, sys; sys.stdout.write(pathlib.Path(certifi.where()).as_posix())')"
-        export SSL_CERT_DIR="$(dirname "$SSL_CERT_FILE")"
-        export REQUESTS_CA_BUNDLE="$SSL_CERT_FILE"
-        export CURL_CA_BUNDLE="$SSL_CERT_FILE"
-        export GIT_SSL_CAINFO="$SSL_CERT_FILE"
-        python scripts/check-tls-tools.py uv pip certifi default
         python - <<'PY'
         import os
+        from pathlib import Path
 
+        import certifi
+
+        bundle = Path(certifi.where()).as_posix()
         with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as environment:
-            for name in ("SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"):
-                environment.write(f"{name}={os.environ[name]}\n")
+            for name in ("SSL_CERT_FILE", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE", "GIT_SSL_CAINFO"):
+                environment.write(f"{name}={bundle}\n")
+            environment.write(f"SSL_CERT_DIR={Path(bundle).parent.as_posix()}\n")
         PY
