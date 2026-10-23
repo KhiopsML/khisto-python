@@ -10,20 +10,9 @@ Khisto — Histograms that fit your data
    adaptive, variable-width bins powered by the Khisto algorithm.
    Dense regions get fine bins, sparse regions get wide ones — no tuning needed.
 
-.. grid:: 2
-   :gutter: 3
-
-   .. grid-item-card:: Standard Gaussian
-      :img-top: images/gaussian-quick-start.png
-
-      Bins concentrate around the interesting areas — exactly
-      matching the density of a normal distribution.
-
-   .. grid-item-card:: Heavy-tailed Pareto
-      :img-top: images/pareto-quick-start.png
-
-      Log-log axes reveal how adaptive bins track a power-law decay
-      over four orders of magnitude.
+.. image:: images/binning-comparison.png
+   :alt: BEFORE: equal-width bins crush the Lévy peak, produce a hedgehog tail, and create artificial spikes in integer house ages. AFTER: Khisto reveals both distributions automatically, with identical observations and scales.
+   :align: center
 
 Get started
 -----------

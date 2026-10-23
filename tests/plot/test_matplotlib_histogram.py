@@ -5,13 +5,18 @@
 """Tests for matplotlib histogram plotting."""
 
 import builtins
+from dataclasses import dataclass
+from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from typing import assert_type
 
 import numpy as np
 import pytest
 
 pytest.importorskip("matplotlib")
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.units as munits
 from matplotlib.container import BarContainer
 from matplotlib.patches import Polygon
 
@@ -278,6 +283,118 @@ class TestHistBasic:
 
         with pytest.raises(ValueError, match="barstacked.*not supported"):
             hist(normal_data, histtype="barstacked", ax=ax)
+
+
+class TestHistUnits:
+    """Test unit conversion before computing adaptive bins."""
+
+    @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+    @pytest.mark.parametrize("density", [False, True])
+    @pytest.mark.parametrize(
+        "kind", ["date", "datetime", "datetime64[D]", "datetime64[ns]"]
+    )
+    def test_dates_use_matplotlib_coordinates_and_formatting(
+        self, orientation, density, kind
+    ):
+        start = datetime(2026, 1, 1, tzinfo=UTC)
+        data = [start + timedelta(days=i) for i in range(60)]
+        if kind == "date":
+            data = [value.date() for value in data]
+        elif kind.startswith("datetime64"):
+            data = np.asarray([value.date() for value in data], dtype=kind)
+        expected, expected_bins = histogram(mdates.date2num(data), density=density)
+        _, ax = plt.subplots()
+
+        values, bins, _ = hist(data, ax=ax, density=density, orientation=orientation)
+
+        axis = ax.yaxis if orientation == "horizontal" else ax.xaxis
+        np.testing.assert_allclose(values, expected)
+        np.testing.assert_array_equal(bins, expected_bins)
+        assert isinstance(axis.get_major_locator(), mdates.AutoDateLocator)
+        assert isinstance(axis.get_major_formatter(), mdates.AutoDateFormatter)
+        ax.figure.canvas.draw()
+
+    @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+    @pytest.mark.parametrize("numeric_range", [False, True])
+    def test_date_range_uses_the_data_axis_units(self, orientation, numeric_range):
+        data = np.arange("2026-01-01", "2026-03-01", dtype="datetime64[D]")
+        bounds = (date(2026, 1, 10), date(2026, 2, 10))
+        converted_bounds = tuple(mdates.date2num(bounds))
+        expected, expected_bins = histogram(
+            mdates.date2num(data), range=converted_bounds, density=False
+        )
+        _, ax = plt.subplots()
+
+        values, bins, _ = hist(
+            data,
+            range=converted_bounds if numeric_range else bounds,
+            density=False,
+            orientation=orientation,
+            ax=ax,
+        )
+
+        np.testing.assert_array_equal(values, expected)
+        np.testing.assert_array_equal(bins, expected_bins)
+
+    def test_decimal_matches_float_input(self):
+        data = [Decimal(i) / 10 for i in range(100)]
+        expected, expected_bins = histogram(np.asarray(data, dtype=float))
+
+        values, bins, _ = hist(data)
+
+        np.testing.assert_allclose(values, expected)
+        np.testing.assert_array_equal(bins, expected_bins)
+
+    @pytest.fixture
+    def unit_value(self, monkeypatch):
+        @dataclass
+        class UnitValue:
+            magnitude: float
+
+        class Converter(munits.ConversionInterface):
+            @staticmethod
+            def default_units(values, axis):
+                return "m"
+
+            @staticmethod
+            def axisinfo(unit, axis):
+                return munits.AxisInfo(label=f"Distance ({unit})")
+
+            @staticmethod
+            def convert(values, unit, axis):
+                scale = 100 if unit == "cm" else 1
+                return np.asarray([value.magnitude for value in values]) * scale
+
+        monkeypatch.setitem(munits.registry, UnitValue, Converter())
+        return UnitValue
+
+    @pytest.mark.parametrize("orientation", ["vertical", "horizontal"])
+    @pytest.mark.parametrize("unit", ["m", "cm"])
+    def test_registered_units_and_overrides(self, unit_value, orientation, unit):
+        data = [unit_value(i) for i in range(100)]
+        scale = 100 if unit == "cm" else 1
+        expected, expected_bins = histogram(
+            np.arange(100) * scale, range=(10 * scale, 80 * scale), density=False
+        )
+        _, ax = plt.subplots()
+        axis_name = "y" if orientation == "horizontal" else "x"
+        unit_kwargs = {f"{axis_name}units": unit} if unit == "cm" else {}
+
+        values, bins, _ = hist(
+            data,
+            range=(unit_value(10), unit_value(80)),
+            density=False,
+            orientation=orientation,
+            ax=ax,
+            **unit_kwargs,
+        )
+
+        axis = ax.yaxis if orientation == "horizontal" else ax.xaxis
+        np.testing.assert_array_equal(values, expected)
+        np.testing.assert_array_equal(bins, expected_bins)
+        assert axis.get_units() == unit
+        assert axis.get_label_text() == f"Distance ({unit})"
+        ax.figure.canvas.draw()
 
 
 class TestHistReturnValues:
