@@ -156,20 +156,10 @@ input = "src/khisto/__init__.py"
 build = "cp311-*"
 skip = "*musllinux*"       # Khiops does not compile when using musl as the C standard library
 archs = "auto64"           # Do not build 32-bit wheels
-build-frontend = "build"
-environment = { PIP_NO_CACHE_DIR = "1", UV_NO_CACHE = "1" }
 
 # Install build-time dependencies in containers created by cibuildwheel
 # This is compatible with Debian-like and Fedora-like distributions
 [tool.cibuildwheel.linux]
 before-all = [
-    "if command -v apt-get >/dev/null; then apt-get update && apt-get install -y ca-certificates ninja-build; else dnf update -y ca-certificates && dnf install -y ninja-build; fi"
+    "apt-get install -y ninja-build || dnf install -y ninja-build"
 ]
-
-[tool.cibuildwheel.linux.environment]
-PIP_NO_CACHE_DIR = "1"
-UV_NO_CACHE = "1"
-SSL_CERT_FILE = "/etc/pki/tls/certs/ca-bundle.crt"
-SSL_CERT_DIR = "/etc/pki/tls/certs"
-REQUESTS_CA_BUNDLE = "/etc/pki/tls/certs/ca-bundle.crt"
-GIT_SSL_CAINFO = "/etc/pki/tls/certs/ca-bundle.crt"

@@ -13,8 +13,7 @@ on:
     paths:
       - docs/**
       - pyproject.toml
-      - uv.lock
-      - .github/actions/setup-python/**
+      - scripts/diagnose-emudhra.py
       - src/khisto/**/*.py
       - .github/workflows/docs.yaml
   push:
@@ -23,9 +22,6 @@ on:
 permissions:
   contents: read
   packages: read
-env:
-  UV_NO_CACHE: '1'
-  PIP_NO_CACHE_DIR: '1'
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest
 # queued. However, do NOT cancel in-progress runs as we want to allow these production deployments
 # to complete.
@@ -35,17 +31,28 @@ concurrency:
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout khisto-python
         uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-python
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: '3.13'
+          check-latest: true
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          enable-cache: false
+          version: "0.13.5"
+      - name: Diagnose runner TLS trust (eMudhra)
+        run: python scripts/diagnose-emudhra.py
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
       - name: Install doc build requirements
-        run: uv sync --frozen --group docs
+        run: uv sync --group docs
       - name: Build Sphinx Documentation
-        run: uv run --frozen --directory docs make html
+        run: uv run --directory docs make html
       - name: Upload the docs as an artifact
         uses: actions/upload-artifact@v4
         with:
@@ -58,7 +65,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action == 'closed' || needs.build.result == 'success')
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       pull-requests: write
@@ -82,7 +89,7 @@ jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
