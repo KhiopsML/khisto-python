@@ -46,7 +46,6 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v7.1.0
-        id: python
         with:
           python-version: '3.13'
           check-latest: true
@@ -69,8 +68,6 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.4
-        with:
-          python-path: ${{ steps.python.outputs.python-path }}
 
       - name: Test built wheel
         env:
