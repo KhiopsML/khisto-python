@@ -8,17 +8,8 @@ All notable changes to Khisto are documented in this file.
 
 ### Security
 
-- Rebuild the 1.0.3 application code after the emSign CA incident using patched
-  uv, pip, certifi, cibuildwheel, and post-incident Linux build images.
-- Use uv-managed Python for tests and documentation, and the official
-  cibuildwheel action for multiplatform wheels on standard GitHub-hosted runners.
-- Block CI if the package client actually used cannot be identified or predates
-  the eMudhra fix: uv 0.13.4 for repository steps, pip 26.2.2 inside wheel builds.
-  This version diagnostic does not audit the runner's native certificate stores.
-- Disable dependency-cache reuse for the recovery build without modifying the
-  runner's certificate stores or supplying custom images.
-- Test the actual built wheels without replacing them with a source installation.
-  There is no demonstrated compromise of the 1.0.3 distributions.
+- Rebuild 1.0.3 with patched packaging tools after the emSign CA incident.
+  Application code is unchanged.
 
 ## [1.0.3] - 2026-10-22
 
