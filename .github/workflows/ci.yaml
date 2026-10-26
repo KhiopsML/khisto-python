@@ -17,7 +17,7 @@ defaults:
 jobs:
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
 
@@ -37,7 +37,7 @@ jobs:
 
   test-base-install:
     name: Test base install without Matplotlib
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v4
 
@@ -54,7 +54,7 @@ jobs:
 
   get-python-versions:
     name: Get Python versions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     outputs:
       python-versions: ${{ steps.versions.outputs.python-versions }}
     steps:
@@ -83,7 +83,7 @@ jobs:
   test:
     name: Test (Python ${{ matrix.python-version }})
     needs: get-python-versions
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     strategy:
       fail-fast: false
       matrix:

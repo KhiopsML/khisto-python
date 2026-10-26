@@ -31,7 +31,7 @@ concurrency:
 jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.action != 'closed'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout khisto-python
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
       github.event.pull_request.head.repo.full_name == github.repository &&
       (github.event.action == 'closed' || needs.build.result == 'success')
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
       pull-requests: write
@@ -89,7 +89,7 @@ jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' && inputs.deploy-gh-pages == true
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     permissions:
       contents: write
     steps:
