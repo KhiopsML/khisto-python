@@ -30,6 +30,7 @@ defaults:
     shell: bash
 env:
   KEYPAIR: KP_Khiops_HSM
+  UV_PYTHON_PREFERENCE: only-managed
 
 jobs:
   build-wheel:
@@ -44,20 +45,15 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v7.1.0
-        with:
-          python-version: '3.13'
-          check-latest: true
-
       - name: Set up UV
         uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: false
           version: "0.13.5"
+          python-version: "3.13"
 
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
 
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
@@ -68,6 +64,8 @@ jobs:
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.4
+        env:
+          CIBW_BEFORE_BUILD: python {project}/scripts/diagnose-emudhra.py --client pip
 
       - name: Test built wheel
         env:
@@ -84,14 +82,11 @@ jobs:
       - name: Warn smctl does not support ARM64 yet
         if: runner.os == 'Windows' && runner.arch == 'ARM64' && env.SIGN_WINDOWS_WHEELS == 'true'
         run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
-      - name: Install wheel package for signing
-        if: env.SIGN_X64_WHEEL == 'true'
-        run: python -m pip install wheel
       - name: Unpack khisto wheel
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
           mkdir -p wheelhouse/unpacked
-          python -m wheel unpack wheelhouse/khisto-*.whl --dest wheelhouse/unpacked
+          uvx wheel unpack wheelhouse/khisto-*.whl --dest wheelhouse/unpacked
       - name: Setup SM_CLIENT_CERT_FILE from base64 secret data
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
@@ -112,7 +107,7 @@ jobs:
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
           rm wheelhouse/khisto-*.whl
-          python -m wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
+          uvx wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
       - uses: actions/upload-artifact@v7
         with:
           name: pkg-wheel-${{ matrix.os }}

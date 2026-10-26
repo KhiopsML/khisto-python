@@ -22,6 +22,8 @@ on:
 permissions:
   contents: read
   packages: read
+env:
+  UV_PYTHON_PREFERENCE: only-managed
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest
 # queued. However, do NOT cancel in-progress runs as we want to allow these production deployments
 # to complete.
@@ -35,18 +37,14 @@ jobs:
     steps:
       - name: Checkout khisto-python
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v7.1.0
-        with:
-          python-version: '3.13'
-          check-latest: true
       - name: Set up UV
         uses: astral-sh/setup-uv@v10.3.2
         with:
           enable-cache: false
           version: "0.13.5"
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+          python-version: "3.13"
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
       - name: Install doc build requirements

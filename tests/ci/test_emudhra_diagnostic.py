@@ -2,12 +2,13 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Tests hors reseau du diagnostic des certificats du runner."""
+"""Tests hors reseau du diagnostic des versions des clients de paquets."""
 
 import runpy
-import ssl
+import subprocess
+import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -17,63 +18,88 @@ DIAGNOSTIC = runpy.run_path(
 
 
 @pytest.mark.parametrize(
-    "error,expected,message",
+    "client,output,exit_code",
     [
-        (None, False, "runner trusts"),
-        (ssl.SSLCertVerificationError("revoked"), True, "rejected"),
-        (TimeoutError("timed out"), False, "inconclusive"),
-        (OSError("DNS unavailable"), False, "inconclusive"),
+        ("uv", "uv 0.13.3\n", 1),
+        ("uv", "uv 0.13.4 (build)\n", 0),
+        ("uv", "uv 0.13.5 (x86_64-unknown-linux-gnu)\n", 0),
+        ("uv", "uv 0.14.0\n", 0),
+        ("uv", "uv 1.0.0\n", 0),
+        ("pip", "pip 26.2.1 from /env/pip (python 3.11)\n", 1),
+        ("pip", "pip 26.2.2 from /env/pip (python 3.11)\n", 0),
+        ("pip", "pip 26.2 from /env/pip (python 3.11)\n", 1),
+        ("pip", "pip 27.0 from /env/pip (python 3.11)\n", 0),
+        ("uv", "uv 0.13.4rc1\n", 1),
+        ("pip", "pip 26.2.2.dev1\n", 1),
+        ("uv", "uv unknown\n", 1),
+        ("uv", "pip 26.2.2\n", 1),
+        ("pip", "", 1),
     ],
 )
-def test_probe_reports_actual_tls_result(
-    error: OSError | None,
-    expected: bool,
-    message: str,
+def test_only_identifiable_patched_clients_pass(
+    client: str,
+    output: str,
+    exit_code: int,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    context = MagicMock(spec=ssl.SSLContext)
-    context.wrap_socket.side_effect = error
+    command = (
+        ["uv", "--version"]
+        if client == "uv"
+        else [sys.executable, "-m", "pip", "--version"]
+    )
+    completed = subprocess.CompletedProcess(command, 0, stdout=output)
 
-    with patch("socket.create_connection"):
-        result = DIAGNOSTIC["rejects_certificate"](
-            "example.test", context, "test client"
-        )
+    with patch("subprocess.run", return_value=completed) as run:
+        result = DIAGNOSTIC["main"](["--client", client])
 
-    assert result is expected
-    assert message in capsys.readouterr().out
-    assert context.wrap_socket.call_args.kwargs["server_hostname"] == "example.test"
+    assert result == exit_code
+    assert ("::error::" in capsys.readouterr().out) == (exit_code != 0)
+    run.assert_called_once_with(
+        command, check=True, capture_output=True, text=True, timeout=30
+    )
 
 
-def test_connection_failure_is_not_certificate_rejection(
+@pytest.mark.parametrize("client", ["uv", "pip"])
+@pytest.mark.parametrize(
+    "error",
+    [
+        FileNotFoundError("client missing"),
+        PermissionError("cannot execute client"),
+        subprocess.TimeoutExpired("client", 30),
+        subprocess.CalledProcessError(1, "client", stderr="client failed"),
+    ],
+)
+def test_missing_or_inconclusive_client_blocks_ci(
+    client: str,
+    error: Exception,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    with patch("socket.create_connection", side_effect=TimeoutError("timed out")):
-        result = DIAGNOSTIC["rejects_certificate"](
-            "example.test", MagicMock(spec=ssl.SSLContext), "test client"
-        )
+    with patch("subprocess.run", side_effect=error):
+        assert DIAGNOSTIC["main"](["--client", client]) == 1
 
-    assert result is False
-    assert "::error::test client: inconclusive" in capsys.readouterr().out
+    assert f"::error::{client}:" in capsys.readouterr().out
 
 
-@pytest.mark.parametrize("rejected,exit_code", [(True, 0), (False, 1)])
-def test_exit_code_matches_probe_results(rejected: bool, exit_code: int) -> None:
+def test_unknown_client_cannot_skip_the_gate() -> None:
+    with patch("subprocess.run") as run, pytest.raises(SystemExit) as error:
+        DIAGNOSTIC["main"](["--client", "unknown"])
+
+    assert error.value.code == 2
+    run.assert_not_called()
+
+
+@pytest.mark.parametrize("version,exit_code", [("0.13.3", 1), ("0.13.4", 0)])
+def test_cli_exit_status_enforces_the_uv_gate(version: str, exit_code: int) -> None:
+    script = Path(__file__).resolve().parents[2] / "scripts" / "diagnose-emudhra.py"
+    completed = subprocess.CompletedProcess(
+        ["uv", "--version"], 0, stdout=f"uv {version}\n"
+    )
+
     with (
-        patch("socket.create_connection"),
-        patch("ssl.create_default_context"),
-        patch.dict(
-            DIAGNOSTIC["main"].__globals__,
-            {"rejects_certificate": MagicMock(return_value=rejected)},
-        ),
+        patch("sys.argv", [str(script)]),
+        patch("subprocess.run", return_value=completed),
+        pytest.raises(SystemExit) as error,
     ):
-        assert DIAGNOSTIC["main"]() == exit_code
+        runpy.run_path(str(script), run_name="__main__")
 
-
-def test_empty_trust_store_is_inconclusive(capsys: pytest.CaptureFixture[str]) -> None:
-    with patch(
-        "socket.create_connection",
-        side_effect=ssl.SSLCertVerificationError("no trusted CA certificates"),
-    ):
-        assert DIAGNOSTIC["main"]() == 1
-
-    assert "inconclusive: cannot verify pypi.org" in capsys.readouterr().out
+    assert error.value.code == exit_code

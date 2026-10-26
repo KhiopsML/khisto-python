@@ -14,6 +14,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  UV_PYTHON_PREFERENCE: only-managed
+
 jobs:
   lint:
     name: Lint
@@ -25,9 +28,10 @@ jobs:
         with:
           enable-cache: false
           version: "0.13.5"
+          python-version: "3.13"
 
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
 
       - name: Install dev dependencies
         run: uv sync --group dev
@@ -45,9 +49,10 @@ jobs:
         with:
           enable-cache: false
           version: "0.13.5"
+          python-version: "3.13"
 
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
 
       - name: Test base API without optional dependencies
         run: uv run --isolated --no-project --with . python scripts/check-base-install.py
@@ -64,19 +69,20 @@ jobs:
         with:
           enable-cache: false
           version: "0.13.5"
+          python-version: "3.13"
 
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
 
       - name: Discover available Python versions
         id: versions
         run: |
-          min_ver=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['requires-python'])")
+          min_ver=$(uv run --no-project python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['requires-python'])")
           versions=$(
             uv python list --all-versions "$min_ver" \
               | grep -oP 'cpython-\K\d+\.\d+(?=\.\d+-)'  \
               | sort -uV \
-              | python3 -c "import sys, json; print(json.dumps(sys.stdin.read().split()))"
+              | uv run --no-project python -c "import sys, json; print(json.dumps(sys.stdin.read().split()))"
           )
           echo "python-versions=$versions" >> $GITHUB_OUTPUT
 
@@ -97,8 +103,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
           version: "0.13.5"
 
-      - name: Diagnose runner TLS trust (eMudhra)
-        run: python scripts/diagnose-emudhra.py
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project python scripts/diagnose-emudhra.py
 
       - name: Install dev dependencies
         run: uv sync --group dev --extra all
