@@ -44,7 +44,7 @@ jobs:
           version: "0.13.5"
           python-version: "3.13"
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
       - name: Install pandoc
         run: sudo apt-get install -y pandoc
       - name: Install doc build requirements

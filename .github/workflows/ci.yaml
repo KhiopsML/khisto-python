@@ -32,7 +32,7 @@ jobs:
           python-version: "3.13"
 
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Install dev dependencies
         run: uv sync --group dev
@@ -53,7 +53,7 @@ jobs:
           python-version: "3.13"
 
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Test base API without optional dependencies
         run: uv run --isolated --no-project --with . python scripts/check-base-install.py
@@ -73,11 +73,11 @@ jobs:
           python-version: "3.13"
 
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Discover available Python versions
         id: versions
-        run: uv run --no-project python scripts/get-python-versions.py
+        run: uv run --no-project scripts/get-python-versions.py
 
   test:
     name: Test (Python ${{ matrix.python-version }})
@@ -97,7 +97,7 @@ jobs:
           version: "0.13.5"
 
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Install dev dependencies
         run: uv sync --group dev --extra all

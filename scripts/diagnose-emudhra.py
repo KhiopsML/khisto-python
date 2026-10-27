@@ -2,15 +2,19 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Verifie uv --short et les metadonnees pip, pas les magasins CA."""
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["packaging>=24.2"]
+# ///
+
+"""Verifie les versions avec packaging, sans auditer les magasins CA."""
 
 import argparse
 import os
-import re
 import subprocess
 import sys
 
-MINIMUM_VERSIONS = {"uv": (0, 13, 4), "pip": (26, 2, 2)}
+MINIMUM_VERSIONS = {"uv": "0.13.4", "pip": "26.2.2"}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -42,15 +46,32 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     version_text = result.stdout.strip()
     print(f"{client}: {version_text}")
-    match = re.fullmatch(r"([0-9]+)\.([0-9]+)(?:\.([0-9]+))?", version_text)
-    if match is None:
+    try:
+        if client == "pip":
+            # Pip fournit ce parseur avant toute installation supplementaire.
+            from pip._vendor.packaging.version import InvalidVersion, Version
+        else:
+            from packaging.version import InvalidVersion, Version
+    except ImportError as error:
+        print(f"::error::{client}: version parser unavailable: {error}")
+        return 1
+    try:
+        version = Version(version_text)
+    except InvalidVersion as error:
+        print(f"::error::{client}: cannot identify a stable version: {error}")
+        return 1
+    if (
+        version.is_prerelease
+        or version.is_postrelease
+        or version.local is not None
+        or version.epoch != 0
+        or len(version.release) not in (2, 3)
+    ):
         print(f"::error::{client}: cannot identify a stable version")
         return 1
-    version = tuple(int(part or 0) for part in match.groups())
     minimum = MINIMUM_VERSIONS[client]
-    if version < minimum:
-        required = ".".join(map(str, minimum))
-        print(f"::error::{client}: requires >= {required} for the eMudhra fix")
+    if version < Version(minimum):
+        print(f"::error::{client}: requires >= {minimum} for the eMudhra fix")
         return 1
     print(f"{client}: patched version check passed")
     return 0

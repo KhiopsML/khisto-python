@@ -11,6 +11,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from packaging.version import Version
 
 SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "get-python-versions.py"
 DISCOVERY = runpy.run_path(str(SCRIPT))
@@ -18,11 +19,17 @@ DISCOVERY = runpy.run_path(str(SCRIPT))
 
 def installation(
     version: str, implementation: str = "cpython", variant: str = "default"
-) -> dict[str, str]:
+) -> dict[str, object]:
+    major, minor, patch_version = Version(version).release
     return {
         "version": version,
         "implementation": implementation,
         "variant": variant,
+        "version_parts": {
+            "major": major,
+            "minor": minor,
+            "patch": patch_version,
+        },
     }
 
 
@@ -122,14 +129,16 @@ def test_github_output_is_appended_without_overwriting_other_keys(
         [installation("3.16.0a1")],
         [installation("3.16.0rc1")],
         [installation("3.16.0.dev1")],
+        [installation("3.15.1.post1")],
+        [installation("3.15.1+local")],
+        [installation("1!3.15.1")],
         [installation("3.15.1", variant="freethreaded")],
         [installation("3.15.1", implementation="pypy")],
-        [installation("\uff13.\uff11\uff15.\uff11")],
     ],
 )
 def test_matrix_without_stable_cpython_blocks_ci(
     project: Path,
-    installations: list[dict[str, str]],
+    installations: list[dict[str, object]],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     completed = subprocess.CompletedProcess("uv", 0, stdout=json.dumps(installations))
@@ -155,6 +164,43 @@ def test_matrix_without_stable_cpython_blocks_ci(
         json.dumps([{**installation("3.15.1"), "version": None}]),
         json.dumps([{**installation("3.15.1"), "implementation": False}]),
         json.dumps([{**installation("3.15.1"), "variant": 1}]),
+        json.dumps(
+            [{**installation("3.15.1"), "version": "\uff13.\uff11\uff15.\uff11"}]
+        ),
+        json.dumps([{**installation("3.15.1"), "version_parts": None}]),
+        json.dumps([{**installation("3.15.1"), "version_parts": {}}]),
+        json.dumps(
+            [
+                {
+                    **installation("3.15.1"),
+                    "version_parts": {"major": "3", "minor": 15, "patch": 1},
+                }
+            ]
+        ),
+        json.dumps(
+            [
+                {
+                    **installation("3.15.1"),
+                    "version_parts": {"major": 3, "minor": True, "patch": 1},
+                }
+            ]
+        ),
+        json.dumps(
+            [
+                {
+                    **installation("3.15.1"),
+                    "version_parts": {"major": 3, "minor": -1, "patch": 1},
+                }
+            ]
+        ),
+        json.dumps(
+            [
+                {
+                    **installation("3.15.1"),
+                    "version_parts": {"major": 3, "minor": 14, "patch": 1},
+                }
+            ]
+        ),
         json.dumps([installation("3.15.1"), {}]),
     ],
 )

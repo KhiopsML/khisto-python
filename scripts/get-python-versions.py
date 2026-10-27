@@ -2,15 +2,21 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Read uv's JSON catalog and emit the supported stable CPython matrix."""
+# /// script
+# requires-python = ">=3.11"
+# dependencies = ["packaging>=24.2"]
+# ///
+
+"""Use uv's structured version parts and packaging to emit stable CPython versions."""
 
 import json
 import os
-import re
 import subprocess
 import sys
 import tomllib
 from pathlib import Path
+
+from packaging.version import Version
 
 
 def main() -> int:
@@ -52,9 +58,23 @@ def main() -> int:
                 or installation["variant"] != "default"
             ):
                 continue
-            match = re.fullmatch(r"([0-9]+)\.([0-9]+)\.[0-9]+", installation["version"])
-            if match:
-                versions.add((int(match[1]), int(match[2])))
+            version = Version(installation["version"])
+            if (
+                version.is_prerelease
+                or version.is_postrelease
+                or version.local is not None
+                or version.epoch != 0
+            ):
+                continue
+            parts = installation.get("version_parts")
+            if not isinstance(parts, dict) or not all(
+                type(parts.get(key)) is int and parts[key] >= 0
+                for key in ("major", "minor", "patch")
+            ):
+                raise TypeError("invalid Python version parts")
+            if (parts["major"], parts["minor"], parts["patch"]) != version.release:
+                raise ValueError("inconsistent Python version metadata")
+            versions.add((parts["major"], parts["minor"]))
     except (TypeError, ValueError) as error:
         print(f"::error::Cannot parse Python versions: {error}", file=sys.stderr)
         return 1

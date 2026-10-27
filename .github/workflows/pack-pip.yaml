@@ -53,7 +53,7 @@ jobs:
           python-version: "3.13"
 
       - name: Check package client version (eMudhra)
-        run: uv run --no-project python scripts/diagnose-emudhra.py
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
