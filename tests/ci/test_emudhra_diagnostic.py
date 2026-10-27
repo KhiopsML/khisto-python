@@ -20,18 +20,24 @@ DIAGNOSTIC = runpy.run_path(
 @pytest.mark.parametrize(
     "client,output,exit_code",
     [
-        ("uv", "uv 0.13.3\n", 1),
-        ("uv", "uv 0.13.4 (build)\n", 0),
-        ("uv", "uv 0.13.5 (x86_64-unknown-linux-gnu)\n", 0),
-        ("uv", "uv 0.14.0\n", 0),
-        ("uv", "uv 1.0.0\n", 0),
-        ("pip", "pip 26.2.1 from /env/pip (python 3.11)\n", 1),
-        ("pip", "pip 26.2.2 from /env/pip (python 3.11)\n", 0),
-        ("pip", "pip 26.2 from /env/pip (python 3.11)\n", 1),
-        ("pip", "pip 27.0 from /env/pip (python 3.11)\n", 0),
-        ("uv", "uv 0.13.4rc1\n", 1),
-        ("pip", "pip 26.2.2.dev1\n", 1),
-        ("uv", "uv unknown\n", 1),
+        ("uv", "0.13.3\n", 1),
+        ("uv", "0.13.4\n", 0),
+        ("uv", "0.13.5\n", 0),
+        ("uv", "0.14.0\n", 0),
+        ("uv", "1.0.0\n", 0),
+        ("pip", "26.2.1\n", 1),
+        ("pip", "26.2.2\n", 0),
+        ("pip", "26.2\n", 1),
+        ("pip", "27.0\n", 0),
+        ("uv", "0.13.4rc1\n", 1),
+        ("pip", "26.2.2.dev1\n", 1),
+        ("pip", "26.2.2.post1\n", 1),
+        ("uv", "0.13.4+local\n", 1),
+        ("uv", "0.13.4.1\n", 1),
+        ("uv", "0.13.4\nunexpected output\n", 1),
+        ("uv", "0.13.4 (build)\n", 1),
+        ("uv", "\uff10.\uff11\uff13.\uff14\n", 1),
+        ("uv", "unknown\n", 1),
         ("uv", "pip 26.2.2\n", 1),
         ("pip", "", 1),
     ],
@@ -43,9 +49,13 @@ def test_only_identifiable_patched_clients_pass(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     command = (
-        ["uv", "--version"]
+        ["uv", "self", "version", "--short"]
         if client == "uv"
-        else [sys.executable, "-m", "pip", "--version"]
+        else [
+            sys.executable,
+            "-c",
+            "from importlib.metadata import version; print(version('pip'))",
+        ]
     )
     completed = subprocess.CompletedProcess(command, 0, stdout=output)
 
@@ -92,7 +102,7 @@ def test_unknown_client_cannot_skip_the_gate() -> None:
 def test_cli_exit_status_enforces_the_uv_gate(version: str, exit_code: int) -> None:
     script = Path(__file__).resolve().parents[2] / "scripts" / "diagnose-emudhra.py"
     completed = subprocess.CompletedProcess(
-        ["uv", "--version"], 0, stdout=f"uv {version}\n"
+        ["uv", "self", "version", "--short"], 0, stdout=f"{version}\n"
     )
 
     with (

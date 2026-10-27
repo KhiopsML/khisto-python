@@ -2,7 +2,7 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Verifie les versions corrigees des clients utilises, pas les magasins CA."""
+"""Verifie uv --short et les metadonnees pip, pas les magasins CA."""
 
 import argparse
 import os
@@ -22,9 +22,13 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Python: {sys.version}; executable: {sys.executable}")
     print("Scope: patched package client version, not an audit of native CA stores.")
     command = (
-        ["uv", "--version"]
+        ["uv", "self", "version", "--short"]
         if client == "uv"
-        else [sys.executable, "-m", "pip", "--version"]
+        else [
+            sys.executable,
+            "-c",
+            "from importlib.metadata import version; print(version('pip'))",
+        ]
     )
     try:
         result = subprocess.run(
@@ -36,8 +40,9 @@ def main(argv: list[str] | None = None) -> int:
     except (OSError, subprocess.TimeoutExpired) as error:
         print(f"::error::{client}: version check inconclusive: {error}")
         return 1
-    print(result.stdout.strip())
-    match = re.match(rf"{client} (\d+)\.(\d+)(?:\.(\d+))?(?=\s|$)", result.stdout)
+    version_text = result.stdout.strip()
+    print(f"{client}: {version_text}")
+    match = re.fullmatch(r"([0-9]+)\.([0-9]+)(?:\.([0-9]+))?", version_text)
     if match is None:
         print(f"::error::{client}: cannot identify a stable version")
         return 1

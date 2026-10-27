@@ -2,7 +2,7 @@
 # This software is distributed under the BSD 3-Clause-clear License, the text of which is available
 # at https://spdx.org/licenses/BSD-3-Clause-Clear.html or see the "LICENSE" file for more details.
 
-"""Print the supported stable CPython versions and set the GitHub matrix output."""
+"""Read uv's JSON catalog and emit the supported stable CPython matrix."""
 
 import json
 import os
@@ -19,7 +19,15 @@ def main() -> int:
         requirement = tomllib.load(stream)["project"]["requires-python"]
     try:
         result = subprocess.run(
-            ["uv", "python", "list", "--all-versions", requirement],
+            [
+                "uv",
+                "python",
+                "list",
+                "--all-versions",
+                "--output-format",
+                "json",
+                requirement,
+            ],
             check=True,
             stdout=subprocess.PIPE,
             text=True,
@@ -28,18 +36,32 @@ def main() -> int:
     except (OSError, subprocess.SubprocessError) as error:
         print(f"::error::Cannot discover Python versions: {error}", file=sys.stderr)
         return 1
-    versions = sorted(
-        {
-            (int(major), int(minor))
-            for major, minor in re.findall(
-                r"cpython-(\d+)\.(\d+)(?=\.\d+-)", result.stdout
-            )
-        }
-    )
+    versions: set[tuple[int, int]] = set()
+    try:
+        installations = json.loads(result.stdout)
+        if not isinstance(installations, list):
+            raise TypeError("expected a list of Python installations")
+        for installation in installations:
+            if not isinstance(installation, dict) or not all(
+                isinstance(installation.get(key), str)
+                for key in ("implementation", "variant", "version")
+            ):
+                raise TypeError("invalid Python installation metadata")
+            if (
+                installation["implementation"] != "cpython"
+                or installation["variant"] != "default"
+            ):
+                continue
+            match = re.fullmatch(r"([0-9]+)\.([0-9]+)\.[0-9]+", installation["version"])
+            if match:
+                versions.add((int(match[1]), int(match[2])))
+    except (TypeError, ValueError) as error:
+        print(f"::error::Cannot parse Python versions: {error}", file=sys.stderr)
+        return 1
     if not versions:
         print("::error::No supported stable CPython versions found", file=sys.stderr)
         return 1
-    matrix = json.dumps([f"{major}.{minor}" for major, minor in versions])
+    matrix = json.dumps([f"{major}.{minor}" for major, minor in sorted(versions)])
     print(matrix)
     if output_file := os.environ.get("GITHUB_OUTPUT"):
         with Path(output_file).open("a", encoding="utf-8") as stream:

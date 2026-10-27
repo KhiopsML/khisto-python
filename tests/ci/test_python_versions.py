@@ -16,6 +16,16 @@ SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "get-python-versions.
 DISCOVERY = runpy.run_path(str(SCRIPT))
 
 
+def installation(
+    version: str, implementation: str = "cpython", variant: str = "default"
+) -> dict[str, str]:
+    return {
+        "version": version,
+        "implementation": implementation,
+        "variant": variant,
+    }
+
+
 @pytest.fixture
 def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (tmp_path / "pyproject.toml").write_text(
@@ -30,15 +40,18 @@ def test_matrix_contains_sorted_unique_stable_cpython_versions(
     project: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    output = (
-        "cpython-3.15.1-linux-x86_64-gnu <download available>\n"
-        "cpython-3.11.17-linux-x86_64-gnu <download available>\n"
-        "cpython-3.15.0-linux-x86_64-gnu /installed/python\n"
-        "cpython-3.12.15-linux-x86_64-gnu <download available>\n"
-        "cpython-3.16.0a1-linux-x86_64-gnu <download available>\n"
-        "cpython-3.15.1t-linux-x86_64-gnu <download available>\n"
-        "pypy-3.11.17-linux-x86_64-gnu <download available>\n"
-        "graalpy-3.13.0-linux-x86_64-gnu <download available>\n"
+    output = json.dumps(
+        [
+            installation("3.15.1"),
+            installation("3.11.17"),
+            installation("3.15.0"),
+            installation("3.12.15"),
+            installation("3.16.0a1"),
+            installation("3.15.1", variant="freethreaded"),
+            installation("3.15.1", variant="debug"),
+            installation("3.11.17", implementation="pypy"),
+            installation("3.13.0", implementation="graalpy"),
+        ]
     )
     completed = subprocess.CompletedProcess("uv", 0, stdout=output)
 
@@ -47,7 +60,15 @@ def test_matrix_contains_sorted_unique_stable_cpython_versions(
 
     assert json.loads(capsys.readouterr().out) == ["3.11", "3.12", "3.15"]
     run.assert_called_once_with(
-        ["uv", "python", "list", "--all-versions", ">=3.11"],
+        [
+            "uv",
+            "python",
+            "list",
+            "--all-versions",
+            "--output-format",
+            "json",
+            ">=3.11",
+        ],
         check=True,
         stdout=subprocess.PIPE,
         text=True,
@@ -65,7 +86,7 @@ def test_project_requirement_is_used_and_versions_are_sorted_numerically(
     completed = subprocess.CompletedProcess(
         "uv",
         0,
-        stdout="cpython-3.10.0-linux-x86_64-gnu\ncpython-3.9.0-linux-x86_64-gnu\n",
+        stdout=json.dumps([installation("3.10.0"), installation("3.9.0")]),
     )
 
     with patch("subprocess.run", return_value=completed) as run:
@@ -83,7 +104,7 @@ def test_github_output_is_appended_without_overwriting_other_keys(
     output_file.write_text("existing=value\n", encoding="utf-8")
     monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
     completed = subprocess.CompletedProcess(
-        "uv", 0, stdout="cpython-3.11.17-linux-x86_64-gnu\n"
+        "uv", 0, stdout=json.dumps([installation("3.11.17")])
     )
 
     with patch("subprocess.run", return_value=completed):
@@ -95,15 +116,23 @@ def test_github_output_is_appended_without_overwriting_other_keys(
 
 
 @pytest.mark.parametrize(
-    "output",
-    ["", "unexpected output", "cpython-3.16.0a1-linux-x86_64-gnu\n"],
+    "installations",
+    [
+        [],
+        [installation("3.16.0a1")],
+        [installation("3.16.0rc1")],
+        [installation("3.16.0.dev1")],
+        [installation("3.15.1", variant="freethreaded")],
+        [installation("3.15.1", implementation="pypy")],
+        [installation("\uff13.\uff11\uff15.\uff11")],
+    ],
 )
-def test_empty_or_unrecognizable_matrix_blocks_ci(
+def test_matrix_without_stable_cpython_blocks_ci(
     project: Path,
-    output: str,
+    installations: list[dict[str, str]],
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    completed = subprocess.CompletedProcess("uv", 0, stdout=output)
+    completed = subprocess.CompletedProcess("uv", 0, stdout=json.dumps(installations))
 
     with patch("subprocess.run", return_value=completed):
         assert DISCOVERY["main"]() == 1
@@ -111,6 +140,42 @@ def test_empty_or_unrecognizable_matrix_blocks_ci(
     captured = capsys.readouterr()
     assert captured.out == ""
     assert "::error::No supported stable CPython versions" in captured.err
+
+
+@pytest.mark.parametrize(
+    "output",
+    [
+        "",
+        "unexpected output",
+        "{}",
+        "null",
+        "[null]",
+        '["cpython-3.15.1-linux-x86_64-gnu"]',
+        '[{"version": "3.15.1"}]',
+        json.dumps([{**installation("3.15.1"), "version": None}]),
+        json.dumps([{**installation("3.15.1"), "implementation": False}]),
+        json.dumps([{**installation("3.15.1"), "variant": 1}]),
+        json.dumps([installation("3.15.1"), {}]),
+    ],
+)
+def test_malformed_discovery_output_blocks_ci_without_emitting_a_matrix(
+    project: Path,
+    output: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output_file = project / "github-output"
+    output_file.write_text("existing=value\n", encoding="utf-8")
+    monkeypatch.setenv("GITHUB_OUTPUT", str(output_file))
+    completed = subprocess.CompletedProcess("uv", 0, stdout=output)
+
+    with patch("subprocess.run", return_value=completed):
+        assert DISCOVERY["main"]() == 1
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "::error::Cannot parse Python versions" in captured.err
+    assert output_file.read_text(encoding="utf-8") == "existing=value\n"
 
 
 @pytest.mark.parametrize(
