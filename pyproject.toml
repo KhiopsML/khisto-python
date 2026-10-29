@@ -1,6 +1,6 @@
 [project]
 name = "khisto"
-version = "1.0.3"
+version = "1.0.4"
 description = "Optimal histogram visualization using the Khiops algorithm"
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
@@ -84,6 +84,9 @@ dev = [
 [build-system]
 requires = ["scikit-build-core>=0.11.6", "ninja"]
 build-backend = "scikit_build_core.build"
+
+[tool.uv]
+constraint-dependencies = ["certifi>=2026.10.23"]
 
 [tool.pytest.ini_options]
 addopts = "-n 4 --cov --cov-report term-missing --durations=10"

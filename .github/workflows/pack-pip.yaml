@@ -17,6 +17,7 @@ on:
   pull_request:
     paths:
       - .github/workflows/pack-pip.yaml
+      - scripts/diagnose-emudhra.py
       - pyproject.toml
       - CMakeLists.txt
 
@@ -29,29 +30,30 @@ defaults:
     shell: bash
 env:
   KEYPAIR: KP_Khiops_HSM
+  UV_PYTHON_PREFERENCE: only-managed
 
 jobs:
   build-wheel:
     name: Build wheel
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-15]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-26]
     env:
       SIGN_WINDOWS_WHEELS: ${{ github.event_name == 'workflow_dispatch' && inputs.signature-activation }}
     steps:
       - uses: actions/checkout@v6
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Set up UV
-        uses: astral-sh/setup-uv@v9.0.0
+        uses: astral-sh/setup-uv@v10.3.2
         with:
-          enable-cache: true
-          version: "0.11.32"
+          enable-cache: false
+          version: "0.13.5"
+          python-version: "3.13"
+
+      - name: Check package client version (eMudhra)
+        run: uv run --no-project scripts/diagnose-emudhra.py
 
       - name: Load Visual C++ Environment Variables (Windows)
         if: runner.os == 'Windows'
@@ -61,14 +63,18 @@ jobs:
           set >> %GITHUB_ENV%
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v3.3.1
+        uses: pypa/cibuildwheel@v4.3.4
+        env:
+          # cibuildwheel uses pip in its own build environment, not the uv environment above.
+          CIBW_BEFORE_BUILD: python {project}/scripts/diagnose-emudhra.py --client pip
 
       - name: Test built wheel
+        env:
+          UV_PROJECT_ENVIRONMENT: .test-env
         run: |
-          uv venv .test-env
-          uv pip install --python .test-env --find-links=wheelhouse "khisto[all]"
-          uv sync --python .test-env --group dev --no-install-project
-          uv run --python .test-env pytest tests/ --no-cov
+          uv sync --group dev --extra all --no-install-project
+          uv pip install --python .test-env wheelhouse/khisto-*.whl
+          uv run --no-sync pytest tests/ --no-cov
 
       # Windows wheels are unpackad, signed and repacked before uploading
       - name: Set SIGN_X64_WHEEL flag
@@ -77,14 +83,11 @@ jobs:
       - name: Warn smctl does not support ARM64 yet
         if: runner.os == 'Windows' && runner.arch == 'ARM64' && env.SIGN_WINDOWS_WHEELS == 'true'
         run: echo "::warning::smctl does not support ARM64 yet; the ARM64 wheel will not be signed"
-      - name: Install wheel package for signing
-        if: env.SIGN_X64_WHEEL == 'true'
-        run: python -m pip install wheel
       - name: Unpack khisto wheel
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
           mkdir -p wheelhouse/unpacked
-          python -m wheel unpack wheelhouse/khisto-*.whl --dest wheelhouse/unpacked
+          uvx wheel unpack wheelhouse/khisto-*.whl --dest wheelhouse/unpacked
       - name: Setup SM_CLIENT_CERT_FILE from base64 secret data
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
@@ -105,7 +108,7 @@ jobs:
         if: env.SIGN_X64_WHEEL == 'true'
         run: |
           rm wheelhouse/khisto-*.whl
-          python -m wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
+          uvx wheel pack wheelhouse/unpacked/khisto-* --dest-dir wheelhouse
       - uses: actions/upload-artifact@v7
         with:
           name: pkg-wheel-${{ matrix.os }}
@@ -128,7 +131,7 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
@@ -149,6 +152,6 @@ jobs:
           pattern: pkg-*
           path: dist
           merge-multiple: true
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           verbose: true
