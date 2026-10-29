@@ -39,7 +39,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-26.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-26]
+        os: [ubuntu-24.04, ubuntu-24.04-arm, windows-2025-vs2026, windows-11-vs2026-arm, macos-15-intel, macos-26]
     env:
       SIGN_WINDOWS_WHEELS: ${{ github.event_name == 'workflow_dispatch' && inputs.signature-activation }}
     steps:
@@ -65,6 +65,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v4.3.4
         env:
+          # cibuildwheel uses pip in its own build environment, not the uv environment above.
           CIBW_BEFORE_BUILD: python {project}/scripts/diagnose-emudhra.py --client pip
 
       - name: Test built wheel
@@ -134,7 +135,6 @@ jobs:
         with:
           verbose: true
           repository-url: https://test.pypi.org/legacy/
-          attestations: true
 
   release-pypi:
     # Publish only on tag pushes in the KhiopsML repository
@@ -155,4 +155,3 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           verbose: true
-          attestations: true
