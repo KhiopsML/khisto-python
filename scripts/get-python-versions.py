@@ -7,87 +7,41 @@
 # dependencies = ["packaging>=24.2"]
 # ///
 
-"""Use uv's structured version parts and packaging to emit stable CPython versions."""
+"""Emit the stable CPython minor versions matching the project's requires-python."""
 
 import json
 import os
 import subprocess
-import sys
 import tomllib
 from pathlib import Path
 
+from packaging.specifiers import SpecifierSet
 from packaging.version import Version
 
+with open("pyproject.toml", "rb") as stream:
+    requirement = SpecifierSet(tomllib.load(stream)["project"]["requires-python"])
 
-def main() -> int:
-    """Discover available Python versions matching the project requirement."""
-    with Path("pyproject.toml").open("rb") as stream:
-        requirement = tomllib.load(stream)["project"]["requires-python"]
-    try:
-        result = subprocess.run(
-            [
-                "uv",
-                "python",
-                "list",
-                "--all-versions",
-                "--output-format",
-                "json",
-                requirement,
-            ],
-            check=True,
-            stdout=subprocess.PIPE,
-            text=True,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError) as error:
-        print(f"::error::Cannot discover Python versions: {error}", file=sys.stderr)
-        return 1
-    versions: set[tuple[int, int]] = set()
-    try:
-        installations = json.loads(result.stdout)
-        if not isinstance(installations, list):
-            raise TypeError("expected a list of Python installations")
-        for installation in installations:
-            if not isinstance(installation, dict) or not all(
-                isinstance(installation.get(key), str)
-                for key in ("implementation", "variant", "version")
-            ):
-                raise TypeError("invalid Python installation metadata")
-            if (
-                installation["implementation"] != "cpython"
-                or installation["variant"] != "default"
-            ):
-                continue
-            version = Version(installation["version"])
-            if (
-                version.is_prerelease
-                or version.is_postrelease
-                or version.local is not None
-                or version.epoch != 0
-            ):
-                continue
-            parts = installation.get("version_parts")
-            if not isinstance(parts, dict) or not all(
-                type(parts.get(key)) is int and parts[key] >= 0
-                for key in ("major", "minor", "patch")
-            ):
-                raise TypeError("invalid Python version parts")
-            if (parts["major"], parts["minor"], parts["patch"]) != version.release:
-                raise ValueError("inconsistent Python version metadata")
-            versions.add((parts["major"], parts["minor"]))
-    except (TypeError, ValueError) as error:
-        print(f"::error::Cannot parse Python versions: {error}", file=sys.stderr)
-        return 1
-    if not versions:
-        print("::error::No supported stable CPython versions found", file=sys.stderr)
-        return 1
-    matrix = json.dumps([f"{major}.{minor}" for major, minor in sorted(versions)])
-    print(matrix)
-    if output_file := os.environ.get("GITHUB_OUTPUT"):
-        with Path(output_file).open("a", encoding="utf-8") as stream:
-            stream.write(f"python-versions={matrix}\n")
-    return 0
+uv_output = subprocess.run(
+    ["uv", "python", "list", "--all-versions", "--output-format", "json"],
+    check=True,
+    capture_output=True,
+    text=True,
+).stdout
 
+versions = sorted(
+    {
+        Version(i["version"]).release[:2]
+        for i in json.loads(uv_output)
+        if i["implementation"] == "cpython"
+        and i["variant"] == "default"
+        and requirement.contains(i["version"], prereleases=False)
+    }
+)
+if not versions:
+    raise SystemExit("::error::No supported stable CPython versions found")
 
-if __name__ == "__main__":
-    sys.exit(main())
+matrix = json.dumps([f"{major}.{minor}" for major, minor in versions])
+print(matrix)
+if output_file := os.environ.get("GITHUB_OUTPUT"):
+    with Path(output_file).open("a", encoding="utf-8") as stream:
+        stream.write(f"python-versions={matrix}\n")
