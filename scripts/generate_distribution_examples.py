@@ -29,7 +29,7 @@ def save_binning_comparison_figure(output_path: Path) -> None:
     with plt.rc_context({
         "font.family": "sans-serif",
         "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"],
-        "font.size": 12,
+        "font.size": 11,
         "text.color": "black",
         "axes.labelcolor": "black",
         "xtick.color": "black",
@@ -41,16 +41,17 @@ def save_binning_comparison_figure(output_path: Path) -> None:
             2, 2, figsize=(10, 6), sharex="row", sharey="row", facecolor="white"
         )
         fig.subplots_adjust(
-            left=0.09, right=0.98, bottom=0.10, top=0.78, hspace=0.90, wspace=0.30
+            left=0.105, right=0.965, bottom=0.115, top=0.81,
+            hspace=0.80, wspace=0.32,
         )
         for column, title in enumerate(("Before / Equal-width", "After / Khisto")):
             fig.text(
-                axes[0, column].get_position().x0, 0.96, title,
-                fontsize=14, weight="bold",
+                axes[0, column].get_position().x0, 0.95, title,
+                fontsize=16, weight="bold", va="top",
             )
         for row, (data, label, xlabel) in enumerate(
             [
-                (levy, "Lévy", "Value"),
+                (levy, "Lévy distribution", "Value"),
                 (ages, "UCI Adult", "Age (years)"),
             ]
         ):
@@ -64,8 +65,8 @@ def save_binning_comparison_figure(output_path: Path) -> None:
             )
             position = axes[row, 0].get_position()
             fig.text(
-                position.x0, position.y1 + 0.10, label,
-                fontsize=16, weight="bold",
+                position.x0, position.y1 + 0.035, label,
+                fontsize=13, weight="bold", color="#333333", va="bottom",
             )
             for ax in axes[row]:
                 ax.set_xlabel(xlabel)
@@ -74,7 +75,7 @@ def save_binning_comparison_figure(output_path: Path) -> None:
                 ax.spines[["top", "right"]].set_visible(False)
                 ax.spines[["bottom", "left"]].set_color("#666666")
                 ax.tick_params(
-                    labelsize=11, color="#666666", which="both", labelleft=True
+                    labelsize=10, color="#666666", which="both", labelleft=True
                 )
                 ax.minorticks_off()
 

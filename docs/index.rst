@@ -32,7 +32,7 @@ Khisto — Histograms that fit your data
 
             Khisto
 
-   .. rubric:: Lévy
+   .. rubric:: Lévy distribution
       :class: comparison-heading
 
    .. container:: comparison-pair
