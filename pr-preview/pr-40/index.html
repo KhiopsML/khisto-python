@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=f54c7f42" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=7634f434" />
     
     
 
@@ -222,8 +222,8 @@
 <li class="toctree-l1"><a class="reference internal" href="histogram/index.html">Histograms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="matplotlib/index.html">Matplotlib</a></li>
 <li class="toctree-l1 has-children"><a class="reference internal" href="core/index.html">Core</a><input aria-label="Toggle navigation of Core" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul>
-<li class="toctree-l2"><a class="reference internal" href="core/generated/khisto.core.compute_histograms.html">khisto.core.compute_histograms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="core/generated/khisto.core.HistogramResult.html">khisto.core.HistogramResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/generated/khisto.core.compute_histograms.html">compute_histograms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="core/generated/khisto.core.HistogramResult.html">HistogramResult</a></li>
 </ul>
 </li>
 </ul>
@@ -278,7 +278,45 @@
 <p class="hero-tagline">Drop-in replacements for <code class="docutils literal notranslate"><span class="pre">numpy.histogram</span></code> and <code class="docutils literal notranslate"><span class="pre">plt.hist</span></code> with
 adaptive, variable-width bins powered by the Khisto algorithm.
 Dense regions get fine bins, sparse regions get wide ones — no tuning needed.</p>
-<img alt="BEFORE: equal-width bins crush the Lévy peak, produce a hedgehog tail, and create artificial spikes in integer house ages. AFTER: Khisto reveals both distributions automatically, with identical observations and scales." class="align-center" src="_images/binning-comparison.png" />
+<div class="binning-comparison docutils container">
+<div class="comparison-header docutils container">
+<div class="comparison-label docutils container">
+<p class="comparison-method rubric">Before</p>
+<p class="comparison-subtitle">Equal-width</p>
+</div>
+<div class="comparison-label docutils container">
+<p class="comparison-method comparison-adaptive rubric">After</p>
+<p class="comparison-subtitle">Khisto</p>
+</div>
+</div>
+<p class="comparison-heading rubric">Lévy</p>
+<div class="comparison-pair docutils container">
+<div class="comparison-panel docutils container">
+<img alt="Before: equal-width bins hide the Lévy peak on logarithmic axes." class="comparison-light" src="_images/levy-equal-width-light.svg" />
+<img alt="Before: equal-width bins hide the Lévy peak on logarithmic axes." class="comparison-dark" src="_images/levy-equal-width-dark.svg" />
+</div>
+<div class="comparison-panel docutils container">
+<img alt="After: Khisto reveals the Lévy peak and heavy tail on the same scales." class="comparison-light" src="_images/levy-khisto-light.svg" />
+<img alt="After: Khisto reveals the Lévy peak and heavy tail on the same scales." class="comparison-dark" src="_images/levy-khisto-dark.svg" />
+</div>
+</div>
+<p class="comparison-heading rubric">Adult age</p>
+<div class="comparison-pair docutils container">
+<div class="comparison-panel docutils container">
+<img alt="Before: equal-width bins create alternating artificial spikes in integer ages." class="comparison-light" src="_images/adult-equal-width-light.svg" />
+<img alt="Before: equal-width bins create alternating artificial spikes in integer ages." class="comparison-dark" src="_images/adult-equal-width-dark.svg" />
+</div>
+<div class="comparison-panel docutils container">
+<img alt="After: Khisto shows the age distribution without alternating binning spikes." class="comparison-light" src="_images/adult-khisto-light.svg" />
+<img alt="After: Khisto shows the age distribution without alternating binning spikes." class="comparison-dark" src="_images/adult-khisto-dark.svg" />
+</div>
+</div>
+<div class="comparison-caption docutils container">
+<p>Same data, bin counts and scales.
+Ages: <a class="reference external" href="https://doi.org/10.24432/C5XW20"
+target="_blank" rel="noopener noreferrer"
+aria-label="UCI Adult (opens in a new tab)">UCI Adult</a>.</p></div>
+</div>
 <section id="get-started">
 <h2>Get started<a class="headerlink" href="#get-started" title="Link to this heading">¶</a></h2>
 <div class="important admonition">
@@ -354,13 +392,15 @@ pick the resolution that suits your analysis.</p>
 <a class="sd-stretched-link sd-hide-link-text reference internal" href="counts_vs_density.html"><span class="doc">Counts vs Density</span></a></div>
 </div>
 <div class="sd-col sd-d-flex-row docutils">
-<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm sd-card-hover histogram-guide-card docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-sm histogram-guide-card sd-card-hover docutils">
 <div class="sd-card-body docutils">
 <div class="sd-card-title sd-font-weight-bold docutils">
 <svg version="1.1" width="1.5em" height="1.5em" class="sd-octicon sd-octicon-info" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 7.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0Zm-3 3.75a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 .75.75v4.25h.75a.75.75 0 0 1 0 1.5h-3a.75.75 0 0 1 0-1.5h.75V12h-.75a.75.75 0 0 1-.75-.75Z"></path><path d="M12 1c6.075 0 11 4.925 11 11s-4.925 11-11 11S1 18.075 1 12 5.925 1 12 1ZM2.5 12a9.5 9.5 0 0 0 9.5 9.5 9.5 9.5 0 0 0 9.5-9.5A9.5 9.5 0 0 0 12 2.5 9.5 9.5 0 0 0 2.5 12Z"></path></svg> Histograms - Khiops</div>
 <p class="sd-card-text">Go further, from the simplest histogram to the most complex.</p>
+<a class="sd-stretched-link sd-hide-link-text reference external"
+href="https://khiops.org/learn/histograms/" target="_blank"
+rel="noopener noreferrer"><span>Histograms - Khiops (opens in a new tab)</span></a></div>
 </div>
-<a class="sd-stretched-link sd-hide-link-text reference external" href="https://khiops.org/learn/histograms/"><span>https://khiops.org/learn/histograms/</span></a></div>
 </div>
 </div>
 </div>

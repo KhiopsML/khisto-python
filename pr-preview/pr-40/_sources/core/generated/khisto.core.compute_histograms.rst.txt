@@ -1,5 +1,5 @@
-﻿khisto.core.compute\_histograms
-===============================
+﻿compute\_histograms
+===================
 
 .. currentmodule:: khisto.core
 

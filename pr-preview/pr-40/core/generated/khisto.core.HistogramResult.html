@@ -3,16 +3,16 @@
   <head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Khisto — optimal binning histograms" href="../../demo.html"><link rel="prev" title="khisto.core.compute_histograms" href="khisto.core.compute_histograms.html">
+<link rel="index" title="Index" href="../../genindex.html"><link rel="search" title="Search" href="../../search.html"><link rel="next" title="Khisto — optimal binning histograms" href="../../demo.html"><link rel="prev" title="compute_histograms" href="khisto.core.compute_histograms.html">
 
     <!-- Generated with Sphinx 9.1.1 and Furo 2025.12.19 -->
-        <title>khisto.core.HistogramResult - khisto-python 1.0.3</title>
+        <title>HistogramResult - khisto-python 1.0.3</title>
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d111a655" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo.css?v=7bdb33bb" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="../../_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=f54c7f42" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css?v=7634f434" />
     
     
 
@@ -222,8 +222,8 @@
 <li class="toctree-l1"><a class="reference internal" href="../../histogram/index.html">Histograms</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../matplotlib/index.html">Matplotlib</a></li>
 <li class="toctree-l1 current has-children"><a class="reference internal" href="../index.html">Core</a><input aria-label="Toggle navigation of Core" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
-<li class="toctree-l2"><a class="reference internal" href="khisto.core.compute_histograms.html">khisto.core.compute_histograms</a></li>
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">khisto.core.HistogramResult</a></li>
+<li class="toctree-l2"><a class="reference internal" href="khisto.core.compute_histograms.html">compute_histograms</a></li>
+<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">HistogramResult</a></li>
 </ul>
 </li>
 </ul>
@@ -273,8 +273,8 @@
           </label>
         </div>
         <article role="main" id="furo-main-content">
-          <section id="khisto-core-histogramresult">
-<h1>khisto.core.HistogramResult<a class="headerlink" href="#khisto-core-histogramresult" title="Link to this heading">¶</a></h1>
+          <section id="histogramresult">
+<h1>HistogramResult<a class="headerlink" href="#histogramresult" title="Link to this heading">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="khisto.core.HistogramResult">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">khisto.core.</span></span><span class="sig-name descname"><span class="pre">HistogramResult</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lower_bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">upper_bounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">frequencies</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.int64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">probabilities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">densities</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">NDArray</span><span class="p"><span class="pre">[</span></span><span class="pre">np.float64</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_best</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">granularity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">information_rate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.15)"><span class="pre">float</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">peak_interval_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spike_interval_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">empty_interval_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#khisto.core.HistogramResult" title="Link to this definition">¶</a></dt>
@@ -374,7 +374,7 @@ lower_bounds and upper_bounds are equal for adjacent bins.</p>
                   <span>Previous</span>
                 </div>
                 
-                <div class="title">khisto.core.compute_histograms</div>
+                <div class="title">compute_histograms</div>
                 
               </div>
             </a>
@@ -415,7 +415,7 @@ lower_bounds and upper_bounds are equal for adjacent bins.</p>
         <div class="toc-tree-container">
           <div class="toc-tree">
             <ul>
-<li><a class="reference internal" href="#">khisto.core.HistogramResult</a><ul>
+<li><a class="reference internal" href="#">HistogramResult</a><ul>
 <li><a class="reference internal" href="#khisto.core.HistogramResult"><code class="docutils literal notranslate"><span class="pre">HistogramResult</span></code></a><ul>
 <li><a class="reference internal" href="#khisto.core.HistogramResult.__init__"><code class="docutils literal notranslate"><span class="pre">HistogramResult.__init__()</span></code></a></li>
 <li><a class="reference internal" href="#khisto.core.HistogramResult.bin_centers"><code class="docutils literal notranslate"><span class="pre">HistogramResult.bin_centers</span></code></a></li>
