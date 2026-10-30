@@ -1,19 +1,20 @@
 # Changelog
 
-All notable changes to Khisto are documented in this file.
+All notable changes  to Khisto are documented in this file for the users.
 
 ## Unreleased
 
 ### Fixed
 
-- Convert date-like inputs and registered Matplotlib units before binning in
-  `hist()`, preserving axis formatting and unit-aware range bounds.
+- Fix plotting dates and data with measurement units, including axis labels
+  and range limits.
+- Fix incorrect editor warnings when plotting dates, decimals, or data with
+  measurement units.
 
 ### Changed
 
-- Replace the landing page's Gaussian and Pareto plots with a before/after
-  comparison on heavy-tailed Lévy data and real UCI Adult ages, using
-  the same bin count for equal-width and adaptive histograms in each row.
+- Add clearer before-and-after examples comparing Khisto with equal-width
+  histograms in the documentation.
 
 ## [1.0.3] - 2026-10-22
 

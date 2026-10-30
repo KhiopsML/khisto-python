@@ -17,6 +17,7 @@ pytest.importorskip("matplotlib")
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.units as munits
+from matplotlib.colors import to_rgba
 from matplotlib.container import BarContainer
 from matplotlib.patches import Polygon
 
@@ -190,11 +191,11 @@ class TestHistBasic:
         _, _, patches = hist(normal_data, color="tab:blue", alpha=alpha, ax=ax)
 
         for patch in patches.patches:
-            assert patch.get_edgecolor()[:3] == patch.get_facecolor()[:3]
-            assert patch.get_edgecolor()[3] == pytest.approx(expected_edge_alpha)
-            assert patch.get_facecolor()[3] == pytest.approx(
-                1.0 if alpha is None else alpha
-            )
+            edgecolor = to_rgba(patch.get_edgecolor())
+            facecolor = to_rgba(patch.get_facecolor())
+            assert edgecolor[:3] == facecolor[:3]
+            assert edgecolor[3] == pytest.approx(expected_edge_alpha)
+            assert facecolor[3] == pytest.approx(1.0 if alpha is None else alpha)
             assert patch.get_alpha() == alpha
 
     @pytest.mark.parametrize("edgecolor_keyword", ["edgecolor", "ec"])
@@ -305,8 +306,11 @@ class TestHistUnits:
         expected, expected_bins = histogram(mdates.date2num(data), density=density)
         _, ax = plt.subplots()
 
-        values, bins, _ = hist(data, ax=ax, density=density, orientation=orientation)
+        values, bins, patches = hist(
+            data, ax=ax, density=density, orientation=orientation
+        )
 
+        assert_type(patches, BarContainer)
         axis = ax.yaxis if orientation == "horizontal" else ax.xaxis
         np.testing.assert_allclose(values, expected)
         np.testing.assert_array_equal(bins, expected_bins)
@@ -340,8 +344,9 @@ class TestHistUnits:
         data = [Decimal(i) / 10 for i in range(100)]
         expected, expected_bins = histogram(np.asarray(data, dtype=float))
 
-        values, bins, _ = hist(data)
+        values, bins, patches = hist(data)
 
+        assert_type(patches, BarContainer)
         np.testing.assert_allclose(values, expected)
         np.testing.assert_array_equal(bins, expected_bins)
 
@@ -351,7 +356,7 @@ class TestHistUnits:
         class UnitValue:
             magnitude: float
 
-        class Converter(munits.ConversionInterface):
+        class Converter:
             @staticmethod
             def default_units(values, axis):
                 return "m"
@@ -377,18 +382,19 @@ class TestHistUnits:
             np.arange(100) * scale, range=(10 * scale, 80 * scale), density=False
         )
         _, ax = plt.subplots()
-        axis_name = "y" if orientation == "horizontal" else "x"
-        unit_kwargs = {f"{axis_name}units": unit} if unit == "cm" else {}
+        unit_override = unit if unit == "cm" else None
 
-        values, bins, _ = hist(
+        values, bins, patches = hist(
             data,
             range=(unit_value(10), unit_value(80)),
             density=False,
             orientation=orientation,
             ax=ax,
-            **unit_kwargs,
+            xunits=unit_override if orientation == "vertical" else None,
+            yunits=unit_override if orientation == "horizontal" else None,
         )
 
+        assert_type(patches, BarContainer)
         axis = ax.yaxis if orientation == "horizontal" else ax.xaxis
         np.testing.assert_array_equal(values, expected)
         np.testing.assert_array_equal(bins, expected_bins)

@@ -13,6 +13,8 @@ import numpy as np
 from khisto.histogram import histogram as khisto_histogram
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.container import BarContainer
     from matplotlib.patches import Polygon
@@ -21,7 +23,7 @@ if TYPE_CHECKING:
 
 @overload
 def hist(
-    x: ArrayLike,
+    x: ArrayLike | Sequence[object],
     range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
@@ -34,7 +36,7 @@ def hist(
 
 @overload
 def hist(
-    x: ArrayLike,
+    x: ArrayLike | Sequence[object],
     range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
@@ -47,7 +49,7 @@ def hist(
 
 @overload
 def hist(
-    x: ArrayLike,
+    x: ArrayLike | Sequence[object],
     range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
@@ -63,7 +65,7 @@ def hist(
 
 
 def hist(
-    x: ArrayLike,
+    x: ArrayLike | Sequence[object],
     range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
@@ -80,7 +82,8 @@ def hist(
     Parameters
     ----------
     x : array_like
-        Input data. Must be 1-dimensional.
+        Numeric values or values supported by Matplotlib's unit converters.
+        Must be 1-dimensional.
     range : tuple, optional
         Lower and upper range of the bins. Values outside the range are ignored.
     max_bins : int, optional
@@ -153,10 +156,16 @@ def hist(
     if ax is None:
         ax = plt.gca()
 
-    # Use the same unit processing as Axes.hist, before computing numeric bins.
     axis_name = "y" if kwargs.get("orientation") == "horizontal" else "x"
-    (x,) = ax._process_unit_info([(axis_name, x)], kwargs)
     axis = ax.yaxis if axis_name == "y" else ax.xaxis
+    if not axis.have_units():
+        axis.update_units(x)
+    units = kwargs.pop(f"{axis_name}units", None)
+    if units is not None and units != axis.get_units():
+        axis.set_units(units)
+        axis.update_units(x)
+    x = np.asarray(axis.convert_units(x), dtype=np.float64)
+
     bin_range = None
     if range is not None:
         lower, upper = axis.convert_units(range)
