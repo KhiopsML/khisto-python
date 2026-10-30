@@ -7,13 +7,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
 import numpy as np
+from matplotlib.transforms import Bbox
 
 from khisto.matplotlib import hist
 
 SEED = 42
 SAMPLE_SIZE = 10_000
+BASELINE_COLOR = "#9373bd"
 
 
 def save_binning_comparison_figure(output_path: Path) -> None:
@@ -22,7 +23,7 @@ def save_binning_comparison_figure(output_path: Path) -> None:
     levy = 1 / rng.standard_normal(SAMPLE_SIZE) ** 2
     ages = np.loadtxt(
         Path(__file__).resolve().parents[1]
-        / "docs" / "datasets" / "california-housing-ages.csv",
+        / "docs" / "datasets" / "adult-ages.csv",
         dtype=int,
     )
     with plt.rc_context({
@@ -33,71 +34,89 @@ def save_binning_comparison_figure(output_path: Path) -> None:
         "axes.labelcolor": "black",
         "xtick.color": "black",
         "ytick.color": "black",
+        "svg.fonttype": "path",
+        "svg.hashsalt": "khisto-comparison",
     }):
         fig, axes = plt.subplots(
-            2, 2, figsize=(10, 5.8), sharex="row", sharey="row", facecolor="white"
+            2, 2, figsize=(10, 6), sharex="row", sharey="row", facecolor="white"
         )
         fig.subplots_adjust(
-            left=0.10, right=0.98, bottom=0.10, top=0.80, hspace=0.72, wspace=0.18
+            left=0.09, right=0.98, bottom=0.10, top=0.78, hspace=0.90, wspace=0.30
         )
-        for column, (title, subtitle, color, text_color) in enumerate(
-            [
-                ("Before", "Equal-width bins", "black", "white"),
-                ("After", "Khisto", "#ff7900", "black"),
-            ]
-        ):
-            position = axes[0, column].get_position()
-            center = (position.x0 + position.x1) / 2
-            fig.add_artist(Rectangle(
-                (position.x0, 0.915), position.width, 0.075,
-                transform=fig.transFigure, facecolor=color, edgecolor="none",
-            ))
+        for column, title in enumerate(("Before / Equal-width", "After / Khisto")):
             fig.text(
-                center, 0.9525, title, ha="center", va="center",
-                fontsize=22, weight="bold", color=text_color,
+                axes[0, column].get_position().x0, 0.96, title,
+                fontsize=14, weight="bold",
             )
-            fig.text(center, 0.875, subtitle, ha="center", fontsize=13)
-
-        for row, (data, bins, label, xlabel) in enumerate(
+        for row, (data, label, xlabel) in enumerate(
             [
-                (levy, 100, "Lévy", "Value"),
-                (ages, 35, "California Housing", "Median house age (years)"),
+                (levy, "Lévy", "Value"),
+                (ages, "UCI Adult", "Age (years)"),
             ]
         ):
+            _, adaptive_edges, _ = hist(
+                data, density=True, ax=axes[row, 1], color="#f16e00"
+            )
+            bin_count = len(adaptive_edges) - 1
             axes[row, 0].hist(
-                data, bins=bins, density=True, color="#666666",
+                data, bins=bin_count, density=True, color=BASELINE_COLOR,
                 edgecolor="white", linewidth=0.6,
             )
-            hist(data, density=True, ax=axes[row, 1], color="#f16e00")
             position = axes[row, 0].get_position()
             fig.text(
-                position.x0, position.y1 + 0.025, label, fontsize=13, weight="bold",
+                position.x0, position.y1 + 0.10, label,
+                fontsize=16, weight="bold",
             )
-            fig.text(
-                0.54, position.y0 - 0.078, xlabel, ha="center", fontsize=12,
-            )
-            axes[row, 0].set_ylabel("Density")
             for ax in axes[row]:
-                ax.set_facecolor("white")
+                ax.set_xlabel(xlabel)
+                ax.set_ylabel("Density")
+                ax.set_facecolor("none")
                 ax.spines[["top", "right"]].set_visible(False)
                 ax.spines[["bottom", "left"]].set_color("#666666")
-                ax.tick_params(labelsize=11, color="#666666", which="both")
+                ax.tick_params(
+                    labelsize=11, color="#666666", which="both", labelleft=True
+                )
                 ax.minorticks_off()
 
         for ax in axes[0]:
             ax.set_xscale("log")
             ax.set_yscale("log")
             ax.minorticks_off()
-        axes[1, 0].set_ylim(0, 0.07)
-        spike = axes[1, 0].patches[10]
-        axes[1, 0].annotate(
-            "Two ages in one bin\ncreate an artificial spike",
-            xy=(spike.get_x() + spike.get_width() / 2, spike.get_height()),
-            xytext=(0.65, 0.93), textcoords="axes fraction",
-            ha="center", va="top", fontsize=10,
-            arrowprops={"arrowstyle": "->", "color": "black", "linewidth": 0.8},
-        )
         fig.savefig(output_path, dpi=180, facecolor=fig.get_facecolor())
+        for text in fig.texts:
+            text.set_visible(False)
+        for theme, foreground, axis_color, orange in (
+            ("light", "#000000", "#666666", "#f16e00"),
+            ("dark", "#ffffff", "#999999", "#ff7900"),
+        ):
+            for row, dataset in enumerate(("levy", "adult")):
+                for column, method in enumerate(("equal-width", "khisto")):
+                    ax = axes[row, column]
+                    ax.xaxis.label.set_color(foreground)
+                    ax.yaxis.label.set_color(foreground)
+                    ax.tick_params(colors=foreground, which="both")
+                    ax.spines[["bottom", "left"]].set_color(axis_color)
+                    for bar in ax.patches:
+                        bar.set_facecolor((BASELINE_COLOR, orange)[column])
+                        bar.set_edgecolor((BASELINE_COLOR, orange)[column])
+                    position = ax.get_position()
+                    bounds = Bbox.from_extents(
+                        position.x0 - 0.085, position.y0 - 0.085,
+                        position.x1 + 0.015, position.y1 + 0.015,
+                    ).transformed(fig.transFigure - fig.dpi_scale_trans)
+                    svg_path = output_path.parent / f"{dataset}-{method}-{theme}.svg"
+                    fig.savefig(
+                        svg_path,
+                        bbox_inches=bounds, transparent=True,
+                        metadata={"Date": None},
+                    )
+                    svg_path.write_text(
+                        "\n".join(
+                            line.rstrip()
+                            for line in svg_path.read_text(encoding="utf-8").splitlines()
+                        ) + "\n",
+                        encoding="utf-8",
+                    )
         plt.close(fig)
 
 

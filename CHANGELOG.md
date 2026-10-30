@@ -12,8 +12,8 @@ All notable changes to Khisto are documented in this file.
 ### Changed
 
 - Replace the landing page's Gaussian and Pareto plots with a before/after
-  comparison on heavy-tailed Lévy data and real California Housing ages,
-  stored locally so figure generation works offline without scikit-learn.
+  comparison on heavy-tailed Lévy data and real UCI Adult ages, using
+  the same bin count for equal-width and adaptive histograms in each row.
 
 ## [1.0.3] - 2026-10-22
 
