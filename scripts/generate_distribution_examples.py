@@ -8,37 +8,117 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.transforms import Bbox
 
 from khisto.matplotlib import hist
 
 SEED = 42
 SAMPLE_SIZE = 10_000
-PARETO_SHAPE = 3.0
+BASELINE_COLOR = "#9373bd"
 
 
-def generate_gaussian_data(size: int = SAMPLE_SIZE, seed: int = SEED) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    return rng.normal(loc=0.0, scale=1.0, size=size)
+def save_binning_comparison_figure(output_path: Path) -> None:
+    rng = np.random.default_rng(SEED)
+    # The reciprocal square of a standard normal follows a Lévy distribution.
+    levy = 1 / rng.standard_normal(SAMPLE_SIZE) ** 2
+    ages = np.loadtxt(
+        Path(__file__).resolve().parents[1]
+        / "docs" / "datasets" / "adult-ages.csv",
+        dtype=int,
+    )
+    with plt.rc_context({
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"],
+        "font.size": 11,
+        "text.color": "black",
+        "axes.labelcolor": "black",
+        "xtick.color": "black",
+        "ytick.color": "black",
+        "svg.fonttype": "path",
+        "svg.hashsalt": "khisto-comparison",
+    }):
+        fig, axes = plt.subplots(
+            2, 2, figsize=(10, 6), sharex="row", sharey="row", facecolor="white"
+        )
+        fig.subplots_adjust(
+            left=0.105, right=0.965, bottom=0.115, top=0.81,
+            hspace=0.80, wspace=0.32,
+        )
+        for column, title in enumerate(("Before / Equal-width", "After / Khisto")):
+            fig.text(
+                axes[0, column].get_position().x0, 0.95, title,
+                fontsize=16, weight="bold", va="top",
+            )
+        for row, (data, label, xlabel) in enumerate(
+            [
+                (levy, "Lévy distribution", "Value"),
+                (ages, "UCI Adult", "Age (years)"),
+            ]
+        ):
+            _, adaptive_edges, _ = hist(
+                data, density=True, ax=axes[row, 1], color="#f16e00"
+            )
+            bin_count = len(adaptive_edges) - 1
+            axes[row, 0].hist(
+                data, bins=bin_count, density=True, color=BASELINE_COLOR,
+                edgecolor="white", linewidth=0.6,
+            )
+            position = axes[row, 0].get_position()
+            fig.text(
+                position.x0, position.y1 + 0.035, label,
+                fontsize=13, weight="bold", color="#333333", va="bottom",
+            )
+            for ax in axes[row]:
+                ax.set_xlabel(xlabel)
+                ax.set_ylabel("Density")
+                ax.set_facecolor("none")
+                ax.spines[["top", "right"]].set_visible(False)
+                ax.spines[["bottom", "left"]].set_color("#666666")
+                ax.tick_params(
+                    labelsize=10, color="#666666", which="both", labelleft=True
+                )
+                ax.minorticks_off()
 
-
-def generate_pareto_data(
-    size: int = SAMPLE_SIZE,
-    shape: float = PARETO_SHAPE,
-    seed: int = SEED,
-) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    return rng.pareto(a=shape, size=size) + 1.0
-
-
-def save_gaussian_figure(data: np.ndarray, output_path: Path) -> None:
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="steelblue", linewidth=0.8)
-    ax.set_title("Adaptive histogram on a standard Gaussian")
-    ax.set_xlabel("Value")
-    ax.set_ylabel("Density")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    plt.close(fig)
+        for ax in axes[0]:
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.minorticks_off()
+        fig.savefig(output_path, dpi=180, facecolor=fig.get_facecolor())
+        for text in fig.texts:
+            text.set_visible(False)
+        for theme, foreground, axis_color, orange in (
+            ("light", "#000000", "#666666", "#f16e00"),
+            ("dark", "#ffffff", "#999999", "#ff7900"),
+        ):
+            for row, dataset in enumerate(("levy", "adult")):
+                for column, method in enumerate(("equal-width", "khisto")):
+                    ax = axes[row, column]
+                    ax.xaxis.label.set_color(foreground)
+                    ax.yaxis.label.set_color(foreground)
+                    ax.tick_params(colors=foreground, which="both")
+                    ax.spines[["bottom", "left"]].set_color(axis_color)
+                    for bar in ax.patches:
+                        bar.set_facecolor((BASELINE_COLOR, orange)[column])
+                        bar.set_edgecolor((BASELINE_COLOR, orange)[column])
+                    position = ax.get_position()
+                    bounds = Bbox.from_extents(
+                        position.x0 - 0.085, position.y0 - 0.085,
+                        position.x1 + 0.015, position.y1 + 0.015,
+                    ).transformed(fig.transFigure - fig.dpi_scale_trans)
+                    svg_path = output_path.parent / f"{dataset}-{method}-{theme}.svg"
+                    fig.savefig(
+                        svg_path,
+                        bbox_inches=bounds, transparent=True,
+                        metadata={"Date": None},
+                    )
+                    svg_path.write_text(
+                        "\n".join(
+                            line.rstrip()
+                            for line in svg_path.read_text(encoding="utf-8").splitlines()
+                        ) + "\n",
+                        encoding="utf-8",
+                    )
+        plt.close(fig)
 
 
 def save_counts_density_comparison_figure(output_path: Path) -> None:
@@ -119,41 +199,16 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
     plt.close(fig)
 
 
-def save_pareto_figure(data: np.ndarray, output_path: Path) -> None:
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="darkorange", linewidth=0.8)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_title("Adaptive histogram on a heavy-tailed Pareto law")
-    ax.set_xlabel("Value")
-    ax.set_ylabel("Density")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    plt.close(fig)
-
-
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     images_dir = repo_root / "docs" / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    gaussian_data = generate_gaussian_data()
-    pareto_data = generate_pareto_data()
+    save_binning_comparison_figure(images_dir / "binning-comparison.png")
+    save_counts_density_comparison_figure(images_dir / "counts-vs-density.png")
 
-    save_gaussian_figure(gaussian_data, images_dir / "gaussian-quick-start.png")
-    save_counts_density_comparison_figure(
-        images_dir / "counts-vs-density.png"
-    )
-    save_pareto_figure(pareto_data, images_dir / "pareto-quick-start.png")
-
-    print(f"Gaussian sample: size={gaussian_data.size}, mean={gaussian_data.mean():.4f}, std={gaussian_data.std():.4f}")
-    print(
-        "Pareto sample: "
-        f"size={pareto_data.size}, min={pareto_data.min():.4f}, max={pareto_data.max():.4f}, shape={PARETO_SHAPE:.1f}"
-    )
-    print(f"Wrote {images_dir / 'gaussian-quick-start.png'}")
+    print(f"Wrote {images_dir / 'binning-comparison.png'}")
     print(f"Wrote {images_dir / 'counts-vs-density.png'}")
-    print(f"Wrote {images_dir / 'pareto-quick-start.png'}")
 
 
 if __name__ == "__main__":

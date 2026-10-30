@@ -1,8 +1,20 @@
 # Changelog
 
-All notable changes to Khisto are documented in this file.
+All notable changes  to Khisto are documented in this file for the users.
 
 ## Unreleased
+
+### Fixed
+
+- Fix plotting dates and data with measurement units, including axis labels
+  and range limits.
+- Fix incorrect editor warnings when plotting dates, decimals, or data with
+  measurement units.
+
+### Changed
+
+- Add clearer before-and-after examples comparing Khisto with equal-width
+  histograms in the documentation.
 
 ## [1.0.3] - 2026-10-22
 

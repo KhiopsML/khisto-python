@@ -13,6 +13,8 @@ import numpy as np
 from khisto.histogram import histogram as khisto_histogram
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from matplotlib.axes import Axes
     from matplotlib.container import BarContainer
     from matplotlib.patches import Polygon
@@ -21,8 +23,8 @@ if TYPE_CHECKING:
 
 @overload
 def hist(
-    x: ArrayLike,
-    range: tuple[float, float] | None = None,
+    x: ArrayLike | Sequence[object],
+    range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
     *,
@@ -34,8 +36,8 @@ def hist(
 
 @overload
 def hist(
-    x: ArrayLike,
-    range: tuple[float, float] | None = None,
+    x: ArrayLike | Sequence[object],
+    range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
     *,
@@ -47,8 +49,8 @@ def hist(
 
 @overload
 def hist(
-    x: ArrayLike,
-    range: tuple[float, float] | None = None,
+    x: ArrayLike | Sequence[object],
+    range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
     *,
@@ -63,8 +65,8 @@ def hist(
 
 
 def hist(
-    x: ArrayLike,
-    range: tuple[float, float] | None = None,
+    x: ArrayLike | Sequence[object],
+    range: tuple[object, object] | None = None,
     max_bins: int | None = None,
     density: bool = True,
     *,
@@ -80,10 +82,10 @@ def hist(
     Parameters
     ----------
     x : array_like
-        Input data. Must be 1-dimensional.
-    range : tuple of (float, float), optional
-        Lower and upper range of the bins. Values outside the range are
-        ignored.
+        Numeric values or values supported by Matplotlib's unit converters.
+        Must be 1-dimensional.
+    range : tuple, optional
+        Lower and upper range of the bins. Values outside the range are ignored.
     max_bins : int, optional
         Maximum number of bins. If not provided, the algorithm selects
         the optimal number of bins automatically.
@@ -151,16 +153,31 @@ def hist(
             "histtype='barstacked' is not supported. Khisto only accepts a single dataset."
         )
 
+    if ax is None:
+        ax = plt.gca()
+
+    axis_name = "y" if kwargs.get("orientation") == "horizontal" else "x"
+    axis = ax.yaxis if axis_name == "y" else ax.xaxis
+    if not axis.have_units():
+        axis.update_units(x)
+    units = kwargs.pop(f"{axis_name}units", None)
+    if units is not None and units != axis.get_units():
+        axis.set_units(units)
+        axis.update_units(x)
+    x = np.asarray(axis.convert_units(x), dtype=np.float64)
+
+    bin_range = None
+    if range is not None:
+        lower, upper = axis.convert_units(range)
+        bin_range = (lower, upper)
+
     # Use frequencies so Matplotlib applies density and cumulative only once.
     frequencies, bin_edges = khisto_histogram(
         x,
-        range=range,
+        range=bin_range,
         max_bins=max_bins,
         density=False,
     )
-
-    if ax is None:
-        ax = plt.gca()
 
     # Weighted left edges preserve Khiops' right-closed bins and [-1e100, 1e100]
     # clamping when Matplotlib renders its left-closed bins.

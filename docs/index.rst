@@ -10,20 +10,86 @@ Khisto — Histograms that fit your data
    adaptive, variable-width bins powered by the Khisto algorithm.
    Dense regions get fine bins, sparse regions get wide ones — no tuning needed.
 
-.. grid:: 2
-   :gutter: 3
+.. container:: binning-comparison
 
-   .. grid-item-card:: Standard Gaussian
-      :img-top: images/gaussian-quick-start.png
+   .. container:: comparison-header
 
-      Bins concentrate around the interesting areas — exactly
-      matching the density of a normal distribution.
+      .. container:: comparison-label
 
-   .. grid-item-card:: Heavy-tailed Pareto
-      :img-top: images/pareto-quick-start.png
+         .. rubric:: Before
+            :class: comparison-method
 
-      Log-log axes reveal how adaptive bins track a power-law decay
-      over four orders of magnitude.
+         .. rst-class:: comparison-subtitle
+
+            Equal-width
+
+      .. container:: comparison-label
+
+         .. rubric:: After
+            :class: comparison-method comparison-adaptive
+
+         .. rst-class:: comparison-subtitle
+
+            Khisto
+
+   .. rubric:: Lévy distribution
+      :class: comparison-heading
+
+   .. container:: comparison-pair
+
+      .. container:: comparison-panel
+
+         .. image:: images/levy-equal-width-light.svg
+            :class: comparison-light
+            :alt: Before: equal-width bins hide the Lévy peak on logarithmic axes.
+
+         .. image:: images/levy-equal-width-dark.svg
+            :class: comparison-dark
+            :alt: Before: equal-width bins hide the Lévy peak on logarithmic axes.
+
+      .. container:: comparison-panel
+
+         .. image:: images/levy-khisto-light.svg
+            :class: comparison-light
+            :alt: After: Khisto reveals the Lévy peak and heavy tail on the same scales.
+
+         .. image:: images/levy-khisto-dark.svg
+            :class: comparison-dark
+            :alt: After: Khisto reveals the Lévy peak and heavy tail on the same scales.
+
+   .. rubric:: Adult age
+      :class: comparison-heading
+
+   .. container:: comparison-pair
+
+      .. container:: comparison-panel
+
+         .. image:: images/adult-equal-width-light.svg
+            :class: comparison-light
+            :alt: Before: equal-width bins create alternating artificial spikes in integer ages.
+
+         .. image:: images/adult-equal-width-dark.svg
+            :class: comparison-dark
+            :alt: Before: equal-width bins create alternating artificial spikes in integer ages.
+
+      .. container:: comparison-panel
+
+         .. image:: images/adult-khisto-light.svg
+            :class: comparison-light
+            :alt: After: Khisto shows the age distribution without alternating binning spikes.
+
+         .. image:: images/adult-khisto-dark.svg
+            :class: comparison-dark
+            :alt: After: Khisto shows the age distribution without alternating binning spikes.
+
+   .. container:: comparison-caption
+
+      .. raw:: html
+
+         <p>Same data, bin counts and scales.
+         Ages: <a class="reference external" href="https://doi.org/10.24432/C5XW20"
+         target="_blank" rel="noopener noreferrer"
+         aria-label="UCI Adult (opens in a new tab)">UCI Adult</a>.</p>
 
 Get started
 -----------
@@ -91,11 +157,15 @@ Get started
       See why counts mislead when bins have different widths.
 
    .. grid-item-card:: :octicon:`info;1.5em` Histograms - Khiops
-      :link: https://khiops.org/learn/histograms/
-      :link-type: url
-      :class-card: histogram-guide-card
+      :class-card: histogram-guide-card sd-card-hover
 
       Go further, from the simplest histogram to the most complex.
+
+      .. raw:: html
+
+         <a class="sd-stretched-link sd-hide-link-text reference external"
+         href="https://khiops.org/learn/histograms/" target="_blank"
+         rel="noopener noreferrer"><span>Histograms - Khiops (opens in a new tab)</span></a>
 
 .. toctree::
    :maxdepth: 2

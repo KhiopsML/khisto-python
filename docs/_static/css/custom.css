@@ -30,6 +30,77 @@ img.sidebar-logo {
   margin-bottom: 1.5rem;
 }
 
+/* Comparison charts follow the page theme without adding a plotting runtime. */
+.binning-comparison {
+  margin: 2rem 0 1rem;
+}
+
+.binning-comparison .comparison-heading {
+  font-size: 1.125rem;
+  margin: 1.25rem 0 0.5rem;
+}
+
+.comparison-header,
+.comparison-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.binning-comparison .comparison-method {
+  border-top: 3px solid #9373bd;
+  font-size: 1.5rem;
+  line-height: 1.2;
+  margin: 0;
+  padding-top: 0.625rem;
+}
+
+.binning-comparison .comparison-adaptive {
+  border-color: #ff7900;
+}
+
+.binning-comparison .comparison-subtitle {
+  color: var(--color-foreground-secondary);
+  font-size: 0.9375rem;
+  margin: 0.25rem 0 0;
+}
+
+.comparison-panel img {
+  display: block;
+  width: 100%;
+}
+
+.comparison-caption {
+  color: var(--color-foreground-secondary);
+  font-size: 0.9375rem;
+  margin-top: 0.5rem;
+}
+
+.comparison-panel .comparison-dark,
+body[data-theme="dark"] .comparison-panel .comparison-light {
+  display: none;
+}
+
+body[data-theme="dark"] .comparison-panel .comparison-dark {
+  display: block;
+}
+
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) .comparison-panel .comparison-light {
+    display: none;
+  }
+
+  body:not([data-theme="light"]) .comparison-panel .comparison-dark {
+    display: block;
+  }
+}
+
+@media (max-width: 40rem) {
+  .comparison-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* Card styling overrides for Furo + sphinx-design */
 .sd-card {
   border-radius: 0px !important;
