@@ -12,13 +12,13 @@ Khisto — Histograms that fit your data
 
 .. container:: binning-comparison
 
-   .. image:: images/binning-comparison.png
+   .. image:: images/binning-comparison.svg
       :class: only-light
       :alt: Before / Equal-width and After / Khisto, using the same data, bin counts
          and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic
          axes and avoids artificial spikes in integer Adult ages.
 
-   .. image:: images/binning-comparison-dark.png
+   .. image:: images/binning-comparison-dark.svg
       :class: only-dark
       :alt: Before / Equal-width and After / Khisto, using the same data, bin counts
          and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic
