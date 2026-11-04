@@ -12,7 +12,7 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?v=8dab3a3b" />
-    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=7634f434" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=71cdebf3" />
     
     
 
@@ -279,38 +279,8 @@
 adaptive, variable-width bins powered by the Khisto algorithm.
 Dense regions get fine bins, sparse regions get wide ones — no tuning needed.</p>
 <div class="binning-comparison docutils container">
-<div class="comparison-header docutils container">
-<div class="comparison-label docutils container">
-<p class="comparison-method rubric">Before</p>
-<p class="comparison-subtitle">Equal-width</p>
-</div>
-<div class="comparison-label docutils container">
-<p class="comparison-method comparison-adaptive rubric">After</p>
-<p class="comparison-subtitle">Khisto</p>
-</div>
-</div>
-<p class="comparison-heading rubric">Lévy distribution</p>
-<div class="comparison-pair docutils container">
-<div class="comparison-panel docutils container">
-<img alt="Before: equal-width bins hide the Lévy peak on logarithmic axes." class="comparison-light" src="_images/levy-equal-width-light.svg" />
-<img alt="Before: equal-width bins hide the Lévy peak on logarithmic axes." class="comparison-dark" src="_images/levy-equal-width-dark.svg" />
-</div>
-<div class="comparison-panel docutils container">
-<img alt="After: Khisto reveals the Lévy peak and heavy tail on the same scales." class="comparison-light" src="_images/levy-khisto-light.svg" />
-<img alt="After: Khisto reveals the Lévy peak and heavy tail on the same scales." class="comparison-dark" src="_images/levy-khisto-dark.svg" />
-</div>
-</div>
-<p class="comparison-heading rubric">Adult age</p>
-<div class="comparison-pair docutils container">
-<div class="comparison-panel docutils container">
-<img alt="Before: equal-width bins create alternating artificial spikes in integer ages." class="comparison-light" src="_images/adult-equal-width-light.svg" />
-<img alt="Before: equal-width bins create alternating artificial spikes in integer ages." class="comparison-dark" src="_images/adult-equal-width-dark.svg" />
-</div>
-<div class="comparison-panel docutils container">
-<img alt="After: Khisto shows the age distribution without alternating binning spikes." class="comparison-light" src="_images/adult-khisto-light.svg" />
-<img alt="After: Khisto shows the age distribution without alternating binning spikes." class="comparison-dark" src="_images/adult-khisto-dark.svg" />
-</div>
-</div>
+<img alt="Before / Equal-width and After / Khisto, using the same data, bin counts and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic axes and avoids artificial spikes in integer Adult ages." class="only-light" src="_images/binning-comparison.png" />
+<img alt="Before / Equal-width and After / Khisto, using the same data, bin counts and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic axes and avoids artificial spikes in integer Adult ages." class="only-dark" src="_images/binning-comparison-dark.png" />
 <div class="comparison-caption docutils container">
 <p>Same data, bin counts and scales.
 Ages: <a class="reference external" href="https://doi.org/10.24432/C5XW20"
