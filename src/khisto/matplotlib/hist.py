@@ -82,8 +82,7 @@ def hist(
     Parameters
     ----------
     x : array_like
-        Numeric values or values supported by Matplotlib's unit converters.
-        Must be 1-dimensional.
+        Input data. Must be 1-dimensional.
     range : tuple, optional
         Lower and upper range of the bins. Values outside the range are ignored.
     max_bins : int, optional

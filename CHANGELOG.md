@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes  to Khisto are documented in this file for the users.
+All notable changes to Khisto are documented in this file for the users.
 
 ## Unreleased
 
