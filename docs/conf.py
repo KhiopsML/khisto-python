@@ -127,4 +127,5 @@ html_theme_options = {
 }
 html_title = f"<h6><center>{project} {release}</center></h6>"
 html_static_path = ['_static']
+html_extra_path = ['images/binning-comparison.png']
 html_css_files = ["css/custom.css"]

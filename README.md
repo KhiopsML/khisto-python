@@ -12,7 +12,7 @@ Khisto is a Python library for creating histograms using the **Khiops optimal bi
 
 Documentation is available at **[khiopsml.github.io/khisto-python](https://khiopsml.github.io/khisto-python/)**.
 
-![Before / Equal-width and After / Khisto on Lévy and UCI Adult ages, using the same data, bin counts and scales.](https://raw.githubusercontent.com/KhiopsML/khisto-python/main/docs/images/binning-comparison.png)
+![Before / Equal-width and After / Khisto on Lévy and UCI Adult ages, using the same data, bin counts and scales.](https://khiopsml.github.io/khisto-python/binning-comparison.png)
 
 ## Installation
 
