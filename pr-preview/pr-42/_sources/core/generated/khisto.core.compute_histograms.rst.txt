@@ -1,6 +1,0 @@
-﻿compute\_histograms
-===================
-
-.. currentmodule:: khisto.core
-
-.. autofunction:: compute_histograms
