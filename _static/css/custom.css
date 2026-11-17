@@ -30,6 +30,16 @@ img.sidebar-logo {
   margin-bottom: 1.5rem;
 }
 
+.binning-comparison {
+  margin: 2rem 0 1rem;
+}
+
+.comparison-caption {
+  color: var(--color-foreground-secondary);
+  font-size: 0.9375rem;
+  margin-top: 0.5rem;
+}
+
 /* Card styling overrides for Furo + sphinx-design */
 .sd-card {
   border-radius: 0px !important;

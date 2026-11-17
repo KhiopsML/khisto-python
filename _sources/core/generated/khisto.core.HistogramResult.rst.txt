@@ -1,5 +1,5 @@
-﻿khisto.core.HistogramResult
-===========================
+﻿HistogramResult
+===============
 
 .. currentmodule:: khisto.core
 
