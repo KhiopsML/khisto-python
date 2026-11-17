@@ -13,32 +13,94 @@ from khisto.matplotlib import hist
 
 SEED = 42
 SAMPLE_SIZE = 10_000
-PARETO_SHAPE = 3.0
+BASELINE_COLOR = "#9373bd"
 
 
-def generate_gaussian_data(size: int = SAMPLE_SIZE, seed: int = SEED) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    return rng.normal(loc=0.0, scale=1.0, size=size)
-
-
-def generate_pareto_data(
-    size: int = SAMPLE_SIZE,
-    shape: float = PARETO_SHAPE,
-    seed: int = SEED,
-) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    return rng.pareto(a=shape, size=size) + 1.0
-
-
-def save_gaussian_figure(data: np.ndarray, output_path: Path) -> None:
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="steelblue", linewidth=0.8)
-    ax.set_title("Adaptive histogram on a standard Gaussian")
-    ax.set_xlabel("Value")
-    ax.set_ylabel("Density")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    plt.close(fig)
+def save_binning_comparison_figure(output_path: Path) -> None:
+    rng = np.random.default_rng(SEED)
+    # The reciprocal square of a standard normal follows a Lévy distribution.
+    levy = 1 / rng.standard_normal(SAMPLE_SIZE) ** 2
+    ages = np.loadtxt(
+        Path(__file__).resolve().parents[1]
+        / "docs" / "datasets" / "adult-ages.csv",
+        dtype=int,
+    )
+    for suffix, foreground, secondary, axis_color, orange in (
+        ("", "black", "#646776", "#666666", "#f16e00"),
+        ("-dark", "white", "#9ca0a5", "#999999", "#ff7900"),
+    ):
+        with plt.rc_context({
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Helvetica Neue", "Helvetica", "Arial", "Liberation Sans", "DejaVu Sans"],
+            "font.size": 11,
+            "mathtext.default": "regular",
+            "svg.fonttype": "path",
+            "svg.hashsalt": "khisto-comparison",
+            "text.color": foreground,
+            "axes.labelcolor": foreground,
+            "xtick.color": foreground,
+            "ytick.color": foreground,
+        }):
+            fig, axes = plt.subplots(
+                2, 2, figsize=(10, 6.59), sharex="row", sharey="row",
+            )
+            fig.subplots_adjust(
+                left=0.087, right=0.985, bottom=0.08, top=0.742,
+                hspace=0.85, wspace=0.355,
+            )
+            for column, (title, subtitle, color) in enumerate(
+                [("Before", "Equal-width", BASELINE_COLOR), ("After", "Khisto", "#ff7900")]
+            ):
+                left = column * 0.516
+                fig.add_artist(plt.Line2D(
+                    [left, left + 0.484], [0.996, 0.996],
+                    transform=fig.transFigure, color=color, linewidth=3,
+                ))
+                fig.text(left, 0.973, title, fontsize=24, weight="bold", va="top")
+                fig.text(left, 0.905, subtitle, fontsize=15, color=secondary, va="top")
+            for row, (data, label, xlabel) in enumerate(
+                [
+                    (levy, "Lévy distribution", "Value"),
+                    (ages, "Adult age", "Age (years)"),
+                ]
+            ):
+                _, adaptive_edges, _ = hist(
+                    data, density=True, ax=axes[row, 1],
+                    color=orange, edgecolor=orange,
+                )
+                axes[row, 0].hist(
+                    data, bins=len(adaptive_edges) - 1, density=True,
+                    color=BASELINE_COLOR, edgecolor=BASELINE_COLOR, linewidth=0.6,
+                )
+                fig.text(
+                    0, (0.819, 0.389)[row], label,
+                    fontsize=18, weight="bold", va="top",
+                )
+                for ax in axes[row]:
+                    ax.set_xlabel(xlabel)
+                    ax.set_ylabel("Density")
+                    ax.spines[["top", "right"]].set_visible(False)
+                    ax.spines[["bottom", "left"]].set_color(axis_color)
+                    ax.tick_params(
+                        labelsize=10, color=axis_color, which="both", labelleft=True,
+                    )
+                    ax.minorticks_off()
+                    if row == 1:
+                        ax.locator_params(axis="x", nbins=5)
+            for ax in axes[0]:
+                ax.set_xscale("log")
+                ax.set_yscale("log")
+                ax.minorticks_off()
+            fig.savefig(
+                output_path.with_stem(f"{output_path.stem}{suffix}"),
+                transparent=True, metadata={"Date": None},
+            )
+            if not suffix:
+                fig.savefig(
+                    output_path.with_suffix(".png"),
+                    dpi=180, facecolor="white", transparent=False,
+                )
+            plt.close(fig)
 
 
 def save_counts_density_comparison_figure(output_path: Path) -> None:
@@ -119,41 +181,18 @@ def save_counts_density_comparison_figure(output_path: Path) -> None:
     plt.close(fig)
 
 
-def save_pareto_figure(data: np.ndarray, output_path: Path) -> None:
-    fig, ax = plt.subplots(figsize=(7, 4.5))
-    hist(data, density=True, ax=ax, color="darkorange", linewidth=0.8)
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.set_title("Adaptive histogram on a heavy-tailed Pareto law")
-    ax.set_xlabel("Value")
-    ax.set_ylabel("Density")
-    fig.tight_layout()
-    fig.savefig(output_path, dpi=180)
-    plt.close(fig)
-
-
 def main() -> None:
     repo_root = Path(__file__).resolve().parents[1]
     images_dir = repo_root / "docs" / "images"
     images_dir.mkdir(parents=True, exist_ok=True)
 
-    gaussian_data = generate_gaussian_data()
-    pareto_data = generate_pareto_data()
+    save_binning_comparison_figure(images_dir / "binning-comparison.svg")
+    save_counts_density_comparison_figure(images_dir / "counts-vs-density.png")
 
-    save_gaussian_figure(gaussian_data, images_dir / "gaussian-quick-start.png")
-    save_counts_density_comparison_figure(
-        images_dir / "counts-vs-density.png"
-    )
-    save_pareto_figure(pareto_data, images_dir / "pareto-quick-start.png")
-
-    print(f"Gaussian sample: size={gaussian_data.size}, mean={gaussian_data.mean():.4f}, std={gaussian_data.std():.4f}")
-    print(
-        "Pareto sample: "
-        f"size={pareto_data.size}, min={pareto_data.min():.4f}, max={pareto_data.max():.4f}, shape={PARETO_SHAPE:.1f}"
-    )
-    print(f"Wrote {images_dir / 'gaussian-quick-start.png'}")
+    print(f"Wrote {images_dir / 'binning-comparison.svg'}")
+    print(f"Wrote {images_dir / 'binning-comparison-dark.svg'}")
+    print(f"Wrote {images_dir / 'binning-comparison.png'}")
     print(f"Wrote {images_dir / 'counts-vs-density.png'}")
-    print(f"Wrote {images_dir / 'pareto-quick-start.png'}")
 
 
 if __name__ == "__main__":

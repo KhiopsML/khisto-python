@@ -10,20 +10,28 @@ Khisto — Histograms that fit your data
    adaptive, variable-width bins powered by the Khisto algorithm.
    Dense regions get fine bins, sparse regions get wide ones — no tuning needed.
 
-.. grid:: 2
-   :gutter: 3
+.. container:: binning-comparison
 
-   .. grid-item-card:: Standard Gaussian
-      :img-top: images/gaussian-quick-start.png
+   .. image:: images/binning-comparison.svg
+      :class: only-light
+      :alt: Before / Equal-width and After / Khisto, using the same data, bin counts
+         and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic
+         axes and avoids artificial spikes in integer Adult ages.
 
-      Bins concentrate around the interesting areas — exactly
-      matching the density of a normal distribution.
+   .. image:: images/binning-comparison-dark.svg
+      :class: only-dark
+      :alt: Before / Equal-width and After / Khisto, using the same data, bin counts
+         and scales. Khisto reveals the Lévy peak and heavy tail on logarithmic
+         axes and avoids artificial spikes in integer Adult ages.
 
-   .. grid-item-card:: Heavy-tailed Pareto
-      :img-top: images/pareto-quick-start.png
+   .. container:: comparison-caption
 
-      Log-log axes reveal how adaptive bins track a power-law decay
-      over four orders of magnitude.
+      .. raw:: html
+
+         <p>Same data, bin counts and scales.
+         Ages: <a class="reference external" href="https://doi.org/10.24432/C5XW20"
+         target="_blank" rel="noopener noreferrer"
+         aria-label="UCI Adult (opens in a new tab)">UCI Adult</a>.</p>
 
 Get started
 -----------
@@ -91,11 +99,15 @@ Get started
       See why counts mislead when bins have different widths.
 
    .. grid-item-card:: :octicon:`info;1.5em` Histograms - Khiops
-      :link: https://khiops.org/learn/histograms/
-      :link-type: url
-      :class-card: histogram-guide-card
+      :class-card: histogram-guide-card sd-card-hover
 
       Go further, from the simplest histogram to the most complex.
+
+      .. raw:: html
+
+         <a class="sd-stretched-link sd-hide-link-text reference external"
+         href="https://khiops.org/learn/histograms/" target="_blank"
+         rel="noopener noreferrer"><span>Histograms - Khiops (opens in a new tab)</span></a>
 
 .. toctree::
    :maxdepth: 2
